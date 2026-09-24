@@ -155,14 +155,17 @@ const KycVerificationPage = () => {
     document: null,
   });
 
-  const calculateDynamicScore = (isAadhaarDone, isEmpDone, isVoterDone, isDlDone, isEduDone, isEduVerified = false) => {
-    let s = 0;
-    if (isAadhaarDone) s += 20.0;
-    if (isVoterDone) s += 20.0;
-    if (isDlDone) s += 5.0;
-    if (isEmpDone) s += 35.0;
-    if (isEduVerified) s += 20.0; // Points ONLY when verified!
-    const finalScore = parseFloat(Math.min(100, s).toFixed(1));
+  const calculateDynamicScore = (isAadhaarDone, isEmpDone, isVoterDone, isDlDone, isEduDone, isEduVerified = false, refCount = 0) => {
+    const aadhaarPts = isAadhaarDone ? 20 : 0;
+    const voterPts = isVoterDone ? 20 : 0;
+    const eduPts = isEduVerified ? 20 : 0;
+    const empPts = isEmpDone ? 30 : 0;
+    const validRefs = Math.min(2, Math.max(0, refCount));
+    const refPts = validRefs * 5;
+
+    const earned = aadhaarPts + voterPts + eduPts + empPts + refPts;
+    const applicable = 100;
+    const finalScore = Math.min(100, Math.round((earned / applicable) * 100));
     setScore(finalScore);
 
     if (finalScore >= 80) {

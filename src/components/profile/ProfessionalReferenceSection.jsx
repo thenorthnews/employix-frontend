@@ -325,6 +325,25 @@ const ProfessionalReferenceSection = ({ isSetupCompleted = false }) => {
         </div>
       </div>
 
+      {/* Scoring Policy Info Strip */}
+      <div
+        className="p-2 px-3 rounded-lg mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
+        style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+      >
+        <div className="d-flex align-items-center gap-2">
+          <span style={{ fontSize: '16px' }}>🛡️</span>
+          <span className="small text-dark font-weight-bold">
+            Reference Scoring (10% Max):{' '}
+            <span className="text-muted font-weight-normal">
+              0 verified = 0/10 Pts · 1 verified = 5/10 Pts · 2 verified = 10/10 Pts. Contributes directly to your 100 Pts overall profile score.
+            </span>
+          </span>
+        </div>
+        <span className="badge badge-light border text-muted font-weight-bold px-2 py-1" style={{ fontSize: '11px' }}>
+          Max 2 References Allowed
+        </span>
+      </div>
+
       {/* Main Content Area */}
       {loading ? (
         <div className="text-center py-5">
@@ -596,11 +615,7 @@ const ProfessionalReferenceSection = ({ isSetupCompleted = false }) => {
 
                   <form onSubmit={handleAddReference}>
                     <div className="modal-body p-4">
-                      <div className="p-3 rounded-lg mb-3" style={{ background: '#f0fdf9', border: '1px solid #bbf7d0' }}>
-                        <p className="small text-dark mb-0 font-weight-bold">
-                          ⚡ Instant Dispatch: An invitation email with a unique secure link will be sent immediately.
-                        </p>
-                      </div>
+
 
                       {/* 1. Name with Regex Validation */}
                       <div className="form-group mb-3">

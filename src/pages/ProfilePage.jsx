@@ -9,6 +9,7 @@ import Footer from '../components/common/Footer';
 import ButtonSpinner from '../components/common/Loader';
 import { getProfileApi } from '../api/authApi';
 import { getEmploymentRecordsApi, getQualificationsApi, getCertificationsApi } from '../api/kycApi';
+import { getReferencesApi } from '../api/referenceApi';
 import { updateUserKycStatus } from '../redux/slices/authSlice';
 
 const ProfilePage = () => {
@@ -60,6 +61,21 @@ const ProfilePage = () => {
           if (Array.isArray(cList) && cList.length > 0) {
             mergedUser.certifications = cList;
           }
+        }
+      } catch (e) {
+        // fallback silent
+      }
+
+      // Ensure latest professional references are merged
+      try {
+        const refRes = await getReferencesApi();
+        const refPayload = refRes?.data || refRes;
+        const refList = refPayload?.references || refPayload?.data?.references || [];
+        if (Array.isArray(refList)) {
+          mergedUser.references = refList;
+          mergedUser.verifiedReferencesCount = refList.filter(
+            (r) => String(r?.status || '').toUpperCase() === 'COMPLETED' || r?.isFeedbackSubmitted || r?.isPointsAwarded
+          ).length;
         }
       } catch (e) {
         // fallback silent
@@ -118,7 +134,7 @@ const ProfilePage = () => {
                 {/* Two-Column Main Profile Dashboard Layout */}
                 <div className="row g-4">
                   <ProfileMainCards user={profileUser} onUpdate={fetchProfile} />
-                  <ProfileSidebar user={profileUser} />
+                  <ProfileSidebar user={profileUser} references={profileUser?.references} />
                 </div>
               </>
             )}

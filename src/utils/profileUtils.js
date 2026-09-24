@@ -146,83 +146,225 @@ export const isCandidateSetupCompleted = (user) => {
 };
 
 /**
- * Calculates Employix Trust Score & Tier
- * Formula: Aadhaar (20) + Voter (20) + DL (5) + Employment (35) + Education (20) = 100 max
+ * Calculates Employee Profile Scoring System (100% Base Maximum)
+ *
+ * Scoring Criteria:
+ * 1. Aadhaar Card = 20% (Verified = 20 pts, Not Verified = 0 pts)
+ * 2. Voter ID Card = 20% (Verified = 20 pts, Not Verified = 0 pts)
+ * 3. Education = 20% (Verified = 20 pts, Not Verified = 0 pts)
+ * 4. Employment = 30% (Verified = 30 pts, Not Verified = 0 pts)
+ * 5. Employee Reference = 10% Maximum
+ *    - Maximum 2 references allowed per employee
+ *    - 0 verified references -> 0/10 (Earned = 0, Applicable Target = 90)
+ *    - 1 verified reference  -> 5/10 (Earned = 5, Applicable Target = 95)
+ *    - 2 verified references -> 10/10 (Earned = 10, Applicable Target = 100)
+ *    - Missing optional 2nd reference creates NO PENALTY (e.g. 95/95 = 100%)
+ *    - More than 2 references must not be allowed
+ *
  * @param {object} user
- * @returns {{
- *   score: number,
- *   displayScore: number,
- *   tierText: string,
- *   aadhaarScore: number,
- *   voterScore: number,
- *   dlScore: number,
- *   empScore: number,
- *   eduScore: number,
- *   isAadhaarDone: boolean,
- *   isVoterDone: boolean,
- *   isDlDone: boolean,
- *   isEmpDone: boolean,
- *   isEduVerified: boolean
- * }}
+ * @param {Array} [explicitReferences]
+ * @returns {object}
  */
-export const calculateTrustScore = (user) => {
+export const calculateEmployeeScore = (user, explicitReferences = null) => {
   if (!user) {
     return {
+      individualScores: {
+        aadhaar: 0,
+        voter: 0,
+        education: 0,
+        employment: 0,
+        reference: 0,
+      },
+      aadhaarScore: 0,
+      voterScore: 0,
+      eduScore: 0,
+      empScore: 0,
+      referenceScore: 0,
+      totalEarnedScore: 0,
+      totalApplicableScore: 100,
+      finalPercentage: 0,
+      verifiedReferencesCount: 0,
+      criteria: [],
       score: 0,
       displayScore: 0,
       tierText: 'Base Profile · Not Verified',
-      aadhaarScore: 0,
-      voterScore: 0,
-      dlScore: 0,
-      empScore: 0,
-      eduScore: 0,
       isAadhaarDone: false,
       isVoterDone: false,
-      isDlDone: false,
       isEmpDone: false,
       isEduVerified: false,
+      dlScore: 0,
+      isDlDone: false,
     };
   }
 
   const { isAadhaarDone, isEmpDone, isVoterDone, isDlDone, isEduVerified } = getKycVerificationFlags(user);
 
+  // 1. Aadhaar Card = 20%
   const aadhaarScore = isAadhaarDone ? 20 : 0;
+
+  // 2. Voter ID Card = 20%
   const voterScore = isVoterDone ? 20 : 0;
-  const dlScore = isDlDone ? 5 : 0;
-  const empScore = isEmpDone ? 35 : 0;
+
+  // 3. Education = 20%
   const eduScore = isEduVerified ? 20 : 0;
 
-  const rawScore =
-    user.employixScore !== undefined && user.employixScore !== null
-      ? user.employixScore
-      : parseFloat((aadhaarScore + voterScore + dlScore + empScore + eduScore).toFixed(1));
+  // 4. Employment = 30%
+  const empScore = isEmpDone ? 30 : 0;
 
-  const displayScore = Math.round(rawScore);
+  // 5. Employee Reference = 10% maximum (Up to 2 allowed, 5 points each)
+  const refsList = explicitReferences || user.references || [];
+  let completedCount = 0;
+  if (Array.isArray(refsList) && refsList.length > 0) {
+    completedCount = refsList.filter((ref) => {
+      const s = String(ref?.status || '').toUpperCase();
+      return s === 'COMPLETED' || ref?.isFeedbackSubmitted === true || ref?.isPointsAwarded === true;
+    }).length;
+  } else if (typeof user.verifiedReferencesCount === 'number') {
+    completedCount = user.verifiedReferencesCount;
+  } else if (typeof user.completedReferencesCount === 'number') {
+    completedCount = user.completedReferencesCount;
+  } else if (typeof user.rewardPoints === 'number' && user.rewardPoints > 0) {
+    completedCount = Math.floor(user.rewardPoints / 5);
+  }
+
+  // Clamped between 0 and 2 (maximum 2 references allowed)
+  const verifiedReferencesCount = Math.min(2, Math.max(0, completedCount));
+  const referenceScore = verifiedReferencesCount * 5; // 0, 5, or 10
+
+  // Total Earned Score
+  const totalEarnedScore = aadhaarScore + voterScore + eduScore + empScore + referenceScore;
+
+  // Total Applicable Score is ALWAYS fixed out of 100:
+  // Aadhaar (20) + Voter (20) + Employment (30) + Education (20) + References (10) = 100
+  const totalApplicableScore = 100;
+
+  // Final Percentage Calculation (out of 100)
+  const finalPercentage = Math.min(100, Math.round((totalEarnedScore / totalApplicableScore) * 100));
 
   let tierText = 'Base Profile · Not Verified';
-  if (displayScore >= 80) {
+  if (finalPercentage >= 80) {
     tierText = 'Platinum - Highly Trusted';
-  } else if (displayScore >= 60) {
+  } else if (finalPercentage >= 60) {
     tierText = 'Gold - Verified Candidate';
-  } else if (displayScore >= 30) {
+  } else if (finalPercentage >= 30) {
     tierText = 'Silver - Partially Verified';
-  } else if (displayScore > 0) {
+  } else if (finalPercentage > 0) {
     tierText = 'Bronze - Basic Profile';
   }
 
+  const criteria = [
+    {
+      id: 'aadhaar',
+      name: 'Aadhaar Card',
+      category: 'Identity Verification',
+      icon: '🪪',
+      weight: '20%',
+      maxScore: 20,
+      earnedScore: aadhaarScore,
+      isVerified: isAadhaarDone,
+      statusLabel: isAadhaarDone ? 'Verified' : 'Pending',
+      statusClass: isAadhaarDone ? 'text-success' : 'text-danger',
+      badgeClass: isAadhaarDone ? 'badge-success' : 'badge-danger',
+      description: isAadhaarDone ? 'UIDAI Official Identity Record Verified' : 'Aadhaar card not yet verified (0 Pts)',
+    },
+    {
+      id: 'voter',
+      name: 'Voter ID Card',
+      category: 'Address Verification',
+      icon: '🗳️',
+      weight: '20%',
+      maxScore: 20,
+      earnedScore: voterScore,
+      isVerified: isVoterDone,
+      statusLabel: isVoterDone ? 'Verified' : 'Pending',
+      statusClass: isVoterDone ? 'text-success' : 'text-danger',
+      badgeClass: isVoterDone ? 'badge-success' : 'badge-danger',
+      description: isVoterDone ? 'Election Commission Voter ID Verified' : 'Voter ID card not yet verified (0 Pts)',
+    },
+    {
+      id: 'education',
+      name: 'Education',
+      category: 'Academic Proof',
+      icon: '🎓',
+      weight: '20%',
+      maxScore: 20,
+      earnedScore: eduScore,
+      isVerified: isEduVerified,
+      statusLabel: isEduVerified ? 'Verified' : 'Pending',
+      statusClass: isEduVerified ? 'text-success' : 'text-danger',
+      badgeClass: isEduVerified ? 'badge-success' : 'badge-danger',
+      description: isEduVerified ? 'Qualifications & Degree Verified' : 'Education not yet verified (0 Pts)',
+    },
+    {
+      id: 'employment',
+      name: 'Employment',
+      category: 'Work History',
+      icon: '💼',
+      weight: '30%',
+      maxScore: 30,
+      earnedScore: empScore,
+      isVerified: isEmpDone,
+      statusLabel: isEmpDone ? 'Verified' : 'Pending',
+      statusClass: isEmpDone ? 'text-success' : 'text-danger',
+      badgeClass: isEmpDone ? 'badge-success' : 'badge-danger',
+      description: isEmpDone ? 'EPFO or Manual Employment History Verified' : 'Employment not yet verified (0 Pts)',
+    },
+    {
+      id: 'reference',
+      name: 'Employee Reference',
+      category: 'Peer Endorsements',
+      icon: '👥',
+      weight: '10% Max',
+      maxScore: 10,
+      earnedScore: referenceScore,
+      isVerified: verifiedReferencesCount > 0,
+      statusLabel: `${verifiedReferencesCount} / 2 Verified`,
+      statusClass: verifiedReferencesCount > 0 ? 'text-teal' : 'text-muted',
+      badgeClass: verifiedReferencesCount > 0 ? 'badge-teal' : 'badge-light border',
+      displayRatio: `${referenceScore}/10`,
+      verifiedCount: verifiedReferencesCount,
+      description:
+        verifiedReferencesCount === 2
+          ? '2 Verified References (10/10 Pts)'
+          : verifiedReferencesCount === 1
+          ? '1 Verified Reference (5/10 Pts)'
+          : '0 Verified References (0/10 Pts)',
+    },
+  ];
+
   return {
-    score: rawScore,
-    displayScore,
-    tierText,
+    individualScores: {
+      aadhaar: aadhaarScore,
+      voter: voterScore,
+      education: eduScore,
+      employment: empScore,
+      reference: referenceScore,
+    },
     aadhaarScore,
     voterScore,
-    dlScore,
-    empScore,
     eduScore,
+    empScore,
+    referenceScore,
+    totalEarnedScore,
+    totalApplicableScore,
+    finalPercentage,
+    verifiedReferencesCount,
+    criteria,
+    tierText,
+    score: finalPercentage,
+    displayScore: finalPercentage,
     isAadhaarDone,
     isVoterDone,
-    isDlDone,
     isEmpDone,
     isEduVerified,
+    dlScore: 0,
+    isDlDone,
   };
+};
+
+/**
+ * Backward compatibility alias for calculateEmployeeScore
+ */
+export const calculateTrustScore = (user, explicitReferences = null) => {
+  return calculateEmployeeScore(user, explicitReferences);
 };

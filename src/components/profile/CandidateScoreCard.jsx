@@ -20,7 +20,7 @@ const CandidateScoreCard = ({ user, onEdit }) => {
   const formattedId = formatEmployixId(user?.employixId, user?._id);
 
   // 5. Dynamic Trust Score & Tier
-  const { displayScore, tierText } = calculateTrustScore(user);
+  const { displayScore, tierText, totalEarnedScore, totalApplicableScore } = calculateTrustScore(user);
 
   // 7. Dynamic Skill Tags
   const defaultSkills = [
@@ -121,8 +121,10 @@ const CandidateScoreCard = ({ user, onEdit }) => {
 
         {/* Center Score Value */}
         <div className="candidate-gauge-center-content">
-          <div className="candidate-score-number">{displayScore}</div>
-          <div className="candidate-score-sublabel">of 100</div>
+          <div className="candidate-score-number">{displayScore}%</div>
+          <div className="candidate-score-sublabel">
+            {totalEarnedScore ? `${totalEarnedScore}/${totalApplicableScore} Pts` : 'Base 100%'}
+          </div>
         </div>
       </div>
 
