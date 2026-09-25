@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { getKycVerificationFlags, formatCandidateAddress, isCandidateSetupCompleted } from '../../utils/profileUtils';
+import { getKycVerificationFlags, formatCandidateAddress, isCandidateSetupCompleted, resolveImageUrl } from '../../utils/profileUtils';
 
 const ProfileMainCards = ({ user: propUser }) => {
   const { user: reduxUser } = useSelector((state) => state.auth);
@@ -278,7 +278,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                       </span>
                       {qual.documentUrl && (
                         <a
-                          href={qual.documentUrl}
+                          href={resolveImageUrl(qual.documentUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="doc-view-btn"
@@ -401,7 +401,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                       )}
                       {cert.documentUrl && (
                         <a
-                          href={cert.documentUrl}
+                          href={resolveImageUrl(cert.documentUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="doc-view-btn"

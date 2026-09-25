@@ -4,6 +4,26 @@
  * KYC step verification detection, and Employix Trust Score calculation.
  */
 
+export const getBackendBaseUrl = () => {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL.replace(/\/+$/, '');
+  }
+
+  const apiUrl = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_BASE_URL : '';
+  if (apiUrl && typeof apiUrl === 'string') {
+    if (apiUrl.startsWith('http://') || apiUrl.startsWith('https://')) {
+      try {
+        const parsed = new URL(apiUrl);
+        return parsed.origin;
+      } catch (_) {
+        return apiUrl.replace(/\/v1\/?$/, '').replace(/\/api\/?$/, '').replace(/\/+$/, '');
+      }
+    }
+  }
+
+  return 'http://13.232.68.44:3000';
+};
+
 /**
  * Resolves avatar / document image paths safely
  * @param {string} imgPath
@@ -11,16 +31,31 @@
  * @returns {string}
  */
 export const resolveImageUrl = (imgPath, fallback = '/images/identity.jpg') => {
-  if (!imgPath) return fallback;
+  if (!imgPath || typeof imgPath !== 'string') return fallback;
+
+  const trimmed = imgPath.trim();
+  if (!trimmed) return fallback;
+
   if (
-    imgPath.startsWith('http://') ||
-    imgPath.startsWith('https://') ||
-    imgPath.startsWith('blob:') ||
-    imgPath.startsWith('data:')
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('data:')
   ) {
-    return imgPath;
+    return trimmed;
   }
-  return imgPath.startsWith('/') ? imgPath : `/${imgPath}`;
+
+  let cleanPath = trimmed.replace(/\\/g, '/');
+  if (!cleanPath.startsWith('/')) {
+    cleanPath = `/${cleanPath}`;
+  }
+
+  if (cleanPath.startsWith('/uploads/')) {
+    const backendBase = getBackendBaseUrl();
+    return `${backendBase}${cleanPath}`;
+  }
+
+  return cleanPath;
 };
 
 /**
