@@ -9,6 +9,11 @@ export const getBackendBaseUrl = () => {
     return import.meta.env.VITE_BACKEND_URL.replace(/\/+$/, '');
   }
 
+  const isLocal = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+
   const apiUrl = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_BASE_URL : '';
   if (apiUrl && typeof apiUrl === 'string') {
     if (apiUrl.startsWith('http://') || apiUrl.startsWith('https://')) {
@@ -21,7 +26,7 @@ export const getBackendBaseUrl = () => {
     }
   }
 
-  return 'http://13.232.68.44:3000';
+  return isLocal ? 'http://localhost:5000' : 'http://13.232.68.44:3000';
 };
 
 /**
@@ -36,16 +41,30 @@ export const resolveImageUrl = (imgPath, fallback = '/images/identity.jpg') => {
   const trimmed = imgPath.trim();
   if (!trimmed) return fallback;
 
-  if (
-    trimmed.startsWith('http://') ||
-    trimmed.startsWith('https://') ||
-    trimmed.startsWith('blob:') ||
-    trimmed.startsWith('data:')
-  ) {
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
     return trimmed;
   }
 
-  let cleanPath = trimmed.replace(/\\/g, '/');
+  const isLocal = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+
+  let cleanPath = trimmed;
+
+  // On local machine, if the image URL points to remote 13.232.68.44:3000, redirect to local port 5000
+  if (isLocal && cleanPath.includes('13.232.68.44:3000/uploads/')) {
+    return cleanPath.replace(/http:\/\/13\.232\.68\.44:3000/, 'http://localhost:5000');
+  }
+
+  if (
+    cleanPath.startsWith('http://') ||
+    cleanPath.startsWith('https://')
+  ) {
+    return cleanPath;
+  }
+
+  cleanPath = cleanPath.replace(/\\/g, '/');
   if (!cleanPath.startsWith('/')) {
     cleanPath = `/${cleanPath}`;
   }

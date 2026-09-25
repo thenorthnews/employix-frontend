@@ -28,10 +28,25 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   // Helper for image url resolution
   const resolveImageUrl = (imgPath) => {
     if (!imgPath) return '/images/identity.jpg';
-    if (imgPath.startsWith('http://') || imgPath.startsWith('https://') || imgPath.startsWith('blob:') || imgPath.startsWith('data:')) {
+    if (imgPath.startsWith('blob:') || imgPath.startsWith('data:')) {
       return imgPath;
     }
-    return imgPath.startsWith('/') ? imgPath : `/${imgPath}`;
+    const isLocal = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+    if (isLocal && imgPath.includes('13.232.68.44:3000/uploads/')) {
+      return imgPath.replace(/http:\/\/13\.232\.68\.44:3000/, 'http://localhost:5000');
+    }
+    if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
+      return imgPath;
+    }
+    const cleanPath = imgPath.startsWith('/') ? imgPath : `/${imgPath}`;
+    if (cleanPath.startsWith('/uploads/')) {
+      const base = isLocal ? 'http://localhost:5000' : 'http://13.232.68.44:3000';
+      return `${base}${cleanPath}`;
+    }
+    return cleanPath;
   };
 
   // Populate fields when modal opens or user prop changes
