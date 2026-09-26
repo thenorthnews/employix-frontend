@@ -87,11 +87,9 @@ const KycVerificationPage = () => {
   const [aadhaarVerified, setAadhaarVerified] = useState(false);
   const [aadhaarResult, setAadhaarResult] = useState(null);
 
-  // STEP 3: Employment Verification State
   const [empMethod, setEmpMethod] = useState('uan'); // 'uan' | 'manual'
   const [uanNumber, setUanNumber] = useState('');     // 12-digit UAN
   const [empMobile, setEmpMobile] = useState('');     // Mobile fallback
-  // Default disabled (false) as required
   const [empConsent, setEmpConsent] = useState(false);
   const [empLoading, setEmpLoading] = useState(false);
   const [employmentVerified, setEmploymentVerified] = useState(false);
@@ -99,7 +97,6 @@ const KycVerificationPage = () => {
   const [manualJobs, setManualJobs] = useState([]);
   const [userReferences, setUserReferences] = useState(user?.references || []);
   const [rewardPoints, setRewardPoints] = useState(user?.rewardPoints || 0);
-  // Manual job form
   const [jobForm, setJobForm] = useState({ companyName: '', designation: '', startDate: '', endDate: '', isCurrent: false, description: '' });
   const [jobFormLoading, setJobFormLoading] = useState(false);
   const [showJobForm, setShowJobForm] = useState(false);
@@ -109,7 +106,6 @@ const KycVerificationPage = () => {
   const [voterFrontPreview, setVoterFrontPreview] = useState(null);
   const [voterBack, setVoterBack] = useState(null);
   const [voterBackPreview, setVoterBackPreview] = useState(null);
-  // Default disabled (false) as required
   const [voterConsent, setVoterConsent] = useState(false);
   const [voterLoading, setVoterLoading] = useState(false);
   const [voterVerified, setVoterVerified] = useState(false);
@@ -1772,7 +1768,7 @@ const KycVerificationPage = () => {
                               value={voterNumber}
                               onChange={handleVoterNumberChange}
                               placeholder="e.g. WXD1234567"
-                              maxLength={12}
+                              maxLength={10}
                               required
                             />
                             <small className="form-text text-muted">

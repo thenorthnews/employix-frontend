@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { getKycVerificationFlags, formatCandidateAddress, isCandidateSetupCompleted, resolveImageUrl } from '../../utils/profileUtils';
 
@@ -203,10 +202,7 @@ const ProfileMainCards = ({ user: propUser }) => {
           ) : (
             <div className="p-4 text-center rounded border bg-light">
               <p className="text-danger mb-2 font-weight-bold">&#128188; No employment history verified yet</p>
-              <p className="small text-secondary mb-3">Add employment history in KYC verification to boost your Trust Score.</p>
-              <Link to="/kyc-verification" className="btn btn-sm btn-primary-teal px-3 py-2 font-weight-bold">
-                Add Employment in KYC &rarr;
-              </Link>
+              <p className="small text-secondary mb-0">No employment records verified yet.</p>
             </div>
           )}
         </div>
@@ -228,25 +224,6 @@ const ProfileMainCards = ({ user: propUser }) => {
                 ? `${qualifications.filter(q => q.isVerified && q.verificationStatus === 'verified').length} / ${qualifications.length} Verified`
                 : 'Not Added'}
             </span>
-            {isSetupCompleted ? (
-              <button
-                type="button"
-                disabled
-                className="btn btn-sm btn-secondary font-weight-bold px-3 py-1"
-                style={{ fontSize: '0.82rem', borderRadius: '50px', opacity: 0.6, cursor: 'not-allowed' }}
-                title="Setup completed. Adding qualifications is locked."
-              >
-                + Add Qualification
-              </button>
-            ) : (
-              <Link
-                to="/kyc-verification#step-education"
-                className="btn btn-sm btn-outline-teal font-weight-bold px-3 py-1"
-                style={{ fontSize: '0.82rem', borderRadius: '50px' }}
-              >
-                + Add Qualification
-              </Link>
-            )}
           </div>
         </div>
 
@@ -303,24 +280,9 @@ const ProfileMainCards = ({ user: propUser }) => {
             <p className="mb-2 font-weight-bold" style={{ color: '#0f172a' }}>
               🎓 No educational qualifications added yet
             </p>
-            <p className="small text-secondary mb-3">
-              Add academic degrees, colleges, and diploma records in KYC verification to boost your Trust Score.
+            <p className="small text-secondary mb-0">
+              No academic degrees or diploma records added yet.
             </p>
-            {isSetupCompleted ? (
-              <button
-                type="button"
-                disabled
-                className="btn btn-sm btn-secondary px-3 py-2 font-weight-bold"
-                style={{ opacity: 0.6, cursor: 'not-allowed' }}
-                title="Setup completed. Adding qualifications is locked."
-              >
-                + Add Qualification in KYC (Setup Completed)
-              </button>
-            ) : (
-              <Link to="/kyc-verification#step-education" className="btn btn-sm btn-primary-teal px-3 py-2 font-weight-bold">
-                + Add Qualification in KYC &rarr;
-              </Link>
-            )}
           </div>
         )}
       </div>
@@ -341,25 +303,6 @@ const ProfileMainCards = ({ user: propUser }) => {
                 ? `${certifications.filter(c => c.isVerified && c.verificationStatus === 'verified').length} / ${certifications.length} Verified`
                 : 'Not Added'}
             </span>
-            {isSetupCompleted ? (
-              <button
-                type="button"
-                disabled
-                className="btn btn-sm btn-secondary font-weight-bold px-3 py-1"
-                style={{ fontSize: '0.82rem', borderRadius: '50px', opacity: 0.6, cursor: 'not-allowed' }}
-                title="Setup completed. Adding certifications is locked."
-              >
-                + Add Certification
-              </button>
-            ) : (
-              <Link
-                to="/kyc-verification#step-education"
-                className="btn btn-sm btn-outline-teal font-weight-bold px-3 py-1"
-                style={{ fontSize: '0.82rem', borderRadius: '50px' }}
-              >
-                + Add Certification
-              </Link>
-            )}
           </div>
         </div>
 
@@ -426,24 +369,9 @@ const ProfileMainCards = ({ user: propUser }) => {
             <p className="mb-2 font-weight-bold" style={{ color: '#0f172a' }}>
               🏆 No professional certifications added yet
             </p>
-            <p className="small text-secondary mb-3">
-              Add vendor credentials (AWS, Google, Microsoft, Scrum, etc.) to showcase verified technical skills.
+            <p className="small text-secondary mb-0">
+              No vendor credentials or technical certifications added yet.
             </p>
-            {isSetupCompleted ? (
-              <button
-                type="button"
-                disabled
-                className="btn btn-sm btn-secondary px-3 py-2 font-weight-bold"
-                style={{ opacity: 0.6, cursor: 'not-allowed' }}
-                title="Setup completed. Adding certifications is locked."
-              >
-                + Add Certification (Setup Completed)
-              </button>
-            ) : (
-              <Link to="/kyc-verification#step-education" className="btn btn-sm btn-primary-teal px-3 py-2 font-weight-bold">
-                + Add Certification in KYC &rarr;
-              </Link>
-            )}
           </div>
         )}
       </div>
