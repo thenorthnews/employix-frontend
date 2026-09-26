@@ -23,6 +23,7 @@ import {
   deleteCertificationApi,
   verifyDlOcrApi,
   completeKycSetupApi,
+  getScoreConfigApi,
 } from '../api/kycApi';
 import { updateProfileApi, getProfileApi } from '../api/authApi';
 
@@ -97,6 +98,15 @@ const KycVerificationPage = () => {
   const [manualJobs, setManualJobs] = useState([]);
   const [userReferences, setUserReferences] = useState(user?.references || []);
   const [rewardPoints, setRewardPoints] = useState(user?.rewardPoints || 0);
+  const [scoreConfig, setScoreConfig] = useState({
+    aadhaarScore: 20,
+    voterScore: 20,
+    educationScore: 20,
+    employmentScore: 30,
+    referenceScorePerItem: 5,
+    maxReferencesAllowed: 2,
+    totalApplicableScore: 100,
+  });
   const [jobForm, setJobForm] = useState({ companyName: '', designation: '', startDate: '', endDate: '', isCurrent: false, description: '' });
   const [jobFormLoading, setJobFormLoading] = useState(false);
   const [showJobForm, setShowJobForm] = useState(false);
@@ -148,15 +158,15 @@ const KycVerificationPage = () => {
   });
 
   const calculateDynamicScore = (isAadhaarDone, isEmpDone, isVoterDone, isDlDone, isEduDone, isEduVerified = false, refCount = 0) => {
-    const aadhaarPts = isAadhaarDone ? 20 : 0;
-    const voterPts = isVoterDone ? 20 : 0;
-    const eduPts = isEduVerified ? 20 : 0;
-    const empPts = isEmpDone ? 30 : 0;
-    const validRefs = Math.min(2, Math.max(0, refCount));
-    const refPts = validRefs * 5;
+    const aadhaarPts = isAadhaarDone ? (scoreConfig.aadhaarScore ?? 20) : 0;
+    const voterPts = isVoterDone ? (scoreConfig.voterScore ?? 20) : 0;
+    const eduPts = isEduVerified ? (scoreConfig.educationScore ?? 20) : 0;
+    const empPts = isEmpDone ? (scoreConfig.employmentScore ?? 30) : 0;
+    const validRefs = Math.min(scoreConfig.maxReferencesAllowed ?? 2, Math.max(0, refCount));
+    const refPts = validRefs * (scoreConfig.referenceScorePerItem ?? 5);
 
     const earned = aadhaarPts + voterPts + eduPts + empPts + refPts;
-    const applicable = 100;
+    const applicable = scoreConfig.totalApplicableScore ?? 100;
     const finalScore = Math.min(100, Math.round((earned / applicable) * 100));
     setScore(finalScore);
 
@@ -190,9 +200,23 @@ const KycVerificationPage = () => {
       try {
         setFetchingStatus(true);
 
+        try {
+          const cfgRes = await getScoreConfigApi();
+          const cfgData = cfgRes.data?.data?.config || cfgRes.data?.config;
+          if (cfgData) {
+            setScoreConfig((prev) => ({ ...prev, ...cfgData }));
+          }
+        } catch (cfgErr) {
+          console.error('Failed to load score config from DB:', cfgErr);
+        }
+
         const profileRes = await getProfileApi();
         const pData = profileRes.data || profileRes;
         if (!pData) return;
+
+        if (pData.profileScoring?.scoreConfig) {
+          setScoreConfig((prev) => ({ ...prev, ...pData.profileScoring.scoreConfig }));
+        }
 
         // Step 1: Personal profile fields
         if (pData.name) setFullName(pData.name);
@@ -454,11 +478,11 @@ const KycVerificationPage = () => {
       dispatch(
         updateUserKycStatus({
           aadhaarStatus: 1,
-          employixScore: data.newScore || score + 20,
+          employixScore: data.newScore || score + (scoreConfig.aadhaarScore ?? 20),
           kycStatus: nextKyc,
         })
       );
-      toast.success('Aadhaar verified successfully (+20 points).');
+      toast.success(`Aadhaar verified successfully (+${scoreConfig.aadhaarScore ?? 20} points).`);
     } catch (err) {
       let msg = err.response?.data?.message || err.message || 'Aadhaar verification failed.';
       const lower = String(msg).toLowerCase();
@@ -519,11 +543,11 @@ const KycVerificationPage = () => {
         updateUserKycStatus({
           voterStatus: 1,
           address: data.address?.fullAddress || addressText,
-          employixScore: data.newScore || score + 20,
+          employixScore: data.newScore || score + (scoreConfig.voterScore ?? 20),
           kycStatus: newKycSt,
         })
       );
-      toast.success('Voter ID and address verified successfully (+20 points).');
+      toast.success(`Voter ID and address verified successfully (+${scoreConfig.voterScore ?? 20} points).`);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Voter ID verification failed.');
     } finally {
@@ -720,7 +744,7 @@ const KycVerificationPage = () => {
       });
       setKycStatus(nextStatus);
       dispatch(updateUserKycStatus({ employmentStatus: 1, kycStatus: nextStatus }));
-      toast.success('Employment records verified successfully (+35 points).');
+      toast.success(`Employment records verified successfully (+${scoreConfig.employmentScore ?? 30} points).`);
     } catch (err) {
       let msg = err.response?.data?.message || err.message || 'Invalid UAN number. Please enter a valid 12-digit UAN number.';
       const lower = String(msg).toLowerCase();
@@ -795,7 +819,7 @@ const KycVerificationPage = () => {
       });
       setKycStatus(nextStatus);
       dispatch(updateUserKycStatus({ employmentStatus: 1, kycStatus: nextStatus }));
-      toast.success('Employment record added successfully (+35 points).');
+      toast.success(`Employment record added successfully (+${scoreConfig.employmentScore ?? 30} points).`);
     } catch (err) {
       toast.error(err.message || 'Failed to add employment record.');
     } finally {
@@ -1243,7 +1267,7 @@ const KycVerificationPage = () => {
                       <span className="setup-step-badge mr-2">Step 2</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Aadhaar Identity Verification</h3>
-                        <p className="small text-muted mb-0">Official UIDAI Identity Verification (+20 Points Boost)</p>
+                        <p className="small text-muted mb-0">Official UIDAI Identity Verification (+{scoreConfig.aadhaarScore ?? 20} Points Boost)</p>
                       </div>
                     </div>
 
@@ -1274,7 +1298,7 @@ const KycVerificationPage = () => {
                             </span>
                           </div>
                         </div>
-                        <span className="badge badge-success px-3 py-2 font-weight-bold">+20 Points Secured</span>
+                        <span className="badge badge-success px-3 py-2 font-weight-bold">+{scoreConfig.aadhaarScore ?? 20} Points Secured</span>
                       </div>
 
                       {/* Complete Extracted Aadhaar Details */}
@@ -1414,7 +1438,7 @@ const KycVerificationPage = () => {
                             className="btn btn-primary-teal btn-block py-3 font-weight-bold"
                             disabled={aadhaarLoading || !aadhaarConsent || !aadhaarFront || !aadhaarBack}
                           >
-                            {aadhaarLoading ? <ButtonSpinner text="Scanning Aadhaar Card..." /> : 'Scan & Verify Aadhaar (OCR) (+20 Points)'}
+                            {aadhaarLoading ? <ButtonSpinner text="Scanning Aadhaar Card..." /> : `Scan & Verify Aadhaar (OCR) (+${scoreConfig.aadhaarScore ?? 20} Points)`}
                           </button>
                         </form>
                   )}
@@ -1431,7 +1455,7 @@ const KycVerificationPage = () => {
                       <span className="setup-step-badge mr-2">Step 3</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Employment Verification</h3>
-                        <p className="small text-muted mb-0">Add employment history via UAN Number, EPFO Mobile, or manually (+35 Points)</p>
+                        <p className="small text-muted mb-0">Add employment history via UAN Number, EPFO Mobile, or manually (+{scoreConfig.employmentScore ?? 30} Points)</p>
                       </div>
                     </div>
                     {employmentVerified ? (
@@ -1440,7 +1464,7 @@ const KycVerificationPage = () => {
                           &#10003; EMPLOYMENT VERIFIED
                         </span>
                         <span className="badge badge-success px-2 py-1 ml-2 font-weight-bold">
-                          +35 Points Secured
+                          +{scoreConfig.employmentScore ?? 30} Points Secured
                         </span>
                       </div>
                     ) : (
@@ -1552,7 +1576,7 @@ const KycVerificationPage = () => {
                         </div>
                       </div>
                       <button type="submit" className="btn btn-primary-teal btn-block py-3 font-weight-bold" disabled={empLoading || !empConsent || uanNumber.length < 12}>
-                        {empLoading ? <ButtonSpinner text="Fetching UAN Records..." /> : '📊 Fetch Employment History via UAN (+35 Points)'}
+                        {empLoading ? <ButtonSpinner text="Fetching UAN Records..." /> : `📊 Fetch Employment History via UAN (+${scoreConfig.employmentScore ?? 30} Points)`}
                       </button>
                     </form>
                   )}
@@ -1589,7 +1613,7 @@ const KycVerificationPage = () => {
                         </div>
                       </div>
                       <button type="submit" className="btn btn-primary-teal btn-block py-3 font-weight-bold" disabled={empLoading || !empConsent || empMobile.length < 10}>
-                        {empLoading ? <ButtonSpinner text="Fetching EPFO Records..." /> : '&#128202; Fetch EPFO Employment History (+35 Points)'}
+                        {empLoading ? <ButtonSpinner text="Fetching EPFO Records..." /> : `📊 Fetch EPFO Employment History (+${scoreConfig.employmentScore ?? 30} Points)`}
                       </button>
                     </form>
                   )}
@@ -1664,7 +1688,7 @@ const KycVerificationPage = () => {
                       <span className="setup-step-badge mr-2">Step 4</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Address Verification via Voter ID Card</h3>
-                        <p className="small text-muted mb-0">Election Commission of India (ECI) Residential Address Proof (+20 Points)</p>
+                        <p className="small text-muted mb-0">Election Commission of India (ECI) Residential Address Proof (+{scoreConfig.voterScore ?? 20} Points)</p>
                       </div>
                     </div>
 
@@ -1708,7 +1732,7 @@ const KycVerificationPage = () => {
                             </span>
                           </div>
                         </div>
-                        <span className="badge badge-success px-3 py-2 font-weight-bold">+20 Points Secured</span>
+                        <span className="badge badge-success px-3 py-2 font-weight-bold">+{scoreConfig.voterScore ?? 20} Points Secured</span>
                       </div>
 
                       {/* Complete Extracted Voter ID Details */}
@@ -1799,7 +1823,7 @@ const KycVerificationPage = () => {
                             className="btn btn-primary-teal btn-block py-3 font-weight-bold"
                             disabled={voterLoading || !voterConsent || !voterNumber.trim()}
                           >
-                            {voterLoading ? <ButtonSpinner text="Verifying Voter ID & Address..." /> : 'Verify Voter ID Address (+20 Points)'}
+                            {voterLoading ? <ButtonSpinner text="Verifying Voter ID & Address..." /> : `Verify Voter ID Address (+${scoreConfig.voterScore ?? 20} Points)`}
                           </button>
                         </form>
                       )}
@@ -1898,7 +1922,7 @@ const KycVerificationPage = () => {
                             className="btn btn-primary-teal btn-block py-3 font-weight-bold"
                             disabled={voterLoading || !voterConsent || !voterFront || !voterBack}
                           >
-                            {voterLoading ? <ButtonSpinner text="Scanning Voter Card Address..." /> : 'Scan & Extract Address (OCR) (+20 Points)'}
+                            {voterLoading ? <ButtonSpinner text="Scanning Voter Card Address..." /> : `Scan & Extract Address (OCR) (+${scoreConfig.voterScore ?? 20} Points)`}
                           </button>
                         </form>
                       )}
@@ -2083,7 +2107,7 @@ const KycVerificationPage = () => {
                       <span className="setup-step-badge mr-2">Step 6</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Educational Qualifications &amp; Professional Certifications</h3>
-                        <p className="small text-muted mb-0">Add academic degrees and vendor certifications with document proof (+20 Points)</p>
+                        <p className="small text-muted mb-0">Add academic degrees and vendor certifications with document proof (+{scoreConfig.educationScore ?? 20} Points)</p>
                       </div>
                     </div>
 
@@ -2094,7 +2118,7 @@ const KycVerificationPage = () => {
                         </span>
                         {(qualifications.some(q => q.isVerified && q.verificationStatus === 'verified') || certifications.some(c => c.isVerified && c.verificationStatus === 'verified')) && (
                           <span className="badge badge-success px-2 py-1 ml-2 font-weight-bold">
-                            +20 Points Secured
+                            +{scoreConfig.educationScore ?? 20} Points Secured
                           </span>
                         )}
                       </div>

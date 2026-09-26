@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ButtonSpinner from '../components/common/Loader';
@@ -45,7 +45,8 @@ const parseToMonthFormat = (dateStr) => {
 
 const ReferenceVerificationPage = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const rawToken = searchParams.get('token');
+  const token = rawToken ? rawToken.trim().replace(/^["']|["']$/g, '') : '';
 
   // Page States: 'loading' | 'invalid' | 'ready' | 'otp_sent' | 'otp_verified' | 'completed'
   const [pageState, setPageState] = useState('loading');
@@ -56,8 +57,13 @@ const ReferenceVerificationPage = () => {
   // OTP State
   const [otpCode, setOtpCode] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpSentOnce, setOtpSentOnce] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [countdown, setCountdown] = useState(0);
+
+  // Synchronous Locks to prevent duplicate keypress or rapid clicks
+  const isSendingOtpRef = useRef(false);
+  const isVerifyingOtpRef = useRef(false);
 
   // SECTION A: Employment Confirmation State
   const [workedTogether, setWorkedTogether] = useState('Yes'); // 'Yes' | 'No'
@@ -199,10 +205,19 @@ const ReferenceVerificationPage = () => {
     }
   }, [countdown]);
 
-  // Send Email OTP
-  const handleSendOtp = async () => {
+  // Send Email OTP (Guarded: exactly once per action, button disables immediately)
+  const handleSendOtp = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (isSendingOtpRef.current || sendingOtp || countdown > 0) {
+      return;
+    }
+
+    // Immediately acquire synchronous lock and disable button
+    isSendingOtpRef.current = true;
+    setSendingOtp(true);
+    setOtpSentOnce(true);
+
     try {
-      setSendingOtp(true);
       const res = await sendReferenceOtpApi(token);
       const isSuccess = Boolean(res?.success || res?.data?.success || res?.message);
       if (isSuccess) {
@@ -213,21 +228,31 @@ const ReferenceVerificationPage = () => {
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Failed to send OTP.';
       toast.error(msg);
+      // On error, reset so user can try again
+      setOtpSentOnce(false);
     } finally {
       setSendingOtp(false);
+      isSendingOtpRef.current = false;
     }
   };
 
-  // Verify Email OTP
+  // Verify Email OTP (Guarded: single execution on Enter or Click, button disabled immediately)
   const handleVerifyOtp = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    if (isVerifyingOtpRef.current || verifyingOtp) {
+      return;
+    }
+
     if (otpCode.trim().length !== 6) {
       toast.error('Please enter a valid 6-digit verification code.');
       return;
     }
 
+    // Immediately acquire lock and disable
+    isVerifyingOtpRef.current = true;
+    setVerifyingOtp(true);
+
     try {
-      setVerifyingOtp(true);
       const res = await verifyReferenceOtpApi(token, otpCode.trim());
       const payload = res?.data || res;
       const isSuccess = Boolean(res?.success || res?.data?.success || res?.isOtpVerified || payload?.isOtpVerified);
@@ -248,6 +273,7 @@ const ReferenceVerificationPage = () => {
       toast.error(msg);
     } finally {
       setVerifyingOtp(false);
+      isVerifyingOtpRef.current = false;
     }
   };
 
@@ -605,18 +631,24 @@ const ReferenceVerificationPage = () => {
                     <button
                       type="button"
                       onClick={handleSendOtp}
-                      disabled={sendingOtp}
+                      disabled={sendingOtp || otpSentOnce || countdown > 0}
                       className="btn btn-block font-weight-bold py-3 text-white shadow-sm"
                       style={{
-                        background: 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
+                        background: (sendingOtp || otpSentOnce || countdown > 0)
+                          ? '#94a3b8'
+                          : 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
                         borderRadius: '12px',
                         fontSize: '15px',
+                        cursor: (sendingOtp || otpSentOnce || countdown > 0) ? 'not-allowed' : 'pointer',
+                        opacity: (sendingOtp || otpSentOnce || countdown > 0) ? 0.75 : 1,
                       }}
                     >
                       {sendingOtp ? (
                         <>
                           <ButtonSpinner color="#ffffff" size="sm" /> Sending Verification Code...
                         </>
+                      ) : otpSentOnce ? (
+                        '✓ Verification Code Sent'
                       ) : (
                         'Send 6-Digit Verification Code to My Email →'
                       )}
@@ -635,6 +667,17 @@ const ReferenceVerificationPage = () => {
                         placeholder="••••••"
                         value={otpCode}
                         onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        onKeyDown={(e) => {
+                          if (e.repeat) {
+                            e.preventDefault();
+                            return;
+                          }
+                          if (e.key === 'Enter') {
+                            if (verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6) {
+                              e.preventDefault();
+                            }
+                          }
+                        }}
                         style={{
                           letterSpacing: '8px',
                           fontSize: '26px',
@@ -653,12 +696,16 @@ const ReferenceVerificationPage = () => {
 
                     <button
                       type="submit"
-                      disabled={verifyingOtp || otpCode.length !== 6}
+                      disabled={verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6}
                       className="btn btn-block font-weight-bold py-3 mb-3 text-white shadow-sm"
                       style={{
-                        background: 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
+                        background: (verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6)
+                          ? '#94a3b8'
+                          : 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
                         borderRadius: '12px',
                         fontSize: '15px',
+                        cursor: (verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6) ? 'not-allowed' : 'pointer',
+                        opacity: (verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6) ? 0.75 : 1,
                       }}
                     >
                       {verifyingOtp ? (
@@ -674,7 +721,7 @@ const ReferenceVerificationPage = () => {
                       <button
                         type="button"
                         onClick={handleSendOtp}
-                        disabled={countdown > 0 || sendingOtp}
+                        disabled={countdown > 0 || sendingOtp || isSendingOtpRef.current}
                         className="btn btn-link text-muted small p-0 font-weight-bold"
                       >
                         {countdown > 0 ? `Resend Code in ${countdown}s` : 'Resend Verification Code'}

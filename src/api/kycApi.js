@@ -176,4 +176,12 @@ export const completeKycSetupApi = async () => {
   return await axiosInstance.post('/user-portal/kyc/complete-setup');
 };
 
+/**
+ * Fetch dynamic scoring configuration from DB table
+ */
+export const getScoreConfigApi = async () => {
+  return await axiosInstance.get('/user-portal/score-config');
+};
+
+
 

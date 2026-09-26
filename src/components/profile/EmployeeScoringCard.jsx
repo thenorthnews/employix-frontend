@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getKycVerificationFlags } from '../../utils/profileUtils';
+import { getScoreConfigApi } from '../../api/kycApi';
 
 /**
  * Score Breakdown Component
@@ -11,6 +12,21 @@ import { getKycVerificationFlags } from '../../utils/profileUtils';
  * 5. Conduct & Security
  */
 const EmployeeScoringCard = ({ user, references = null }) => {
+  const [dbConfig, setDbConfig] = useState(user?.profileScoring?.scoreConfig || null);
+
+  useEffect(() => {
+    if (user?.profileScoring?.scoreConfig) {
+      setDbConfig(user.profileScoring.scoreConfig);
+    } else {
+      getScoreConfigApi()
+        .then((res) => {
+          const cfg = res.data?.data?.config || res.data?.config || res.data?.data;
+          if (cfg) setDbConfig(cfg);
+        })
+        .catch(() => {});
+    }
+  }, [user]);
+
   const {
     isAadhaarDone,
     isEmpDone,
@@ -20,33 +36,41 @@ const EmployeeScoringCard = ({ user, references = null }) => {
     isEduAdded,
   } = getKycVerificationFlags(user);
 
+  // Dynamic maximum score weights from DB table (with standard fallbacks: 20, 20, 20, 30, 10)
+  const aadhaarMax = Number(dbConfig?.aadhaarScore ?? 20);
+  const voterMax = Number(dbConfig?.voterScore ?? 20);
+  const eduMax = Number(dbConfig?.educationScore ?? 20);
+  const empMax = Number(dbConfig?.employmentScore ?? 30);
+  const refPerItem = Number(dbConfig?.referenceScorePerItem ?? 5);
+  const maxRefs = Number(dbConfig?.maxReferencesAllowed ?? 2);
+  const conductMax = refPerItem * maxRefs;
+
   // 1. Aadhaar Card Verification
-  const aadhaarScore = isAadhaarDone ? 100 : 0;
+  const aadhaarScore = isAadhaarDone ? aadhaarMax : 0;
 
   // 2. Voter Card Verification
-  const voterScore = isVoterDone || isDlDone ? 100 : 0;
+  const voterScore = isVoterDone || isDlDone ? voterMax : 0;
 
   // 3. Qualifications (Education & Certifications)
   const quals = Array.isArray(user?.qualifications) ? user.qualifications : [];
   const certs = Array.isArray(user?.certifications) ? user.certifications : [];
   let qualScore = 0;
   if (isEduVerified) {
-    qualScore = 100;
+    qualScore = eduMax;
   } else if (quals.length > 0 || certs.length > 0 || isEduAdded) {
     const verifiedCount =
       quals.filter((q) => q.isVerified === true || q.verificationStatus === 'verified').length +
       certs.filter((c) => c.isVerified === true || c.verificationStatus === 'verified').length;
     const totalCount = quals.length + certs.length;
     if (verifiedCount > 0 && totalCount > 0) {
-      qualScore = Math.round((verifiedCount / totalCount) * 100);
+      qualScore = Math.round((verifiedCount / totalCount) * eduMax);
     } else {
       qualScore = 0;
     }
   }
 
   // 4. Employment Record (EPFO / Manual Employment)
-  const hasEpfo = Boolean(user?.epfoEmployment?.length || user?.epfoEmployment?.employerName);
-  const employmentScore = isEmpDone ? (hasEpfo ? 100 : 97) : 0;
+  const employmentScore = isEmpDone ? empMax : 0;
 
   // 5. Conduct & Security (Professional References & Soft Skills Conduct)
   const refsList = references || user?.references || [];
@@ -59,43 +83,43 @@ const EmployeeScoringCard = ({ user, references = null }) => {
   } else if (typeof user?.verifiedReferencesCount === 'number') {
     completedRefs = user.verifiedReferencesCount;
   }
-  const conductScore = completedRefs >= 2 ? 100 : completedRefs === 1 ? 50 : 0;
+  const conductScore = Math.min(completedRefs, maxRefs) * refPerItem;
 
   const items = [
     {
       id: 'aadhaar',
       label: 'Aadhaar Card',
       score: aadhaarScore,
-      max: 100,
-      percentage: aadhaarScore,
+      max: aadhaarMax,
+      percentage: aadhaarMax > 0 ? (aadhaarScore / aadhaarMax) * 100 : 0,
     },
     {
       id: 'voter',
       label: 'Voter Card',
       score: voterScore,
-      max: 100,
-      percentage: voterScore,
+      max: voterMax,
+      percentage: voterMax > 0 ? (voterScore / voterMax) * 100 : 0,
     },
     {
       id: 'qualifications',
       label: 'Qualifications',
       score: qualScore,
-      max: 100,
-      percentage: qualScore,
+      max: eduMax,
+      percentage: eduMax > 0 ? (qualScore / eduMax) * 100 : 0,
     },
     {
       id: 'employment',
       label: 'Employment Record',
       score: employmentScore,
-      max: 100,
-      percentage: employmentScore,
+      max: empMax,
+      percentage: empMax > 0 ? (employmentScore / empMax) * 100 : 0,
     },
     {
       id: 'conduct',
       label: 'Conduct & Security',
       score: conductScore,
-      max: 100,
-      percentage: conductScore,
+      max: conductMax,
+      percentage: conductMax > 0 ? (conductScore / conductMax) * 100 : 0,
     },
   ];
 

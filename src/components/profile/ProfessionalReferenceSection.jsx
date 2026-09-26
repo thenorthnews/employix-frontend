@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import ButtonSpinner from '../common/Loader';
 import {
@@ -28,6 +28,10 @@ const ProfessionalReferenceSection = ({
   const [modalStep, setModalStep] = useState('form'); // 'form' | 'sent_success'
   const [submitting, setSubmitting] = useState(false);
   const [resendingId, setResendingId] = useState(null);
+
+  // Synchronous Locks to prevent multi-submit
+  const isSubmittingRef = useRef(false);
+  const isResendingRef = useRef(false);
 
   // Form Fields & Realtime Validation
   const [refereeName, setRefereeName] = useState('');
@@ -147,6 +151,9 @@ const ProfessionalReferenceSection = ({
       return;
     }
 
+    if (isSubmittingRef.current || submitting) return;
+    isSubmittingRef.current = true;
+
     try {
       setSubmitting(true);
       const res = await addReferenceApi({
@@ -182,12 +189,14 @@ const ProfessionalReferenceSection = ({
       toast.error(msg);
     } finally {
       setSubmitting(false);
+      isSubmittingRef.current = false;
     }
   };
 
   const handleResendInvitation = async (id, email) => {
-    if (cooldowns[id] > 0 || isSetupCompleted) return;
+    if (cooldowns[id] > 0 || isSetupCompleted || isResendingRef.current || resendingId) return;
 
+    isResendingRef.current = true;
     try {
       setResendingId(id);
       const res = await resendReferenceApi(id);
@@ -202,7 +211,21 @@ const ProfessionalReferenceSection = ({
       toast.error(msg);
     } finally {
       setResendingId(null);
+      isResendingRef.current = false;
     }
+  };
+
+  const formatShareableLink = (rawUrl) => {
+    if (!rawUrl) return '';
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      try {
+        const parsed = new URL(rawUrl);
+        return `${window.location.origin}${parsed.pathname}${parsed.search}`;
+      } catch (e) {
+        return rawUrl;
+      }
+    }
+    return rawUrl;
   };
 
   // Open Share Link Modal & Auto-copy
@@ -211,14 +234,15 @@ const ProfessionalReferenceSection = ({
 
     // Check if shareable link already exists on object
     if (ref.shareableLink) {
+      const activeLink = formatShareableLink(ref.shareableLink);
       setShareModal({
         isOpen: true,
         reference: ref,
-        link: ref.shareableLink,
+        link: activeLink,
         copied: false,
         loading: false,
       });
-      navigator.clipboard?.writeText(ref.shareableLink);
+      navigator.clipboard?.writeText(activeLink);
       toast.success('Secure link copied to clipboard!');
       return;
     }
@@ -234,17 +258,18 @@ const ProfessionalReferenceSection = ({
 
       const res = await getReferenceShareLinkApi(ref._id);
       const payload = res?.data || res;
-      const link = payload?.shareableLink || payload?.data?.shareableLink;
+      const rawLink = payload?.shareableLink || payload?.data?.shareableLink;
 
-      if (link) {
+      if (rawLink) {
+        const activeLink = formatShareableLink(rawLink);
         setShareModal({
           isOpen: true,
           reference: ref,
-          link,
+          link: activeLink,
           copied: false,
           loading: false,
         });
-        navigator.clipboard?.writeText(link);
+        navigator.clipboard?.writeText(activeLink);
         toast.success('Secure link copied to clipboard!');
       } else {
         toast.error('Unable to generate share link.');

@@ -253,19 +253,30 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
 
   const { isAadhaarDone, isEmpDone, isVoterDone, isDlDone, isEduVerified } = getKycVerificationFlags(user);
 
-  // 1. Aadhaar Card = 20%
-  const aadhaarScore = isAadhaarDone ? 20 : 0;
+  // Dynamic Score Weights from DB Table (with safe fallback)
+  const cfg = user?.profileScoring?.scoreConfig || {};
+  const aadhaarWeight = Number(cfg.aadhaarScore ?? 20);
+  const voterWeight = Number(cfg.voterScore ?? 20);
+  const eduWeight = Number(cfg.educationScore ?? 20);
+  const empWeight = Number(cfg.employmentScore ?? 30);
+  const refPerItem = Number(cfg.referenceScorePerItem ?? 5);
+  const maxRefs = Number(cfg.maxReferencesAllowed ?? 2);
+  const maxRefWeight = refPerItem * maxRefs;
+  const applicableTarget = Number(cfg.totalApplicableScore ?? 100);
 
-  // 2. Voter ID Card = 20%
-  const voterScore = isVoterDone ? 20 : 0;
+  // 1. Aadhaar Card
+  const aadhaarScore = isAadhaarDone ? aadhaarWeight : 0;
 
-  // 3. Education = 20%
-  const eduScore = isEduVerified ? 20 : 0;
+  // 2. Voter ID Card
+  const voterScore = isVoterDone ? voterWeight : 0;
 
-  // 4. Employment = 30%
-  const empScore = isEmpDone ? 30 : 0;
+  // 3. Education
+  const eduScore = isEduVerified ? eduWeight : 0;
 
-  // 5. Employee Reference = 10% maximum (Up to 2 allowed, 5 points each)
+  // 4. Employment
+  const empScore = isEmpDone ? empWeight : 0;
+
+  // 5. Employee Reference (Up to maxRefs allowed, refPerItem points each)
   const refsList = explicitReferences || user.references || [];
   let completedCount = 0;
   if (Array.isArray(refsList) && refsList.length > 0) {
@@ -278,19 +289,18 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
   } else if (typeof user.completedReferencesCount === 'number') {
     completedCount = user.completedReferencesCount;
   } else if (typeof user.rewardPoints === 'number' && user.rewardPoints > 0) {
-    completedCount = Math.floor(user.rewardPoints / 5);
+    completedCount = Math.floor(user.rewardPoints / (refPerItem || 5));
   }
 
-  // Clamped between 0 and 2 (maximum 2 references allowed)
-  const verifiedReferencesCount = Math.min(2, Math.max(0, completedCount));
-  const referenceScore = verifiedReferencesCount * 5; // 0, 5, or 10
+  // Clamped between 0 and max allowed references
+  const verifiedReferencesCount = Math.min(maxRefs, Math.max(0, completedCount));
+  const referenceScore = verifiedReferencesCount * refPerItem;
 
   // Total Earned Score
   const totalEarnedScore = aadhaarScore + voterScore + eduScore + empScore + referenceScore;
 
-  // Total Applicable Score is ALWAYS fixed out of 100:
-  // Aadhaar (20) + Voter (20) + Employment (30) + Education (20) + References (10) = 100
-  const totalApplicableScore = 100;
+  // Total Applicable Score from table (Default: 100)
+  const totalApplicableScore = applicableTarget > 0 ? applicableTarget : 100;
 
   // Final Percentage Calculation (out of 100)
   const finalPercentage = Math.min(100, Math.round((totalEarnedScore / totalApplicableScore) * 100));
@@ -312,8 +322,8 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
       name: 'Aadhaar Card',
       category: 'Identity Verification',
       icon: '🪪',
-      weight: '20%',
-      maxScore: 20,
+      weight: `${aadhaarWeight}%`,
+      maxScore: aadhaarWeight,
       earnedScore: aadhaarScore,
       isVerified: isAadhaarDone,
       statusLabel: isAadhaarDone ? 'Verified' : 'Pending',
@@ -326,8 +336,8 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
       name: 'Voter ID Card',
       category: 'Address Verification',
       icon: '🗳️',
-      weight: '20%',
-      maxScore: 20,
+      weight: `${voterWeight}%`,
+      maxScore: voterWeight,
       earnedScore: voterScore,
       isVerified: isVoterDone,
       statusLabel: isVoterDone ? 'Verified' : 'Pending',
@@ -340,8 +350,8 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
       name: 'Education',
       category: 'Academic Proof',
       icon: '🎓',
-      weight: '20%',
-      maxScore: 20,
+      weight: `${eduWeight}%`,
+      maxScore: eduWeight,
       earnedScore: eduScore,
       isVerified: isEduVerified,
       statusLabel: isEduVerified ? 'Verified' : 'Pending',
@@ -354,8 +364,8 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
       name: 'Employment',
       category: 'Work History',
       icon: '💼',
-      weight: '30%',
-      maxScore: 30,
+      weight: `${empWeight}%`,
+      maxScore: empWeight,
       earnedScore: empScore,
       isVerified: isEmpDone,
       statusLabel: isEmpDone ? 'Verified' : 'Pending',
@@ -368,14 +378,14 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
       name: 'Employee Reference',
       category: 'Peer Endorsements',
       icon: '👥',
-      weight: '10% Max',
-      maxScore: 10,
+      weight: `${maxRefWeight}% Max`,
+      maxScore: maxRefWeight,
       earnedScore: referenceScore,
       isVerified: verifiedReferencesCount > 0,
-      statusLabel: `${verifiedReferencesCount} / 2 Verified`,
+      statusLabel: `${verifiedReferencesCount} / ${maxRefs} Verified`,
       statusClass: verifiedReferencesCount > 0 ? 'text-teal' : 'text-muted',
       badgeClass: verifiedReferencesCount > 0 ? 'badge-teal' : 'badge-light border',
-      displayRatio: `${referenceScore}/10`,
+      displayRatio: `${referenceScore}/${maxRefWeight}`,
       verifiedCount: verifiedReferencesCount,
       description:
         verifiedReferencesCount === 2
