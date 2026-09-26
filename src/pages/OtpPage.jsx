@@ -117,7 +117,13 @@ const OtpPage = () => {
     if (e && e.preventDefault) e.preventDefault();
     if (resendLoading) return;
 
-    const emailToUse = targetEmail || searchParams.get('email') || pendingEmail || 'nehabharti430@gmail.com';
+    const rawEmail = targetEmail || searchParams.get('email') || pendingEmail || '';
+    const emailToUse = rawEmail.trim().toLowerCase();
+
+    if (!emailToUse) {
+      toast.error('Email address is missing. Please return to login.');
+      return;
+    }
 
     try {
       await dispatch(resendOtp({ email: emailToUse })).unwrap();

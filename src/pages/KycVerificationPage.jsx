@@ -76,7 +76,7 @@ const KycVerificationPage = () => {
   const initialDesignation = (user?.designation || '').trim();
   const [designation, setDesignation] = useState(initialDesignation);
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
-  const [profilePhotoPreview, setProfilePhotoPreview] = useState(user?.image || user?.profileImage || null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState(user?.profileImage || null);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(initialDesignation.length > 0);
 
@@ -209,8 +209,8 @@ const KycVerificationPage = () => {
             const fetchedDesignation = (pData.designation || '').trim();
             setDesignation(fetchedDesignation);
             if (pData.address) setAddressText(pData.address);
-            if (pData.profileImage || pData.profileImage) {
-              setProfilePhotoPreview(pData.image || pData.profileImage);
+            if (pData.profileImage) {
+              setProfilePhotoPreview(pData.profileImage);
             }
             if (pData.voterStatus === 1) setVoterVerified(true);
   
@@ -357,7 +357,7 @@ const KycVerificationPage = () => {
       if (phone) formData.append('phoneNumber', phone.trim());
       formData.append('designation', designation.trim());
       if (addressText) formData.append('address', addressText.trim());
-      if (profilePhotoFile) formData.append('image', profilePhotoFile);
+      if (profilePhotoFile) formData.append('profileImage', profilePhotoFile);
       const res = await updateProfileApi(formData);
       const updated = res?.data || res;
 
@@ -367,7 +367,7 @@ const KycVerificationPage = () => {
           designation: updated?.designation || designation,
           phoneNumber: updated?.phoneNumber || phone,
           address: addressText,
-          profileImage: updated?.image || updated?.profileImage || profilePhotoPreview,
+          profileImage: updated?.profileImage || profilePhotoPreview,
         })
       );
 

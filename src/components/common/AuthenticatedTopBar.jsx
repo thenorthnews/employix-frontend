@@ -26,7 +26,7 @@ const AuthenticatedTopBar = ({ subtitle = 'Verified Profile Dashboard', onLogout
   };
 
   const userName = user?.name || 'Verified Candidate';
-  const userAvatar = getImageUrl(user?.image || user?.profileImage);
+  const userAvatar = getImageUrl(user?.profileImage);
   const employixId = user?.employixId || (user?._id ? `EMX-${user._id.slice(-4).toUpperCase()}-1934` : 'EMX-4021-7758-1934');
 
   return (

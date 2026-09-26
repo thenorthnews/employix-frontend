@@ -255,7 +255,7 @@ const Navbar = () => {
                       <>
                         <div className="meesho-user-header-row">
                           <img
-                            src={user?.image || user?.profileImage || '/images/identity.jpg'}
+                            src={user?.profileImage || '/images/identity.jpg'}
                             onError={(e) => {
                               e.target.onerror = null;
                               e.target.src = '/images/identity.jpg';

@@ -30,8 +30,8 @@ export const verifyOtpApi = async (otpData) => {
  */
 export const resendOtpApi = async (data) => {
   const email = typeof data === 'string' ? data : (data?.email || '');
-  const cleanEmail = email ? email.trim().toLowerCase() : 'nehabharti430@gmail.com';
-  return await axiosInstance.post(`/auth/resendOtp?email=${encodeURIComponent(cleanEmail)}`, { email: cleanEmail });
+  const cleanEmail = email ? email.trim().toLowerCase() : '';
+  return await axiosInstance.post('/auth/resendOtp', { email: cleanEmail });
 };
 
 /**

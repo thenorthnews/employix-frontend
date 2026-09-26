@@ -56,7 +56,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
       setDesignation((user.designation || '').trim());
       setBio(user.bio || '');
 
-      const currentImg = user.image || user.profileImage;
+      const currentImg = user.profileImage;
       if (currentImg) {
         setPhotoPreview(resolveImageUrl(currentImg));
       } else {
@@ -119,7 +119,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
       if (bio.trim()) formData.append('bio', bio.trim());
 
       if (photoFile) {
-        formData.append('image', photoFile);
+        formData.append('profileImage', photoFile);
       }
 
       const res = await updateProfileApi(formData);
@@ -280,7 +280,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                         onClick={(e) => {
                           e.stopPropagation();
                           setPhotoFile(null);
-                          setPhotoPreview(resolveImageUrl(user?.image || user?.profileImage));
+                          setPhotoPreview(resolveImageUrl(user?.profileImage));
                         }}
                       >
                         Reset

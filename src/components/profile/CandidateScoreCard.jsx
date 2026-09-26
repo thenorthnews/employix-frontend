@@ -3,7 +3,7 @@ import { resolveImageUrl, formatEmployixId, calculateTrustScore } from '../../ut
 
 const CandidateScoreCard = ({ user, onEdit }) => {
   // 1. Resolve Avatar URL
-  const avatarSrc = resolveImageUrl(user?.image || user?.profileImage);
+  const avatarSrc = resolveImageUrl(user?.profileImage);
 
   // 2. Candidate Name
   const candidateName = user?.name || 'Aarav Sharma';
