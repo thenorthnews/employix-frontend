@@ -14,10 +14,14 @@ const NAME_REGEX = /^[a-zA-Z\s.']{2,50}$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const ROLE_REGEX = /^[a-zA-Z0-9\s/.,&()'-]{2,60}$/;
 
-const ProfessionalReferenceSection = ({ isSetupCompleted = false }) => {
-  const [references, setReferences] = useState([]);
-  const [rewardPoints, setRewardPoints] = useState(0);
-  const [loading, setLoading] = useState(true);
+const ProfessionalReferenceSection = ({
+  isSetupCompleted = false,
+  initialReferences = null,
+  initialRewardPoints = 0,
+}) => {
+  const [references, setReferences] = useState(Array.isArray(initialReferences) ? initialReferences : []);
+  const [rewardPoints, setRewardPoints] = useState(initialRewardPoints || 0);
+  const [loading, setLoading] = useState(initialReferences === null);
 
   // Add Reference Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -49,8 +53,6 @@ const ProfessionalReferenceSection = ({ isSetupCompleted = false }) => {
     isOpen: false,
     reference: null,
   });
-  console.log("🚀 ~ ProfessionalReferenceSection ~ feedbackModal:", feedbackModal.reference)
-  
 
   const fetchReferences = async () => {
     try {
@@ -70,8 +72,12 @@ const ProfessionalReferenceSection = ({ isSetupCompleted = false }) => {
   };
 
   useEffect(() => {
-    fetchReferences();
-  }, []);
+    if (initialReferences !== null && initialReferences !== undefined) {
+      setReferences(Array.isArray(initialReferences) ? initialReferences : []);
+      setRewardPoints(initialRewardPoints || 0);
+      setLoading(false);
+    }
+  }, [initialReferences, initialRewardPoints]);
 
   // Cooldown tick timer
   useEffect(() => {

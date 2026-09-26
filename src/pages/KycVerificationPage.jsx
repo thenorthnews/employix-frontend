@@ -13,16 +13,12 @@ import {
   verifyAadhaarApi,
   verifyVoterApi,
   verifyVoterOcrApi,
-  getKycStatusApi,
   fetchEmploymentHistoryApi,
   fetchEmploymentByUanApi,
   addManualEmploymentApi,
-  getEmploymentRecordsApi,
   deleteManualEmploymentApi,
-  getQualificationsApi,
   addQualificationApi,
   deleteQualificationApi,
-  getCertificationsApi,
   addCertificationApi,
   deleteCertificationApi,
   verifyDlOcrApi,
@@ -101,13 +97,13 @@ const KycVerificationPage = () => {
   const [employmentVerified, setEmploymentVerified] = useState(false);
   const [epfoRecords, setEpfoRecords] = useState([]);
   const [manualJobs, setManualJobs] = useState([]);
+  const [userReferences, setUserReferences] = useState(user?.references || []);
+  const [rewardPoints, setRewardPoints] = useState(user?.rewardPoints || 0);
   // Manual job form
   const [jobForm, setJobForm] = useState({ companyName: '', designation: '', startDate: '', endDate: '', isCurrent: false, description: '' });
   const [jobFormLoading, setJobFormLoading] = useState(false);
   const [showJobForm, setShowJobForm] = useState(false);
-
-  // STEP 4: Address Proof via Voter ID State (Dual Option: Option 1 = EPIC Number, Option 2 = OCR)
-  const [voterMethod, setVoterMethod] = useState('number'); // 'number' | 'ocr'
+  const [voterMethod, setVoterMethod] = useState('number'); 
   const [voterNumber, setVoterNumber] = useState('');
   const [voterFront, setVoterFront] = useState(null);
   const [voterFrontPreview, setVoterFrontPreview] = useState(null);
@@ -192,79 +188,59 @@ const KycVerificationPage = () => {
     return Math.min(6, count);
   };
 
-  // Load existing profile & KYC verification status on mount
+  // Load existing profile & KYC verification status on mount using single GET /v1/users/me
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
         setFetchingStatus(true);
 
-        // Fetch User Profile from /users/me
-        try {
-          const profileRes = await getProfileApi();
-          const pData = profileRes.data || profileRes;
-          if (pData) {
-            if (pData.name) setFullName(pData.name);
-            if (pData.email) setEmail(pData.email);
-            if (pData.phoneNumber) setPhone(pData.phoneNumber);
-            const fetchedDesignation = (pData.designation || '').trim();
-            setDesignation(fetchedDesignation);
-            if (pData.address) setAddressText(pData.address);
-            if (pData.profileImage) {
-              setProfilePhotoPreview(pData.profileImage);
-            }
-            if (pData.voterStatus === 1) setVoterVerified(true);
-  
-            if (fetchedDesignation.length > 0) {
-              setProfileSaved(true);
-            } else {
-              setProfileSaved(false);
-            }
-          }
-        } catch (pErr) {
-          console.warn('Could not fetch user profile:', pErr.message);
+        const profileRes = await getProfileApi();
+        const pData = profileRes.data || profileRes;
+        if (!pData) return;
+
+        // Step 1: Personal profile fields
+        if (pData.name) setFullName(pData.name);
+        if (pData.email) setEmail(pData.email);
+        if (pData.phoneNumber) setPhone(pData.phoneNumber);
+        const fetchedDesignation = (pData.designation || '').trim();
+        setDesignation(fetchedDesignation);
+        if (pData.address) setAddressText(pData.address);
+        if (pData.profileImage) {
+          setProfilePhotoPreview(pData.profileImage);
+        }
+        if (fetchedDesignation.length > 0) {
+          setProfileSaved(true);
+        } else {
+          setProfileSaved(false);
         }
 
-        // Fetch Qualifications & Certifications
-        let loadedQuals = [];
-        let loadedCerts = [];
-        try {
-          const qualRes = await getQualificationsApi();
-          const qualData = qualRes.data?.data || qualRes.data || qualRes;
-          if (Array.isArray(qualData)) {
-            loadedQuals = qualData;
-            setQualifications(qualData);
-          }
-        } catch (qErr) {
-          console.warn('Could not fetch qualifications:', qErr.message);
+        // Step 4: Education & Certifications directly from profile
+        const loadedQuals = Array.isArray(pData.qualifications) ? pData.qualifications : [];
+        const loadedCerts = Array.isArray(pData.certifications) ? pData.certifications : [];
+        setQualifications(loadedQuals);
+        setCertifications(loadedCerts);
+
+        // References & Reward Points from profile
+        if (pData.references && Array.isArray(pData.references)) {
+          setUserReferences(pData.references);
+        }
+        if (pData.rewardPoints !== undefined) {
+          setRewardPoints(pData.rewardPoints);
         }
 
-        try {
-          const certRes = await getCertificationsApi();
-          const certData = certRes.data?.data || certRes.data || certRes;
-          if (Array.isArray(certData)) {
-            loadedCerts = certData;
-            setCertifications(certData);
-          }
-        } catch (cErr) {
-          console.warn('Could not fetch certifications:', cErr.message);
-        }
-
-        // Fetch KYC Status from /user-portal/kyc/status
-        const kycRes = await getKycStatusApi();
-        const kData = kycRes.data || kycRes;
-
-        const isAadhaarDone = kData.aadhaarStatus === 1;
-        const isEmpDone = kData.employmentStatus === 1;
-        const isVoterDone = kData.voterStatus === 1;
-        const isDlDone = kData.dlStatus === 1 || Boolean(kData.dlData);
-        const isEduDone = loadedQuals.length > 0 || loadedCerts.length > 0 || kData.educationStatus === 1;
+        // Step 2 & 3: Verification statuses
+        const isAadhaarDone = pData.aadhaarStatus === 1 || Boolean(pData.aadhaarData);
+        const isVoterDone = pData.voterStatus === 1 || Boolean(pData.voterData);
+        const isDlDone = pData.dlStatus === 1 || Boolean(pData.dlData);
+        const isEmpDone = pData.employmentStatus === 1 || (pData.manualEmployment?.length > 0) || (pData.epfoEmployment?.length > 0);
+        const isEduDone = loadedQuals.length > 0 || loadedCerts.length > 0 || pData.educationStatus === 1;
 
         if (isAadhaarDone) {
           setAadhaarVerified(true);
           setAadhaarResult(
-            kData.aadhaarData || {
+            pData.aadhaarData || {
               maskedDocumentNumber: 'XXXX-XXXX-8921',
-              name: user?.name || fullName,
+              name: pData.name || user?.name || fullName,
               scoreEarned: 20,
             }
           );
@@ -272,33 +248,35 @@ const KycVerificationPage = () => {
 
         if (isVoterDone) {
           setVoterVerified(true);
-          setVoterResult(kData.voterData || null);
-          if (kData.voterData?.address?.fullAddress) {
-            setAddressText(kData.voterData.address.fullAddress);
+          setVoterResult(pData.voterData || null);
+          if (pData.voterData?.address?.fullAddress) {
+            setAddressText(pData.voterData.address.fullAddress);
           }
         }
 
         if (isDlDone) {
           setDlVerified(true);
-          setDlResult(kData.dlData || null);
+          setDlResult(pData.dlData || null);
         }
 
-        // Load existing employment records
+        // Employment records (EPFO + Manual)
         if (isEmpDone) {
           setEmploymentVerified(true);
-          try {
-            const empRes = await getEmploymentRecordsApi();
-            const empData = empRes.data || empRes;
-            if (empData.manualRecords) setManualJobs(empData.manualRecords);
-            if (empData.epfoRecords) setEpfoRecords(empData.epfoRecords);
-          } catch (e) { /* silent */ }
+          if (pData.manualEmployment && Array.isArray(pData.manualEmployment)) {
+            setManualJobs(pData.manualEmployment);
+          }
+          const epfoList = pData.rawEpfoRecords || pData.epfoEmployment;
+          if (epfoList && Array.isArray(epfoList)) {
+            setEpfoRecords(epfoList);
+          }
         }
 
-        if (kData.employixScore !== undefined && kData.employixScore !== null) {
-          setScore(parseFloat(kData.employixScore.toFixed(1)));
-          if (kData.employixScore >= 80) setScoreTier('Platinum Tier · Highly Trusted');
-          else if (kData.employixScore >= 60) setScoreTier('Gold Tier · Verified Candidate');
-          else if (kData.employixScore >= 20) setScoreTier('Silver Tier · Partially Verified');
+        // Score & Tier
+        if (pData.employixScore !== undefined && pData.employixScore !== null) {
+          setScore(parseFloat(Number(pData.employixScore).toFixed(1)));
+          if (pData.employixScore >= 80) setScoreTier('Platinum Tier · Highly Trusted');
+          else if (pData.employixScore >= 60) setScoreTier('Gold Tier · Verified Candidate');
+          else if (pData.employixScore >= 20) setScoreTier('Silver Tier · Partially Verified');
           else setScoreTier('Base Profile · Not Verified');
         } else {
           const hasVerifiedEdu = loadedQuals.some(q => q.isVerified && q.verificationStatus === 'verified') || loadedCerts.some(c => c.isVerified && c.verificationStatus === 'verified');
@@ -306,13 +284,14 @@ const KycVerificationPage = () => {
         }
 
         // Restore kycStatus (preserve status 8 if completed)
-        const isStatus8 = kData.kycStatus === 8 || user?.kycStatus === 8 || localStorage.getItem(`employix_setup_completed_${currentUserId}`) === 'true';
+        const isStatus8 = pData.kycStatus === 8 || user?.kycStatus === 8 || localStorage.getItem(`employix_setup_completed_${currentUserId}`) === 'true';
         if (isStatus8) {
           setKycStatus(8);
           setProfileSaved(true);
-        } else if (kData.kycStatus) {
-          setKycStatus(kData.kycStatus);
+        } else if (pData.kycStatus) {
+          setKycStatus(pData.kycStatus);
         }
+
         // If all steps done mark profile saved and status 7 (unless already 8)
         if (isAadhaarDone && isEmpDone && isVoterDone && isDlDone && isEduDone) {
           setProfileSaved(true);
@@ -321,7 +300,7 @@ const KycVerificationPage = () => {
           }
         }
       } catch (err) {
-        console.warn('Could not fetch DB KYC status:', err.message);
+        console.warn('Could not fetch user profile & KYC data:', err.message);
         calculateDynamicScore(false, false, false, false, false);
       } finally {
         setFetchingStatus(false);
@@ -329,7 +308,7 @@ const KycVerificationPage = () => {
     };
 
     fetchInitialData();
-  }, [user]);
+  }, []);
 
   // Handle Photo selection
   const handlePhotoChange = (e) => {
@@ -2500,7 +2479,11 @@ const KycVerificationPage = () => {
             {/* Professional Reference Verification Section */}
             <div className="row justify-content-center mt-4">
               <div className="col-lg-10">
-                <ProfessionalReferenceSection isSetupCompleted={isSetupCompleted} />
+                <ProfessionalReferenceSection
+                  isSetupCompleted={isSetupCompleted}
+                  initialReferences={userReferences}
+                  initialRewardPoints={rewardPoints}
+                />
               </div>
             </div>
 

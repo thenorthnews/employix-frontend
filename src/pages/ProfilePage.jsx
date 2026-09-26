@@ -8,8 +8,6 @@ import ProfileSidebar from '../components/profile/ProfileSidebar';
 import Footer from '../components/common/Footer';
 import ButtonSpinner from '../components/common/Loader';
 import { getProfileApi } from '../api/authApi';
-import { getEmploymentRecordsApi, getQualificationsApi, getCertificationsApi } from '../api/kycApi';
-import { getReferencesApi } from '../api/referenceApi';
 import { updateUserKycStatus } from '../redux/slices/authSlice';
 
 const ProfilePage = () => {
@@ -22,67 +20,10 @@ const ProfilePage = () => {
     try {
       const res = await getProfileApi();
       const data = res.data?.data || res.data || res;
-      let mergedUser = { ...data };
-
-      // Ensure latest employment records are merged and flattened
-      try {
-        const empRes = await getEmploymentRecordsApi();
-        const empData = empRes.data?.data || empRes.data || empRes;
-        if (empData) {
-          if (Array.isArray(empData.manualRecords) && empData.manualRecords.length > 0) {
-            mergedUser.manualEmployment = empData.manualRecords;
-          }
-          const epfoList = empData.epfoRecords || [];
-          const flatEpfo = epfoList
-            .flatMap((item) => (Array.isArray(item?.records) ? item.records : (item?.employerName ? [item] : [])))
-            .filter(Boolean);
-          if (flatEpfo.length > 0) {
-            mergedUser.epfoEmployment = flatEpfo;
-          }
-        }
-      } catch (e) {
-        // fallback silent
+      if (data) {
+        setProfileUser(data);
+        dispatch(updateUserKycStatus(data));
       }
-
-      // Ensure latest qualifications and certifications are merged
-      try {
-        const [qualRes, certRes] = await Promise.allSettled([
-          getQualificationsApi(),
-          getCertificationsApi(),
-        ]);
-        if (qualRes.status === 'fulfilled') {
-          const qList = qualRes.value?.data?.data || qualRes.value?.data || [];
-          if (Array.isArray(qList) && qList.length > 0) {
-            mergedUser.qualifications = qList;
-          }
-        }
-        if (certRes.status === 'fulfilled') {
-          const cList = certRes.value?.data?.data || certRes.value?.data || [];
-          if (Array.isArray(cList) && cList.length > 0) {
-            mergedUser.certifications = cList;
-          }
-        }
-      } catch (e) {
-        // fallback silent
-      }
-
-      // Ensure latest professional references are merged
-      try {
-        const refRes = await getReferencesApi();
-        const refPayload = refRes?.data || refRes;
-        const refList = refPayload?.references || refPayload?.data?.references || [];
-        if (Array.isArray(refList)) {
-          mergedUser.references = refList;
-          mergedUser.verifiedReferencesCount = refList.filter(
-            (r) => String(r?.status || '').toUpperCase() === 'COMPLETED' || r?.isFeedbackSubmitted || r?.isPointsAwarded
-          ).length;
-        }
-      } catch (e) {
-        // fallback silent
-      }
-
-      setProfileUser(mergedUser);
-      dispatch(updateUserKycStatus(mergedUser));
     } catch (err) {
       console.warn('Could not fetch latest profile from /users/me:', err.message);
     } finally {
