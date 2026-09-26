@@ -69,8 +69,12 @@ export const verifyOtp = createAsyncThunk(
 // Thunk 4: Resend OTP
 export const resendOtp = createAsyncThunk(
   'auth/resendOtp',
-  async ({ email }, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
+      const email = typeof payload === 'string' ? payload : payload?.email;
+      if (!email) {
+        return rejectWithValue('Email is required to resend OTP.');
+      }
       const response = await resendOtpApi({ email });
       return response;
     } catch (err) {

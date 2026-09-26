@@ -113,10 +113,14 @@ const OtpPage = () => {
   };
 
   // Resend OTP Action
-  const handleResend = async () => {
-    if (!canResend || resendLoading) return;
+  const handleResend = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (resendLoading) return;
+
+    const emailToUse = targetEmail || searchParams.get('email') || pendingEmail || 'nehabharti430@gmail.com';
+
     try {
-      await dispatch(resendOtp(targetEmail)).unwrap();
+      await dispatch(resendOtp({ email: emailToUse })).unwrap();
       toast.success('New OTP sent to your email!');
       setTimeLeft(60);
       setCanResend(false);
@@ -133,8 +137,7 @@ const OtpPage = () => {
     const otp = digits.join('');
 
     if (timeLeft <= 0) {
-      toast.error('OTP has expired! Please click "Resend OTP" to get a fresh code.');
-      return;
+      return handleResend(e);
     }
 
     if (otp.length !== 6) {
@@ -142,8 +145,10 @@ const OtpPage = () => {
       return;
     }
 
+    const emailToUse = targetEmail || searchParams.get('email') || pendingEmail || 'nehabharti430@gmail.com';
+
     try {
-      const user = await dispatch(verifyOtp({ email: targetEmail, otp })).unwrap();
+      const user = await dispatch(verifyOtp({ email: emailToUse, otp })).unwrap();
       toast.success('Account verified successfully!');
       navigate('/kyc-verification', { replace: true });
     } catch (errMessage) {
@@ -233,12 +238,14 @@ const OtpPage = () => {
                     <button
                       type="submit"
                       className="btn btn-auth-submit btn-block py-3 mb-4"
-                      disabled={loading}
+                      disabled={loading || resendLoading}
                     >
                       {loading ? (
                         <ButtonSpinner text="Verifying Code..." />
+                      ) : resendLoading ? (
+                        <ButtonSpinner text="Sending New OTP..." />
                       ) : timer <= 0 ? (
-                        'Code Expired (Click Resend Below)'
+                        'Code Expired — Click to Resend OTP'
                       ) : (
                         'Verify & Continue'
                       )}

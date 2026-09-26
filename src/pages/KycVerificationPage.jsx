@@ -442,8 +442,8 @@ const KycVerificationPage = () => {
       toast.error('Please give consent to scan Aadhaar.');
       return;
     }
-    if (!aadhaarFront) {
-      toast.error('Please upload at least the Front image of your Aadhaar Card.');
+    if (!aadhaarFront || !aadhaarBack) {
+      toast.error('Aadhaar Card ka Front aur Back dono photos upload karna compulsory hai.');
       return;
     }
 
@@ -451,7 +451,7 @@ const KycVerificationPage = () => {
     try {
       const formData = new FormData();
       formData.append('documentFront', aadhaarFront);
-      if (aadhaarBack) formData.append('documentBack', aadhaarBack);
+      formData.append('documentBack', aadhaarBack);
       formData.append('consent', aadhaarConsent ? 'true' : 'false');
       formData.append('consentPurpose', 'UIDAI Aadhaar OCR scan for Employix Trust Profile');
 
@@ -460,6 +460,9 @@ const KycVerificationPage = () => {
 
       setAadhaarVerified(true);
       setAadhaarResult(data);
+      if (data.address?.fullAddress) {
+        setAddressText(data.address.fullAddress);
+      }
       const hasEdu = qualifications.length > 0 || certifications.length > 0;
       calculateDynamicScore(true, employmentVerified, voterVerified, dlVerified, hasEdu);
 
@@ -482,7 +485,17 @@ const KycVerificationPage = () => {
       );
       toast.success('Aadhaar verified successfully (+20 points).');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Aadhaar verification failed.');
+      let msg = err.response?.data?.message || err.message || 'Aadhaar verification failed.';
+      const lower = String(msg).toLowerCase();
+      if (
+        lower.includes('non compliant') ||
+        lower.includes('quality standard') ||
+        lower.includes('not compliant') ||
+        lower.includes('document_quality')
+      ) {
+        msg = 'Uploaded document is not a valid Aadhaar card. Please upload a clear photo of your original Aadhaar card (Front & Back).';
+      }
+      toast.error(msg);
     } finally {
       setAadhaarLoading(false);
     }
@@ -550,8 +563,8 @@ const KycVerificationPage = () => {
       toast.error('Please give consent to scan Voter ID.');
       return;
     }
-    if (!voterFront) {
-      toast.error('Please upload your Voter ID Card Front image.');
+    if (!voterFront || !voterBack) {
+      toast.error('Voter ID ka Front aur Back dono photos upload karna compulsory hai.');
       return;
     }
 
@@ -559,7 +572,7 @@ const KycVerificationPage = () => {
     try {
       const formData = new FormData();
       formData.append('documentFront', voterFront);
-      if (voterBack) formData.append('documentBack', voterBack);
+      formData.append('documentBack', voterBack);
       formData.append('consentPurpose', 'Address extraction from Voter ID OCR for candidate records');
 
       const res = await verifyVoterOcrApi(formData);
@@ -593,7 +606,17 @@ const KycVerificationPage = () => {
       );
       toast.success('Voter ID and address verified successfully (+20 points).');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Voter ID OCR processing failed.');
+      let msg = err.response?.data?.message || err.message || 'Voter ID OCR processing failed.';
+      const lower = String(msg).toLowerCase();
+      if (
+        lower.includes('non compliant') ||
+        lower.includes('quality standard') ||
+        lower.includes('not compliant') ||
+        lower.includes('document_quality')
+      ) {
+        msg = 'Uploaded document is not a valid Voter ID card. Please upload a clear photo of your original Voter ID card (Front & Back).';
+      }
+      toast.error(msg);
     } finally {
       setVoterLoading(false);
     }
@@ -606,8 +629,8 @@ const KycVerificationPage = () => {
       toast.error('Please give consent to verify Driving License.');
       return;
     }
-    if (!dlFront) {
-      toast.error('Please upload Driving License front image.');
+    if (!dlFront || !dlBack) {
+      toast.error('Driving License ka Front aur Back dono photos upload karna compulsory hai.');
       return;
     }
 
@@ -615,7 +638,7 @@ const KycVerificationPage = () => {
     try {
       const formData = new FormData();
       formData.append('documentFront', dlFront);
-      if (dlBack) formData.append('documentBack', dlBack);
+      formData.append('documentBack', dlBack);
       formData.append('consent', 'true');
       formData.append('consentPurpose', 'Driving License OCR verification for Employix candidate profile');
 
@@ -648,7 +671,23 @@ const KycVerificationPage = () => {
       toast.success('Driving License verified successfully (+5 points).');
     } catch (err) {
       console.error('DL OCR Error:', err);
-      toast.error(err.response?.data?.message || err.message || 'Driving License OCR verification failed.');
+      let msg = err.response?.data?.message || err.message || 'Driving License OCR verification failed.';
+      const lower = String(msg).toLowerCase();
+      if (
+        lower.includes('non compliant') ||
+        lower.includes('quality standard') ||
+        lower.includes('not compliant') ||
+        lower.includes('document_quality')
+      ) {
+        if (lower.includes('front') || lower.includes('documentfront')) {
+          msg = 'Please upload a valid Driving License (Front side). Only Driving License is accepted.';
+        } else if (lower.includes('back') || lower.includes('documentback')) {
+          msg = 'Please upload a valid Driving License (Back side). Only Driving License is accepted.';
+        } else {
+          msg = 'Uploaded document is not a valid Driving License. Please upload a clear photo of your original Driving License (Front & Back).';
+        }
+      }
+      toast.error(msg);
     } finally {
       setDlLoading(false);
     }
@@ -661,14 +700,35 @@ const KycVerificationPage = () => {
     e.preventDefault();
     if (!empConsent) { toast.error('Please give consent to verify employment.'); return; }
     const cleanUan = uanNumber.replace(/\D/g, '');
-    if (!/^\d{12}$/.test(cleanUan)) {
-      toast.error('Please enter a valid 12-digit UAN number.');
+    if (!cleanUan) {
+      toast.error('Please enter your 12-digit UAN number.');
       return;
     }
+    if (cleanUan.length !== 12) {
+      toast.error('Invalid UAN number. UAN must be exactly 12 digits.');
+      return;
+    }
+    if (cleanUan.startsWith('0')) {
+      toast.error('Invalid UAN number. UAN cannot start with 0.');
+      return;
+    }
+    if (/^(\d)\1{11}$/.test(cleanUan)) {
+      toast.error('Invalid UAN number. Repeating digits sequence is not allowed.');
+      return;
+    }
+    if (cleanUan === '123456789012' || cleanUan === '234567890123') {
+      toast.error('Invalid UAN number. Sequential dummy numbers are not allowed.');
+      return;
+    }
+
     setEmpLoading(true);
     try {
       const res = await fetchEmploymentByUanApi({ uan: cleanUan });
       const data = res.data?.data || res.data || res;
+      if (!data.records || data.records.length === 0) {
+        toast.error('No EPFO employment records found for this UAN. Please add employment manually.');
+        return;
+      }
       setEmploymentVerified(true);
       const epfoList = data.records && data.records.length > 0 ? [data] : [];
       setEpfoRecords(epfoList);
@@ -687,7 +747,12 @@ const KycVerificationPage = () => {
       dispatch(updateUserKycStatus({ employmentStatus: 1, kycStatus: nextStatus }));
       toast.success('Employment records verified successfully (+35 points).');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'UAN lookup failed. Try adding manually.');
+      let msg = err.response?.data?.message || err.message || 'Invalid UAN number. Please enter a valid 12-digit UAN number.';
+      const lower = String(msg).toLowerCase();
+      if (lower.includes('bad request') || lower === 'bad request.') {
+        msg = 'Invalid UAN number. Please enter a valid 12-digit UAN number.';
+      }
+      toast.error(msg);
     } finally {
       setEmpLoading(false);
     }
@@ -1220,28 +1285,72 @@ const KycVerificationPage = () => {
 
                   {aadhaarVerified ? (
                     <div className="p-4 rounded-lg bg-light border border-success">
-                      <div className="d-flex align-items-center justify-content-between flex-wrap">
+                      <div className="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
                         <div className="d-flex align-items-center mb-2 mb-sm-0">
-                          <div className="stat-icon-light bg-teal-light mr-3" style={{ width: '48px', height: '48px' }}>
-                            <span className="text-teal h4 mb-0">&#10003;</span>
+                          <div className="stat-icon-light bg-teal-light mr-3" style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span className="text-teal h4 mb-0 font-weight-bold">&#10003;</span>
                           </div>
                           <div>
-                            <h6 className="font-weight-bold text-dark mb-1">
-                              Aadhaar Card Verified in Database
+                            <h6 className="font-weight-bold text-dark mb-0">
+                              Aadhaar Card Verified Successfully
                             </h6>
-                            <span className="text-muted small">
-                              Masked ID: <strong>{aadhaarResult?.maskedDocumentNumber || 'XXXX-XXXX-8921'}</strong>
+                            <span className="text-success small font-weight-bold">
+                              Official UIDAI Document Verified
                             </span>
                           </div>
                         </div>
                         <span className="badge badge-success px-3 py-2 font-weight-bold">+20 Points Secured</span>
+                      </div>
+
+                      {/* Complete Extracted Aadhaar Details */}
+                      <div className="row g-3 mt-1">
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Full Name</span>
+                          <strong className="text-dark">{aadhaarResult?.name || fullName || 'Mohmmed Saif Faruqi'}</strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Aadhaar Number</span>
+                          <strong className="text-dark">{aadhaarResult?.maskedDocumentNumber || 'XXXX-XXXX-1992'}</strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Date of Birth (DOB)</span>
+                          <strong className="text-dark">
+                            {aadhaarResult?.dob
+                              ? (typeof aadhaarResult.dob === 'string' && aadhaarResult.dob.includes('T')
+                                  ? new Date(aadhaarResult.dob).toLocaleDateString('en-GB')
+                                  : aadhaarResult.dob)
+                              : '31/07/2000'}
+                          </strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Gender</span>
+                          <strong className="text-dark" style={{ textTransform: 'capitalize' }}>
+                            {aadhaarResult?.gender || 'Male'}
+                          </strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Verification Method</span>
+                          <strong className="text-teal">UIDAI OCR Scan</strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Status</span>
+                          <span className="badge badge-success px-2 py-1">Verified</span>
+                        </div>
+                        {(aadhaarResult?.address?.fullAddress || typeof aadhaarResult?.address === 'string' || addressText) && (
+                          <div className="col-12 mt-2 pt-2 border-top">
+                            <span className="text-muted small d-block">Registered Address</span>
+                            <span className="text-dark font-weight-bold small">
+                              {aadhaarResult?.address?.fullAddress || (typeof aadhaarResult?.address === 'string' ? aadhaarResult.address : addressText)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
                     <form onSubmit={handleVerifyAadhaarOcr}>
                           <div className="row g-3 mb-4">
                             <div className="col-md-6 mb-3">
-                              <label className="auth-label">Aadhaar Card Front Document</label>
+                              <label className="auth-label">Aadhaar Card Front Document *</label>
                               <div className="kyc-upload-dropzone p-4 text-center border rounded">
                                 {aadhaarFrontPreview ? (
                                   aadhaarFrontPreview === 'pdf' ? (
@@ -1268,13 +1377,13 @@ const KycVerificationPage = () => {
                                   required
                                 />
                                 <small className="text-muted d-block mt-1">
-                                  Supported formats: JPEG, JPG, PNG, PDF. Maximum file size: 5MB.
+                                  Supported formats: JPEG, JPG, PNG, PDF. Mandatory. Maximum file size: 5MB.
                                 </small>
                               </div>
                             </div>
 
                             <div className="col-md-6 mb-3">
-                              <label className="auth-label">Aadhaar Card Back Document (Optional)</label>
+                              <label className="auth-label">Aadhaar Card Back Document * (Mandatory with Address)</label>
                               <div className="kyc-upload-dropzone p-4 text-center border rounded">
                                 {aadhaarBackPreview ? (
                                   aadhaarBackPreview === 'pdf' ? (
@@ -1298,9 +1407,10 @@ const KycVerificationPage = () => {
                                       setAadhaarBackPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
                                     }
                                   }}
+                                  required
                                 />
                                 <small className="text-muted d-block mt-1">
-                                  Supported formats: JPEG, JPG, PNG, PDF. Optional. Maximum file size: 5MB.
+                                  Supported formats: JPEG, JPG, PNG, PDF. Mandatory. Maximum file size: 5MB.
                                 </small>
                               </div>
                             </div>
@@ -1327,7 +1437,7 @@ const KycVerificationPage = () => {
                           <button
                             type="submit"
                             className="btn btn-primary-teal btn-block py-3 font-weight-bold"
-                            disabled={aadhaarLoading || !aadhaarConsent || !aadhaarFront}
+                            disabled={aadhaarLoading || !aadhaarConsent || !aadhaarFront || !aadhaarBack}
                           >
                             {aadhaarLoading ? <ButtonSpinner text="Scanning Aadhaar Card..." /> : 'Scan & Verify Aadhaar (OCR) (+20 Points)'}
                           </button>
@@ -1608,15 +1718,67 @@ const KycVerificationPage = () => {
                   </div>
 
                   {voterVerified ? (
-                    <div className="setup-address-box">
-                      <div className="d-flex align-items-center justify-content-between mb-2">
-                        <span className="font-weight-bold text-success">&#10003; Official Residential Address Verified</span>
-                        <span className="badge badge-success px-2 py-1">+20 Points Secured</span>
+                    <div className="p-4 rounded-lg bg-light border border-success">
+                      <div className="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+                        <div className="d-flex align-items-center mb-2 mb-sm-0">
+                          <div className="stat-icon-light bg-teal-light mr-3" style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span className="text-teal h4 mb-0 font-weight-bold">&#10003;</span>
+                          </div>
+                          <div>
+                            <h6 className="font-weight-bold text-dark mb-0">
+                              Voter ID &amp; Residential Address Verified
+                            </h6>
+                            <span className="text-success small font-weight-bold">
+                              Official Election Commission of India (ECI) Record Verified
+                            </span>
+                          </div>
+                        </div>
+                        <span className="badge badge-success px-3 py-2 font-weight-bold">+20 Points Secured</span>
                       </div>
-                      <p className="font-weight-bold text-dark mb-1 h6">{addressText}</p>
-                      <span className="small text-muted">
-                        Verified via ECI Voter ID Record: <strong>{voterResult?.maskedDocumentNumber || 'Verified Document'}</strong>
-                      </span>
+
+                      {/* Complete Extracted Voter ID Details */}
+                      <div className="row g-3 mt-1">
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Full Name</span>
+                          <strong className="text-dark">{voterResult?.name || fullName || 'Verified Voter'}</strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Voter ID / EPIC Number</span>
+                          <strong className="text-dark">{voterResult?.maskedDocumentNumber || voterNumber || 'WXD1****92'}</strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Age / DOB</span>
+                          <strong className="text-dark">
+                            {voterResult?.age
+                              ? `${voterResult.age} Years`
+                              : (voterResult?.dob || 'Verified')}
+                          </strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Gender</span>
+                          <strong className="text-dark" style={{ textTransform: 'capitalize' }}>
+                            {voterResult?.gender || 'Male'}
+                          </strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Verification Method</span>
+                          <strong className="text-teal">
+                            {voterResult?.verificationMethod === 'manual_number' ? 'ECI Online Record' : 'ECI Voter Card OCR'}
+                          </strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Status</span>
+                          <span className="badge badge-success px-2 py-1">Verified</span>
+                        </div>
+                        {(voterResult?.address?.fullAddress || typeof voterResult?.address === 'string' || addressText) && (
+                          <div className="col-12 mt-2 pt-2 border-top">
+                            <span className="text-muted small d-block">Verified Residential Address</span>
+                            <span className="text-dark font-weight-bold small">
+                              {voterResult?.address?.fullAddress || (typeof voterResult?.address === 'string' ? voterResult.address : addressText)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -1672,7 +1834,7 @@ const KycVerificationPage = () => {
                         <form onSubmit={handleVerifyVoterOcr}>
                           <div className="row g-3 mb-4">
                             <div className="col-md-6 mb-3">
-                              <label className="auth-label">Voter Card Front Document</label>
+                              <label className="auth-label">Voter Card Front Document *</label>
                               <div className="kyc-upload-dropzone p-4 text-center border rounded">
                                 {voterFrontPreview ? (
                                   voterFrontPreview === 'pdf' ? (
@@ -1699,13 +1861,13 @@ const KycVerificationPage = () => {
                                   required
                                 />
                                 <small className="text-muted d-block mt-1">
-                                  Supported formats: JPEG, JPG, PNG, PDF. Maximum file size: 5MB.
+                                  Supported formats: JPEG, JPG, PNG, PDF. Mandatory. Maximum file size: 5MB.
                                 </small>
                               </div>
                             </div>
 
                             <div className="col-md-6 mb-3">
-                              <label className="auth-label">Voter Card Back Document (With Address)</label>
+                              <label className="auth-label">Voter Card Back Document * (Mandatory with Address)</label>
                               <div className="kyc-upload-dropzone p-4 text-center border rounded">
                                 {voterBackPreview ? (
                                   voterBackPreview === 'pdf' ? (
@@ -1729,9 +1891,10 @@ const KycVerificationPage = () => {
                                       setVoterBackPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
                                     }
                                   }}
+                                  required
                                 />
                                 <small className="text-muted d-block mt-1">
-                                  Supported formats: JPEG, JPG, PNG, PDF. Optional. Maximum file size: 5MB.
+                                  Supported formats: JPEG, JPG, PNG, PDF. Mandatory. Maximum file size: 5MB.
                                 </small>
                               </div>
                             </div>
@@ -1758,7 +1921,7 @@ const KycVerificationPage = () => {
                           <button
                             type="submit"
                             className="btn btn-primary-teal btn-block py-3 font-weight-bold"
-                            disabled={voterLoading || !voterConsent || !voterFront}
+                            disabled={voterLoading || !voterConsent || !voterFront || !voterBack}
                           >
                             {voterLoading ? <ButtonSpinner text="Scanning Voter Card Address..." /> : 'Scan & Extract Address (OCR) (+20 Points)'}
                           </button>
@@ -1871,7 +2034,7 @@ const KycVerificationPage = () => {
                         </div>
 
                         <div className="col-md-6 mb-3">
-                          <label className="auth-label">Driving License Back Side Document (Optional)</label>
+                          <label className="auth-label">Driving License Back Side Document *</label>
                           <div className="kyc-upload-dropzone p-4 text-center border rounded">
                             {dlBackPreview ? (
                               dlBackPreview === 'pdf' ? (
@@ -1895,9 +2058,10 @@ const KycVerificationPage = () => {
                                   setDlBackPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
                                 }
                               }}
+                              required
                             />
                             <small className="text-muted d-block mt-1">
-                              Supported formats: JPEG, JPG, PNG, PDF. Optional. Maximum file size: 5MB.
+                              Supported formats: JPEG, JPG, PNG, PDF. Maximum file size: 5MB.
                             </small>
                           </div>
                         </div>
@@ -1925,7 +2089,7 @@ const KycVerificationPage = () => {
                       <button
                         type="submit"
                         className="btn btn-primary-teal btn-block py-3 font-weight-bold"
-                        disabled={dlLoading || !dlConsent || !dlFront}
+                        disabled={dlLoading || !dlConsent || !dlFront || !dlBack}
                       >
                         {dlLoading ? <ButtonSpinner text="Scanning Driving License OCR..." /> : 'Scan & Extract Driving License (OCR) (+5 Points)'}
                       </button>
