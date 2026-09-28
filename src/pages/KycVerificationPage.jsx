@@ -120,7 +120,7 @@ const KycVerificationPage = () => {
   const [voterLoading, setVoterLoading] = useState(false);
   const [voterVerified, setVoterVerified] = useState(false);
   const [voterResult, setVoterResult] = useState(null);
-  const [addressText, setAddressText] = useState('Flat 402, Green Valley Apartments, Outer Ring Road, Bengaluru, Karnataka - 560103');
+  const [addressText, setAddressText] = useState('');
 
   // STEP 5: Driving License (DL) State (OCR Scan)
   const [dlFront, setDlFront] = useState(null);
@@ -257,26 +257,24 @@ const KycVerificationPage = () => {
 
         if (isAadhaarDone) {
           setAadhaarVerified(true);
-          setAadhaarResult(
-            pData.aadhaarData || {
-              maskedDocumentNumber: 'XXXX-XXXX-8921',
-              name: pData.name || user?.name || fullName,
-              scoreEarned: 20,
-            }
-          );
+          const aData = pData.aadhaarData ? { ...pData.aadhaarData } : {
+            maskedDocumentNumber: 'Verified',
+            name: pData.name || user?.name || fullName,
+            scoreEarned: 20,
+          };
+          setAadhaarResult(aData);
         }
 
         if (isVoterDone) {
           setVoterVerified(true);
-          setVoterResult(pData.voterData || null);
-          if (pData.voterData?.address?.fullAddress) {
-            setAddressText(pData.voterData.address.fullAddress);
-          }
+          const vData = pData.voterData ? { ...pData.voterData } : {};
+          setVoterResult(vData);
         }
 
         if (isDlDone) {
           setDlVerified(true);
-          setDlResult(pData.dlData || null);
+          const dData = pData.dlData ? { ...pData.dlData } : {};
+          setDlResult(dData);
         }
 
         // Employment records (EPFO + Manual)
@@ -558,6 +556,14 @@ const KycVerificationPage = () => {
       return;
     }
 
+    const isBackAadhaar = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(file.name) || /[-_.]back[-_.]/i.test(file.name) || /aadhaar[-_\s]*back/i.test(file.name) || /aadhar[-_\s]*back/i.test(file.name);
+    const isFrontAadhaar = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(file.name) || /[-_.]front[-_.]/i.test(file.name) || /aadhaar[-_\s]*front/i.test(file.name) || /aadhar[-_\s]*front/i.test(file.name);
+    if (isBackAadhaar && !isFrontAadhaar) {
+      toast.error('Aadhaar card (Back side) detected in Front side upload. Please upload the Front side of your Aadhaar card.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
     const check = await validateAadhaarImageFile(file);
     if (!check.valid) {
       if (check.error) toast.error(check.error);
@@ -582,6 +588,14 @@ const KycVerificationPage = () => {
         (file.lastModified && aadhaarFront.lastModified && file.lastModified === aadhaarFront.lastModified))
     ) {
       toast.error('Front and Back side cannot be the same image. Please upload Front and Back sides separately.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    const isBackAadhaar = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(file.name) || /[-_.]back[-_.]/i.test(file.name) || /aadhaar[-_\s]*back/i.test(file.name) || /aadhar[-_\s]*back/i.test(file.name);
+    const isFrontAadhaar = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(file.name) || /[-_.]front[-_.]/i.test(file.name) || /aadhaar[-_\s]*front/i.test(file.name) || /aadhar[-_\s]*front/i.test(file.name);
+    if (isFrontAadhaar && !isBackAadhaar) {
+      toast.error('Aadhaar card (Front side) detected in Back side upload. Please upload the Back side of your Aadhaar card.');
       if (inputElem) inputElem.value = '';
       return;
     }
@@ -639,8 +653,9 @@ const KycVerificationPage = () => {
 
       setAadhaarVerified(true);
       setAadhaarResult(data);
-      if (data.address?.fullAddress) {
-        setAddressText(data.address.fullAddress);
+      const extractedAddr = data.address?.fullAddress || (typeof data.address === 'string' ? data.address : '');
+      if (extractedAddr) {
+        setAddressText(extractedAddr);
       }
       const hasEdu = qualifications.length > 0 || certifications.length > 0;
       calculateDynamicScore(true, employmentVerified, voterVerified, dlVerified, hasEdu);
@@ -744,6 +759,17 @@ const KycVerificationPage = () => {
       return;
     }
 
+    const isBackVoter = (str) => /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(str) || /[-_.]back[-_.]/i.test(str) || /voter[-_\s]*back/i.test(str);
+    const isFrontVoter = (str) => /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(str) || /[-_.]front[-_.]/i.test(str) || /voter[-_\s]*front/i.test(str);
+    if (voterFront?.name && isBackVoter(voterFront.name) && !isFrontVoter(voterFront.name)) {
+      toast.error('Voter ID (Back side) detected in Front side upload. Please upload the Front side of your Voter ID.');
+      return;
+    }
+    if (voterBack?.name && isFrontVoter(voterBack.name) && !isBackVoter(voterBack.name)) {
+      toast.error('Voter ID (Front side) detected in Back side upload. Please upload the Back side of your Voter ID.');
+      return;
+    }
+
     setVoterLoading(true);
     try {
       const formData = new FormData();
@@ -807,6 +833,26 @@ const KycVerificationPage = () => {
     }
     if (!dlFront || !dlBack) {
       toast.error('Driving License ka Front aur Back dono photos upload karna compulsory hai.');
+      return;
+    }
+
+    const isBackName = (str) =>
+      /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(str) ||
+      /[-_.]back[-_.]/i.test(str) ||
+      /dl[-_\s]*back/i.test(str);
+
+    const isFrontName = (str) =>
+      /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(str) ||
+      /[-_.]front[-_.]/i.test(str) ||
+      /dl[-_\s]*front/i.test(str);
+
+    if (dlFront?.name && isBackName(dlFront.name) && !isFrontName(dlFront.name)) {
+      toast.error('Driving License (Back side) detected in Front side upload. Please upload the Front side of your Driving License.');
+      return;
+    }
+
+    if (dlBack?.name && isFrontName(dlBack.name) && !isBackName(dlBack.name)) {
+      toast.error('Driving License (Front side) detected in Back side upload. Please upload the Back side of your Driving License.');
       return;
     }
 
@@ -1482,11 +1528,11 @@ const KycVerificationPage = () => {
                       <div className="row g-3 mt-1">
                         <div className="col-sm-6 col-md-4 mb-2">
                           <span className="text-muted small d-block">Full Name</span>
-                          <strong className="text-dark">{aadhaarResult?.name || fullName || 'Mohmmed Saif Faruqi'}</strong>
+                          <strong className="text-dark">{aadhaarResult?.name || fullName || 'Verified User'}</strong>
                         </div>
                         <div className="col-sm-6 col-md-4 mb-2">
                           <span className="text-muted small d-block">Aadhaar Number</span>
-                          <strong className="text-dark">{aadhaarResult?.maskedDocumentNumber || 'XXXX-XXXX-1992'}</strong>
+                          <strong className="text-dark">{aadhaarResult?.maskedDocumentNumber || 'Verified'}</strong>
                         </div>
                         <div className="col-sm-6 col-md-4 mb-2">
                           <span className="text-muted small d-block">Date of Birth (DOB)</span>
@@ -1495,13 +1541,13 @@ const KycVerificationPage = () => {
                               ? (typeof aadhaarResult.dob === 'string' && aadhaarResult.dob.includes('T')
                                   ? new Date(aadhaarResult.dob).toLocaleDateString('en-GB')
                                   : aadhaarResult.dob)
-                              : '31/07/2000'}
+                              : 'Verified'}
                           </strong>
                         </div>
                         <div className="col-sm-6 col-md-4 mb-2">
                           <span className="text-muted small d-block">Gender</span>
                           <strong className="text-dark" style={{ textTransform: 'capitalize' }}>
-                            {aadhaarResult?.gender || 'Male'}
+                            {aadhaarResult?.gender || 'Verified'}
                           </strong>
                         </div>
                         <div className="col-sm-6 col-md-4 mb-2">
@@ -1512,14 +1558,19 @@ const KycVerificationPage = () => {
                           <span className="text-muted small d-block">Status</span>
                           <span className="badge badge-success px-2 py-1">Verified</span>
                         </div>
-                        {(aadhaarResult?.address?.fullAddress || typeof aadhaarResult?.address === 'string' || addressText) && (
-                          <div className="col-12 mt-2 pt-2 border-top">
-                            <span className="text-muted small d-block">Registered Address</span>
-                            <span className="text-dark font-weight-bold small">
-                              {aadhaarResult?.address?.fullAddress || (typeof aadhaarResult?.address === 'string' ? aadhaarResult.address : addressText)}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const displayAddr =
+                            aadhaarResult?.address?.fullAddress ||
+                            (typeof aadhaarResult?.address === 'string' && aadhaarResult.address.trim()) ||
+                            null;
+                          if (!displayAddr) return null;
+                          return (
+                            <div className="col-12 mt-2 pt-2 border-top">
+                              <span className="text-muted small d-block">Aadhaar Registered Address</span>
+                              <span className="text-dark font-weight-bold small">{displayAddr}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   ) : (
@@ -1929,7 +1980,7 @@ const KycVerificationPage = () => {
                         <div className="col-sm-6 col-md-4 mb-2">
                           <span className="text-muted small d-block">Gender</span>
                           <strong className="text-dark" style={{ textTransform: 'capitalize' }}>
-                            {voterResult?.gender || 'Male'}
+                            {voterResult?.gender || 'Verified'}
                           </strong>
                         </div>
                         <div className="col-sm-6 col-md-4 mb-2">
@@ -1942,14 +1993,19 @@ const KycVerificationPage = () => {
                           <span className="text-muted small d-block">Status</span>
                           <span className="badge badge-success px-2 py-1">Verified</span>
                         </div>
-                        {(voterResult?.address?.fullAddress || typeof voterResult?.address === 'string' || addressText) && (
-                          <div className="col-12 mt-2 pt-2 border-top">
-                            <span className="text-muted small d-block">Verified Residential Address</span>
-                            <span className="text-dark font-weight-bold small">
-                              {voterResult?.address?.fullAddress || (typeof voterResult?.address === 'string' ? voterResult.address : addressText)}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const displayAddr =
+                            voterResult?.address?.fullAddress ||
+                            (typeof voterResult?.address === 'string' && voterResult.address.trim()) ||
+                            null;
+                          if (!displayAddr) return null;
+                          return (
+                            <div className="col-12 mt-2 pt-2 border-top">
+                              <span className="text-muted small d-block">Voter ID Residential Address</span>
+                              <span className="text-dark font-weight-bold small">{displayAddr}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   ) : (
@@ -2026,6 +2082,16 @@ const KycVerificationPage = () => {
                                   onChange={(e) => {
                                     const f = e.target.files[0];
                                     if (f && validateDocFile(f)) {
+                                      const fname = f.name?.toLowerCase() || '';
+                                      const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /voter[-_\s]*back/i.test(fname);
+                                      const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /voter[-_\s]*front/i.test(fname);
+                                      if (isBack && !isFront) {
+                                        toast.error('Voter ID (Back side) detected in Front side upload. Please upload the Front side of your Voter ID.');
+                                        e.target.value = '';
+                                        setVoterFront(null);
+                                        setVoterFrontPreview(null);
+                                        return;
+                                      }
                                       setVoterFront(f);
                                       setVoterFrontPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
                                     }
@@ -2059,6 +2125,16 @@ const KycVerificationPage = () => {
                                   onChange={(e) => {
                                     const f = e.target.files[0];
                                     if (f && validateDocFile(f)) {
+                                      const fname = f.name?.toLowerCase() || '';
+                                      const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /voter[-_\s]*back/i.test(fname);
+                                      const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /voter[-_\s]*front/i.test(fname);
+                                      if (isFront && !isBack) {
+                                        toast.error('Voter ID (Front side) detected in Back side upload. Please upload the Back side of your Voter ID.');
+                                        e.target.value = '';
+                                        setVoterBack(null);
+                                        setVoterBackPreview(null);
+                                        return;
+                                      }
                                       setVoterBack(f);
                                       setVoterBackPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
                                     }
@@ -2158,12 +2234,19 @@ const KycVerificationPage = () => {
                             <strong className="text-dark">{new Date(dlResult.dateOfExpiry).toLocaleDateString()}</strong>
                           </div>
                         )}
-                        {dlResult?.address?.fullAddress && (
-                          <div className="col-12 mt-1">
-                            <span className="small text-muted d-block">Registered Address:</span>
-                            <span className="small text-dark font-weight-bold">{dlResult.address.fullAddress}</span>
-                          </div>
-                        )}
+                        {(() => {
+                          const displayAddr =
+                            dlResult?.address?.fullAddress ||
+                            (typeof dlResult?.address === 'string' && dlResult.address.trim()) ||
+                            null;
+                          if (!displayAddr) return null;
+                          return (
+                            <div className="col-12 mt-2 pt-2 border-top">
+                              <span className="small text-muted d-block">Driving License Registered Address</span>
+                              <span className="small text-dark font-weight-bold">{displayAddr}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <span className="small text-muted d-block mt-2">
                         Verified via Ministry of Road Transport and Highways (MoRTH) / State RTO OCR records.
@@ -2193,6 +2276,16 @@ const KycVerificationPage = () => {
                               onChange={(e) => {
                                 const f = e.target.files[0];
                                 if (f && validateDocFile(f)) {
+                                  const fname = f.name?.toLowerCase() || '';
+                                  const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /dl[-_\s]*back/i.test(fname);
+                                  const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /dl[-_\s]*front/i.test(fname);
+                                  if (isBack && !isFront) {
+                                    toast.error('Driving License (Back side) detected in Front side upload. Please upload the Front side of your Driving License.');
+                                    e.target.value = '';
+                                    setDlFront(null);
+                                    setDlFrontPreview(null);
+                                    return;
+                                  }
                                   setDlFront(f);
                                   setDlFrontPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
                                 }
@@ -2226,6 +2319,16 @@ const KycVerificationPage = () => {
                               onChange={(e) => {
                                 const f = e.target.files[0];
                                 if (f && validateDocFile(f)) {
+                                  const fname = f.name?.toLowerCase() || '';
+                                  const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /dl[-_\s]*back/i.test(fname);
+                                  const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /dl[-_\s]*front/i.test(fname);
+                                  if (isFront && !isBack) {
+                                    toast.error('Driving License (Front side) detected in Back side upload. Please upload the Back side of your Driving License.');
+                                    e.target.value = '';
+                                    setDlBack(null);
+                                    setDlBackPreview(null);
+                                    return;
+                                  }
                                   setDlBack(f);
                                   setDlBackPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
                                 }
