@@ -434,15 +434,195 @@ const KycVerificationPage = () => {
     return true;
   };
 
+  // Specific Aadhaar Image Validation (Dimensions, Crop, and Blur Check)
+  const validateAadhaarImageFile = (file) => {
+    return new Promise((resolve) => {
+      if (!validateDocFile(file)) {
+        resolve({ valid: false });
+        return;
+      }
+
+      if (file.size < 10 * 1024) {
+        resolve({
+          valid: false,
+          error: 'File size is too small (< 10KB). Please upload a clear photo of your Aadhaar card.',
+        });
+        return;
+      }
+
+      // If PDF, skip image canvas checks
+      if (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')) {
+        resolve({ valid: true });
+        return;
+      }
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const width = img.naturalWidth || img.width;
+        const height = img.naturalHeight || img.height;
+
+        // 1. Dimensions / Crop check
+        if (width < 320 || height < 180) {
+          resolve({
+            valid: false,
+            error: 'The uploaded Aadhaar card image appears cropped or resolution is too low. Please upload the full card.',
+          });
+          return;
+        }
+
+        const aspect = width / height;
+        if (aspect < 0.45 || aspect > 2.8) {
+          resolve({
+            valid: false,
+            error: 'The uploaded Aadhaar card image appears cropped or cut off. Please ensure all 4 corners are visible.',
+          });
+          return;
+        }
+
+        // 2. Blur check via Laplacian variance on scaled canvas
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const maxDim = 250;
+          const scale = Math.min(1, maxDim / Math.max(width, height));
+          const sw = Math.max(10, Math.floor(width * scale));
+          const sh = Math.max(10, Math.floor(height * scale));
+          canvas.width = sw;
+          canvas.height = sh;
+          ctx.drawImage(img, 0, 0, sw, sh);
+
+          const imgData = ctx.getImageData(0, 0, sw, sh);
+          const data = imgData.data;
+
+          const gray = new Float32Array(sw * sh);
+          for (let i = 0; i < data.length; i += 4) {
+            gray[i / 4] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          }
+
+          let sum = 0;
+          let sumSq = 0;
+          let count = 0;
+          for (let y = 1; y < sh - 1; y++) {
+            for (let x = 1; x < sw - 1; x++) {
+              const idx = y * sw + x;
+              const lap =
+                gray[idx - sw] +
+                gray[idx + sw] +
+                gray[idx - 1] +
+                gray[idx + 1] -
+                4 * gray[idx];
+              sum += lap;
+              sumSq += lap * lap;
+              count++;
+            }
+          }
+
+          const mean = sum / count;
+          const variance = sumSq / count - mean * mean;
+
+          if (variance < 35) {
+            resolve({
+              valid: false,
+              error: 'The uploaded Aadhaar card image is blurry or unclear. Please upload a clear and sharp photo.',
+            });
+            return;
+          }
+
+          resolve({ valid: true });
+        } catch {
+          resolve({ valid: true });
+        }
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve({ valid: false, error: 'Could not read image file. Please upload a valid JPG, PNG, or PDF.' });
+      };
+
+      img.src = objectUrl;
+    });
+  };
+
+  const handleAadhaarFrontChange = async (file, inputElem) => {
+    if (!file) return;
+
+    if (
+      aadhaarBack &&
+      ((file.name === aadhaarBack.name && file.size === aadhaarBack.size) ||
+        (file.lastModified && aadhaarBack.lastModified && file.lastModified === aadhaarBack.lastModified))
+    ) {
+      toast.error('Front and Back side cannot be the same image. Please upload Front and Back sides separately.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    const check = await validateAadhaarImageFile(file);
+    if (!check.valid) {
+      if (check.error) toast.error(check.error);
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    setAadhaarFront(file);
+    setAadhaarFrontPreview(
+      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+        ? 'pdf'
+        : URL.createObjectURL(file)
+    );
+  };
+
+  const handleAadhaarBackChange = async (file, inputElem) => {
+    if (!file) return;
+
+    if (
+      aadhaarFront &&
+      ((file.name === aadhaarFront.name && file.size === aadhaarFront.size) ||
+        (file.lastModified && aadhaarFront.lastModified && file.lastModified === aadhaarFront.lastModified))
+    ) {
+      toast.error('Front and Back side cannot be the same image. Please upload Front and Back sides separately.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    const check = await validateAadhaarImageFile(file);
+    if (!check.valid) {
+      if (check.error) toast.error(check.error);
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    setAadhaarBack(file);
+    setAadhaarBackPreview(
+      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+        ? 'pdf'
+        : URL.createObjectURL(file)
+    );
+  };
+
   // Submit Aadhaar Verification - Option 2: OCR Upload
   const handleVerifyAadhaarOcr = async (e) => {
     e.preventDefault();
-    if (!aadhaarConsent) {
-      toast.error('Please give consent to scan Aadhaar.');
+    if (!aadhaarFront) {
+      toast.error('Please upload your Aadhaar card (Front side) image to verify.');
       return;
     }
-    if (!aadhaarFront || !aadhaarBack) {
-      toast.error('Aadhaar Card ka Front aur Back dono photos upload karna compulsory hai.');
+    if (!aadhaarBack) {
+      toast.error('Please upload your Aadhaar card (Back side) image to verify.');
+      return;
+    }
+
+    if (
+      (aadhaarFront.name === aadhaarBack.name && aadhaarFront.size === aadhaarBack.size) ||
+      (aadhaarFront.lastModified && aadhaarBack.lastModified && aadhaarFront.lastModified === aadhaarBack.lastModified)
+    ) {
+      toast.error('Front and Back side cannot be the same image. Please upload Front and Back sides separately.');
+      return;
+    }
+
+    if (!aadhaarConsent) {
+      toast.error('Please accept the mandatory UIDAI OCR Consent checkbox before proceeding.');
       return;
     }
 
@@ -451,7 +631,7 @@ const KycVerificationPage = () => {
       const formData = new FormData();
       formData.append('documentFront', aadhaarFront);
       formData.append('documentBack', aadhaarBack);
-      formData.append('consent', aadhaarConsent ? 'true' : 'false');
+      formData.append('consent', 'true');
       formData.append('consentPurpose', 'UIDAI Aadhaar OCR scan for Employix Trust Profile');
 
       const res = await verifyAadhaarApi(formData);
@@ -484,16 +664,13 @@ const KycVerificationPage = () => {
       );
       toast.success(`Aadhaar verified successfully (+${scoreConfig.aadhaarScore ?? 20} points).`);
     } catch (err) {
-      let msg = err.response?.data?.message || err.message || 'Aadhaar verification failed.';
-      const lower = String(msg).toLowerCase();
-      if (
-        lower.includes('non compliant') ||
-        lower.includes('quality standard') ||
-        lower.includes('not compliant') ||
-        lower.includes('document_quality')
-      ) {
-        msg = 'Uploaded document is not a valid Aadhaar card. Please upload a clear photo of your original Aadhaar card (Front & Back).';
-      }
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        err.response?.data?.error?.detail ||
+        (typeof err.response?.data?.error === 'string' ? err.response?.data?.error : null) ||
+        err.message ||
+        'Aadhaar verification failed.';
       toast.error(msg);
     } finally {
       setAadhaarLoading(false);
@@ -1365,24 +1542,22 @@ const KycVerificationPage = () => {
                                 <input
                                   type="file"
                                   className="form-control-file mt-2"
-                                  accept=".jpeg,.jpg,.png,.pdf,image/jpeg,image/png,image/jpg,application/pdf"
+                                  accept="image/jpeg,image/png,image/jpg,application/pdf"
                                   onChange={(e) => {
                                     const f = e.target.files[0];
-                                    if (f && validateDocFile(f)) {
-                                      setAadhaarFront(f);
-                                      setAadhaarFrontPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
+                                    if (f) {
+                                      handleAadhaarFrontChange(f, e.target);
                                     }
                                   }}
-                                  required
                                 />
                                 <small className="text-muted d-block mt-1">
-                                  Supported formats: JPEG, JPG, PNG, PDF. Mandatory. Maximum file size: 5MB.
+                                  Upload Front side photo or PDF.
                                 </small>
                               </div>
                             </div>
 
                             <div className="col-md-6 mb-3">
-                              <label className="auth-label">Aadhaar Card Back Document * (Mandatory with Address)</label>
+                              <label className="auth-label">Aadhaar Card Back Document *</label>
                               <div className="kyc-upload-dropzone p-4 text-center border rounded">
                                 {aadhaarBackPreview ? (
                                   aadhaarBackPreview === 'pdf' ? (
@@ -1398,18 +1573,16 @@ const KycVerificationPage = () => {
                                 <input
                                   type="file"
                                   className="form-control-file mt-2"
-                                  accept=".jpeg,.jpg,.png,.pdf,image/jpeg,image/png,image/jpg,application/pdf"
+                                  accept="image/jpeg,image/png,image/jpg,application/pdf"
                                   onChange={(e) => {
                                     const f = e.target.files[0];
-                                    if (f && validateDocFile(f)) {
-                                      setAadhaarBack(f);
-                                      setAadhaarBackPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
+                                    if (f) {
+                                      handleAadhaarBackChange(f, e.target);
                                     }
                                   }}
-                                  required
                                 />
                                 <small className="text-muted d-block mt-1">
-                                  Supported formats: JPEG, JPG, PNG, PDF. Mandatory. Maximum file size: 5MB.
+                                  Upload Back side photo or PDF.
                                 </small>
                               </div>
                             </div>
