@@ -419,3 +419,369 @@ input.auth-input-group:disabled {
   cursor: not-allowed !important;
   opacity: 0.88 !important;
 }
+
+/* ==========================================================================
+   Modern KYC Document Upload System (Step 2 Aadhaar Redesign)
+   ========================================================================== */
+.kyc-upload-guide-banner {
+  background: linear-gradient(135deg, rgba(0, 210, 148, 0.08) 0%, rgba(2, 12, 31, 0.02) 100%);
+  border: 1.5px solid rgba(0, 210, 148, 0.25);
+  border-radius: 14px;
+  padding: 16px 20px;
+}
+
+.kyc-doc-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.kyc-doc-card:hover {
+  border-color: rgba(0, 210, 148, 0.6);
+  box-shadow: 0 10px 25px -5px rgba(0, 210, 148, 0.12), 0 6px 12px -3px rgba(0, 0, 0, 0.04);
+}
+
+.kyc-doc-card-header {
+  padding: 14px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #edf2f7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kyc-doc-card-body {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.kyc-modern-dropzone {
+  border: 2px dashed #cbd5e1;
+  background: #fbfcfe;
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.kyc-modern-dropzone:hover {
+  border-color: #00D294;
+  background: rgba(0, 210, 148, 0.04);
+  transform: translateY(-2px);
+}
+
+.kyc-modern-dropzone.drag-active {
+  border-color: #00D294;
+  background: rgba(0, 210, 148, 0.09);
+  border-style: solid;
+  box-shadow: 0 0 0 4px rgba(0, 210, 148, 0.2);
+}
+
+.kyc-upload-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(0, 210, 148, 0.12);
+  color: #00B880;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.kyc-modern-dropzone:hover .kyc-upload-icon-wrapper {
+  transform: scale(1.08);
+  background: rgba(0, 210, 148, 0.22);
+}
+
+.kyc-preview-container {
+  border-radius: 10px;
+  background: #0f172a;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  max-height: 210px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.kyc-preview-image {
+  max-width: 100%;
+  max-height: 210px;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+}
+
+.kyc-preview-pdf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  width: 100%;
+  height: 100%;
+  color: #ffffff;
+}
+
+.kyc-file-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-top: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kyc-consent-card-modern {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 22px;
+  transition: all 0.2s ease;
+}
+
+.kyc-consent-card-modern.consented {
+  background: rgba(0, 210, 148, 0.05);
+  border-color: rgba(0, 210, 148, 0.55);
+  box-shadow: 0 4px 14px rgba(0, 210, 148, 0.08);
+}
+
+.kyc-tag-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.kyc-badge-front {
+  background: rgba(0, 210, 148, 0.15);
+  color: #009366;
+  border: 1px solid rgba(0, 210, 148, 0.35);
+}
+
+.kyc-badge-back {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.kyc-status-summary-bar {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Modern Auth Card System & Highlighted Header Design
+   ========================================================================== */
+.auth-card {
+  background: #FFFFFF !important;
+  border: 1.5px solid #E2E8F0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
+  overflow: hidden !important;
+  position: relative !important;
+  z-index: 5 !important;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+
+.auth-card:hover {
+  border-color: rgba(0, 210, 148, 0.45) !important;
+  box-shadow: 0 22px 50px -10px rgba(0, 210, 148, 0.12), 0 8px 24px -4px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Distinct Highlighted Top Heading Header */
+.auth-card-header {
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(0, 210, 148, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 85% 50%, rgba(0, 102, 255, 0.14) 0%, transparent 50%),
+    #07152B !important;
+  border-bottom: 2px solid #00D294 !important;
+  border-top: 3px solid #00D294 !important;
+  padding: 22px 28px !important;
+  position: relative !important;
+  color: #FFFFFF !important;
+}
+
+@media (max-width: 767px) {
+  .auth-card-header {
+    padding: 18px 20px !important;
+  }
+}
+
+.auth-card-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 180px;
+  height: 100%;
+  background: radial-gradient(circle at 100% 0%, rgba(0, 210, 148, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.auth-card-body {
+  background: #FFFFFF;
+}
+
+.auth-card-header h1,
+.auth-card-header h2,
+.auth-card-header h3,
+.auth-card-header h4,
+.auth-card-header h5,
+.auth-card-header h6,
+.auth-card-heading {
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  color: #FFFFFF !important;
+  letter-spacing: -0.015em !important;
+  margin-bottom: 3px;
+}
+
+.auth-card-sub,
+.auth-card-header p,
+.auth-card-header .small {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.88rem !important;
+  font-weight: 400;
+}
+
+.auth-card-header .text-muted {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.auth-card-header .text-dark {
+  color: #FFFFFF !important;
+}
+
+.auth-card-header .setup-step-badge {
+  background: rgba(0, 210, 148, 0.22) !important;
+  color: #00FFB4 !important;
+  border: 1px solid rgba(0, 210, 148, 0.45) !important;
+  font-weight: 800 !important;
+}
+
+.auth-card-header .badge-light {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.auth-card-header .kyc-method-tabs {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.auth-card-header .kyc-method-btn {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.auth-card-header .kyc-method-btn:hover {
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.auth-card-header .kyc-method-btn.active {
+  background: linear-gradient(135deg, #00D294 0%, #00B880 100%) !important;
+  color: #061325 !important;
+}
+
+/* Fallback for any auth-card with direct border-bottom header */
+.auth-card > div:first-child.border-bottom {
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(0, 210, 148, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 85% 50%, rgba(0, 102, 255, 0.14) 0%, transparent 50%),
+    #07152B !important;
+  border-bottom: 2px solid #00D294 !important;
+  border-top: 3px solid #00D294 !important;
+  padding: 22px 28px !important;
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
+  color: #FFFFFF !important;
+}
+
+.auth-card > div:first-child.border-bottom h1,
+.auth-card > div:first-child.border-bottom h2,
+.auth-card > div:first-child.border-bottom h3,
+.auth-card > div:first-child.border-bottom h4,
+.auth-card > div:first-child.border-bottom p,
+.auth-card > div:first-child.border-bottom .auth-card-heading,
+.auth-card > div:first-child.border-bottom .auth-card-sub {
+  color: #FFFFFF !important;
+}
+
+@media (min-width: 768px) {
+  .auth-card > div:first-child.border-bottom {
+    margin: -3rem -3rem 2rem -3rem !important;
+  }
+}
+
+/* ==========================================================================
+   Reference Verification Page Responsive & Modern Styling
+   ========================================================================== */
+.ref-verification-card {
+  box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  border: 1.5px solid #E2E8F0 !important;
+  background: #FFFFFF !important;
+}
+
+.ref-scale-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .ref-scale-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+}
+
+.ref-company-card {
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.ref-company-card:hover {
+  transform: translateY(-2px);
+  border-color: #00D294 !important;
+  box-shadow: 0 6px 16px rgba(0, 210, 148, 0.15) !important;
+}
+
+
+

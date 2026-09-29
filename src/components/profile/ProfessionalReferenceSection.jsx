@@ -39,6 +39,7 @@ const ProfessionalReferenceSection = ({
   const [refereeRole, setRefereeRole] = useState('');
   const [fieldErrors, setFieldErrors] = useState({ name: '', email: '', role: '' });
   const [recentlySentReferee, setRecentlySentReferee] = useState(null);
+  const [addModalCopied, setAddModalCopied] = useState(false);
 
   // Cooldown timers per reference ID (seconds remaining)
   const [cooldowns, setCooldowns] = useState({});
@@ -217,7 +218,7 @@ const ProfessionalReferenceSection = ({
 
   const formatShareableLink = (rawUrl) => {
     if (!rawUrl) return '';
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    if (typeof window !== 'undefined' && window.location?.origin) {
       try {
         const parsed = new URL(rawUrl);
         return `${window.location.origin}${parsed.pathname}${parsed.search}`;
@@ -228,11 +229,46 @@ const ProfessionalReferenceSection = ({
     return rawUrl;
   };
 
+  // Bulletproof copy function working across all devices, browsers, HTTP/HTTPS, localhost, and LAN
+  const copyTextToClipboard = async (textToCopy) => {
+    if (!textToCopy) return false;
+
+    // 1. Try modern navigator.clipboard API if supported
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        return true;
+      } catch (err) {
+        console.warn('Async clipboard writeText blocked or failed, using fallback:', err);
+      }
+    }
+
+    // 2. Reliable Fallback using hidden textarea and document.execCommand('copy')
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = textToCopy;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.setAttribute('readonly', '');
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(0, 99999);
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      console.error('execCommand copy failed:', err);
+      return false;
+    }
+  };
+
   // Open Share Link Modal & Auto-copy
   const handleShareLink = async (ref) => {
     if (isSetupCompleted) return;
 
-    // Check if shareable link already exists on object
     if (ref.shareableLink) {
       const activeLink = formatShareableLink(ref.shareableLink);
       setShareModal({
@@ -242,7 +278,7 @@ const ProfessionalReferenceSection = ({
         copied: false,
         loading: false,
       });
-      navigator.clipboard?.writeText(activeLink);
+      await copyTextToClipboard(activeLink);
       toast.success('Secure link copied to clipboard!');
       return;
     }
@@ -269,7 +305,7 @@ const ProfessionalReferenceSection = ({
           copied: false,
           loading: false,
         });
-        navigator.clipboard?.writeText(activeLink);
+        await copyTextToClipboard(activeLink);
         toast.success('Secure link copied to clipboard!');
       } else {
         toast.error('Unable to generate share link.');
@@ -282,14 +318,21 @@ const ProfessionalReferenceSection = ({
     }
   };
 
-  const handleCopyFromModal = (link) => {
+  const handleCopyFromModal = async (link) => {
     if (!link) return;
-    navigator.clipboard?.writeText(link);
-    setShareModal((prev) => ({ ...prev, copied: true }));
-    toast.success('Link copied to clipboard!');
-    setTimeout(() => {
-      setShareModal((prev) => ({ ...prev, copied: false }));
-    }, 2500);
+    const activeLink = formatShareableLink(link);
+    const copiedOk = await copyTextToClipboard(activeLink);
+    if (copiedOk) {
+      setAddModalCopied(true);
+      setShareModal((prev) => ({ ...prev, copied: true }));
+      toast.success('Verification link copied to clipboard!');
+      setTimeout(() => {
+        setAddModalCopied(false);
+        setShareModal((prev) => ({ ...prev, copied: false }));
+      }, 2500);
+    } else {
+      toast.error('Unable to auto-copy. Please click and copy manually.');
+    }
   };
 
   const maxReached = references.length >= 2;
@@ -297,52 +340,65 @@ const ProfessionalReferenceSection = ({
   const displayEarned = scores.totalEarnedPoints || rewardPoints;
 
   return (
-    <div className="professional-reference-card p-4 rounded-lg border bg-white mb-4 shadow-sm" id="step-references">
-      {/* Header & Reward Points Overview */}
-      <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 pb-3 border-bottom mb-4">
-        <div>
-          <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-            <span className="badge badge-teal-subtle text-teal font-weight-bold px-2 py-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
-              RECOMMENDATIONS &amp; TRUST
-            </span>
-            <span className="badge badge-light border text-muted small font-weight-bold">
-              {references.length}/2 Added ({scores.completedReferencesCount} Verified)
-            </span>
+    <div className="auth-card" id="step-references">
+      {/* Modern Highlighted Header matching Step 6 & Image 2 */}
+      <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
+        <div className="d-flex align-items-center gap-3">
+          <span className="setup-step-badge mr-2">Step 7</span>
+          <div>
+            <h3 className="auth-card-heading mb-0">Professional Reference Verification</h3>
+            <p className="auth-card-sub small mb-0">
+              Add up to 2 professional references (managers or peers) with email verification (+10 Points)
+            </p>
           </div>
-          <h4 className="font-weight-bold text-dark mb-1 d-flex align-items-center">
-            <span className="mr-2" style={{ color: '#00D294' }}>★</span>
-            Professional Reference Verification
-          </h4>
-          <p className="text-muted small mb-0">
-            Add up to 2 professional references (managers or peers). Send verification invitations directly via email or share the secure link. Each verified reference awards{' '}
-            <strong className="text-teal">+5 Reward Points</strong> (up to 10 points total).
-          </p>
         </div>
 
-        {/* Reward Points Badge Display & Add Button */}
-        <div className="d-flex align-items-center gap-3">
-          <div
-            className="p-2 px-3 rounded-lg text-center"
-            style={{
-              background: 'linear-gradient(135deg, rgba(0, 210, 148, 0.12) 0%, rgba(11, 37, 69, 0.05) 100%)',
-              border: '1px solid rgba(0, 210, 148, 0.3)',
-            }}
-          >
-            <span className="small text-muted font-weight-bold d-block text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
-              Reference Points ({scores.overallProgressPercentage}%)
+        {references.length > 0 ? (
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <span className="badge badge-info px-3 py-2 font-weight-bold">
+              &#10003; {references.length}/2 Reference(s) Added
             </span>
-            <span className="h4 font-weight-bold text-teal mb-0">
-              +{displayEarned} <span className="small font-weight-normal text-muted" style={{ fontSize: '12px' }}>/ {scores.maxPossibleTarget} Pts</span>
-            </span>
+            {scores.completedReferencesCount > 0 ? (
+              <span className="badge badge-success px-3 py-2 font-weight-bold">
+                +{displayEarned} Points Secured ({scores.completedReferencesCount}/2 Verified)
+              </span>
+            ) : (
+              <span className="badge badge-warning px-3 py-2 font-weight-bold">
+                VERIFICATION PENDING (+10 PTS)
+              </span>
+            )}
           </div>
+        ) : (
+          <span className="badge badge-warning px-3 py-2 font-weight-bold">
+            PENDING STEP 7
+          </span>
+        )}
+      </div>
 
+      <div className="auth-card-body p-4 p-md-5">
+        {/* Subsection: Professional References (Managers / Peers) - Matching Image 2 */}
+        <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+          <div>
+            <h5 className="font-weight-bold text-dark mb-0 d-flex align-items-center">
+              <span className="mr-2" style={{ fontSize: '1.25rem' }}>🤝</span>
+              Professional References (Managers / Peers)
+            </h5>
+            <small className="text-muted">
+              Add up to 2 managers or colleagues to verify candidate's tenure, conduct &amp; soft skills
+            </small>
+          </div>
           <button
             type="button"
             onClick={handleOpenModal}
             disabled={maxReached || isSetupCompleted}
-            className={`btn font-weight-bold px-3 py-2 ${
-              maxReached || isSetupCompleted ? 'btn-light border text-muted' : 'btn-primary-teal'
-            }`}
+            className={`btn btn-sm ${
+              maxReached || isSetupCompleted ? 'btn-secondary text-white' : 'btn-primary-teal'
+            } px-3 py-2 font-weight-bold`}
+            style={
+              maxReached || isSetupCompleted
+                ? { opacity: 0.65, cursor: 'not-allowed', borderRadius: '50px' }
+                : { borderRadius: '50px' }
+            }
             title={
               isSetupCompleted
                 ? 'Profile setup is complete and locked'
@@ -354,54 +410,42 @@ const ProfessionalReferenceSection = ({
             + Add Reference
           </button>
         </div>
-      </div>
 
-      {/* Scoring Policy Info Strip */}
-      <div
-        className="p-2 px-3 rounded-lg mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
-        style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
-      >
-        <div className="d-flex align-items-center gap-2">
-          <span style={{ fontSize: '16px' }}>🛡️</span>
-          <span className="small text-dark font-weight-bold">
-            Reference Scoring (10% Max):{' '}
-            <span className="text-muted font-weight-normal">
-              0 verified = 0/10 Pts · 1 verified = 5/10 Pts · 2 verified = 10/10 Pts. Contributes directly to your 100 Pts overall profile score.
+        {/* Scoring Policy Info Strip */}
+        <div
+          className="p-2 px-3 rounded-lg mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
+          style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+        >
+       
+          <div className="d-flex align-items-center gap-2">
+            <span className="badge badge-light border text-muted font-weight-bold px-2 py-1" style={{ fontSize: '11px' }}>
+              {references.length}/2 Added
             </span>
-          </span>
+            <span
+              className="badge font-weight-bold px-2 py-1"
+              style={{
+                background: scores.completedReferencesCount > 0 ? '#dcfce7' : '#fef3c7',
+                color: scores.completedReferencesCount > 0 ? '#15803d' : '#92400e',
+                fontSize: '11px',
+              }}
+            >
+              {scores.completedReferencesCount}/2 Verified (+{displayEarned} Pts)
+            </span>
+          </div>
         </div>
-        <span className="badge badge-light border text-muted font-weight-bold px-2 py-1" style={{ fontSize: '11px' }}>
-          Max 2 References Allowed
-        </span>
-      </div>
 
-      {/* Main Content Area */}
-      {loading ? (
-        <div className="text-center py-5">
-          <ButtonSpinner color="#00D294" />
-          <span className="small text-muted d-block mt-2 font-weight-bold">Loading professional references...</span>
-        </div>
-      ) : references.length === 0 ? (
-        /* Empty State */
-        <div className="text-center py-5 px-3 rounded-lg bg-light border border-dashed">
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>🤝</div>
-          <h6 className="font-weight-bold text-dark mb-1">No Professional References Added Yet</h6>
-          <p className="small text-muted mb-3" style={{ maxWidth: '480px', margin: '0 auto' }}>
-            Add up to 2 managers or colleagues to verify your work experience. You can invite them via instant background email or share your personal secure link.
-          </p>
-          <button
-            type="button"
-            onClick={handleOpenModal}
-            disabled={isSetupCompleted}
-            className={`btn btn-sm font-weight-bold px-4 py-2 ${
-              isSetupCompleted ? 'btn-light border text-muted' : 'btn-primary-teal shadow-sm'
-            }`}
-            title={isSetupCompleted ? 'Profile setup is complete and locked' : 'Add your first professional reference'}
-          >
-            + Add First Reference
-          </button>
-        </div>
-      ) : (
+        {/* Main Content Area */}
+        {loading ? (
+          <div className="text-center py-5">
+            <ButtonSpinner color="#00D294" />
+            <span className="small text-muted d-block mt-2 font-weight-bold">Loading professional references...</span>
+          </div>
+        ) : references.length === 0 ? (
+          /* Empty State matching Image 2 */
+          <div className="py-2">
+           
+          </div>
+        ) : (
         /* Modern High-End Table Format */
         <div className="reference-table-container">
           <div className="table-responsive rounded-lg border shadow-sm mb-4">
@@ -617,6 +661,7 @@ const ProfessionalReferenceSection = ({
           </div>
         </div>
       )}
+      </div>
 
       {/* MODAL 1: ADD PROFESSIONAL REFERENCE (With Real-Time Regex Validation) */}
       {showAddModal && (
@@ -819,19 +864,45 @@ const ProfessionalReferenceSection = ({
                         <input
                           type="text"
                           readOnly
-                          className="form-control font-monospace small bg-white"
-                          value={recentlySentReferee.shareableLink}
+                          className="form-control font-monospace small bg-white cursor-pointer"
+                          value={formatShareableLink(recentlySentReferee.shareableLink)}
+                          onClick={(e) => {
+                            e.target.select();
+                            handleCopyFromModal(recentlySentReferee.shareableLink);
+                          }}
+                          title="Click to select all & copy"
                         />
                         <div className="input-group-append">
                           <button
                             type="button"
                             onClick={() => handleCopyFromModal(recentlySentReferee.shareableLink)}
-                            className="btn btn-outline-teal font-weight-bold"
+                            className={`btn font-weight-bold transition-all px-3 ${
+                              addModalCopied ? 'btn-success text-white' : 'btn-outline-teal'
+                            }`}
                           >
-                            Copy Link
+                            {addModalCopied ? '✓ Copied!' : 'Copy Link'}
                           </button>
                         </div>
                       </div>
+                      <small className="text-muted d-block mt-1 mb-2" style={{ fontSize: '11px' }}>
+                        💡 You can copy this link or send it directly via WhatsApp:
+                      </small>
+                      <a
+                        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                          `Hi ${recentlySentReferee?.name || 'there'}, please verify my professional reference on EMPLOYIX: ${formatShareableLink(recentlySentReferee.shareableLink)}`
+                        )}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-sm btn-block font-weight-bold py-2 text-white d-flex align-items-center justify-content-center shadow-2xs"
+                        style={{
+                          borderRadius: '8px',
+                          background: '#25D366',
+                          borderColor: '#25D366',
+                          fontSize: '13px',
+                        }}
+                      >
+                        <span className="mr-1" style={{ fontSize: '15px' }}>💬</span> Share directly via WhatsApp &rarr;
+                      </a>
                     </div>
                   )}
 

@@ -111,7 +111,7 @@ export const formatCandidateAddress = (rawAddr) => {
 
 /**
  * Detects completed verification flags across all 6 KYC steps
- * Weights: Aadhaar (20), Voter (20), DL (5), Employment (35), Education & Certs (20)
+ * Weights: Aadhaar (20), Voter (20), Employment (30), Education & Certs (20), References (5 each, max 2 = 10 pts)
  * @param {object} user
  * @returns {object}
  */
@@ -207,10 +207,10 @@ export const isCandidateSetupCompleted = (user) => {
  * 2. Voter ID Card = 20% (Verified = 20 pts, Not Verified = 0 pts)
  * 3. Education = 20% (Verified = 20 pts, Not Verified = 0 pts)
  * 4. Employment = 30% (Verified = 30 pts, Not Verified = 0 pts)
- * 5. Employee Reference = 10% Maximum
+ * 5. Employee Reference = Up to 2 references (5 pts for 1st, 5 pts for 2nd, max 10 pts)
  *    - Maximum 2 references allowed per employee
- *    - 0 verified references -> 0/10 (Earned = 0, Applicable Target = 90)
- *    - 1 verified reference  -> 5/10 (Earned = 5, Applicable Target = 95)
+ *    - 0 verified references -> 0/10 (Earned = 0, Applicable Target = 100)
+ *    - 1 verified reference  -> 5/10 (Earned = 5, Applicable Target = 100)
  *    - 2 verified references -> 10/10 (Earned = 10, Applicable Target = 100)
  *    - Missing optional 2nd reference creates NO PENALTY (e.g. 95/95 = 100%)
  *    - More than 2 references must not be allowed

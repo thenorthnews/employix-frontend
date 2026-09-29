@@ -49,7 +49,7 @@ const EmployeeScoringCard = ({ user, references = null }) => {
   const aadhaarScore = isAadhaarDone ? aadhaarMax : 0;
 
   // 2. Voter Card Verification
-  const voterScore = isVoterDone || isDlDone ? voterMax : 0;
+  const voterScore = isVoterDone ? voterMax : 0;
 
   // 3. Qualifications (Education & Certifications)
   const quals = Array.isArray(user?.qualifications) ? user.qualifications : [];

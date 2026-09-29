@@ -70,6 +70,7 @@ const ReferenceVerificationPage = () => {
   const [selectedCompany, setSelectedCompany] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [savedEndDate, setSavedEndDate] = useState('');
   const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(false);
   const [isPrefilled, setIsPrefilled] = useState(false);
 
@@ -159,6 +160,7 @@ const ReferenceVerificationPage = () => {
       const formattedEnd = parseToMonthFormat(sessionData.exitDate);
       if (formattedEnd) {
         setEndDate(formattedEnd);
+        setSavedEndDate(formattedEnd);
         setIsCurrentlyWorking(false);
         prefilledAny = true;
       }
@@ -193,7 +195,41 @@ const ReferenceVerificationPage = () => {
         setIsCurrentlyWorking(false);
         const formattedEnd = parseToMonthFormat(found.exitDate);
         setEndDate(formattedEnd || '');
+        setSavedEndDate(formattedEnd || '');
       }
+    }
+  };
+
+  // Toggle currently working checkbox without losing previous end date
+  const handleToggleCurrentlyWorking = (checked) => {
+    setIsCurrentlyWorking(checked);
+    if (checked) {
+      // Remember current endDate before clearing
+      if (endDate) {
+        setSavedEndDate(endDate);
+      }
+      setEndDate('');
+    } else {
+      // Restore previously saved end date, or fall back to official exitDate from sessionData
+      let restoreDate = savedEndDate;
+      if (!restoreDate && sessionData) {
+        const found = sessionData.allCompanies?.find(
+          (c) => c.companyName === (selectedCompany || sessionData.companyName)
+        );
+        const rawExit = found?.exitDate || sessionData.exitDate;
+        if (rawExit && String(rawExit).toLowerCase() !== 'null' && String(rawExit).trim() !== '') {
+          restoreDate = parseToMonthFormat(rawExit);
+        }
+      }
+      // If still nothing, default to current Month/Year
+      if (!restoreDate) {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        restoreDate = `${y}-${m}`;
+      }
+      setEndDate(restoreDate);
+      setSavedEndDate(restoreDate);
     }
   };
 
@@ -383,7 +419,7 @@ const ReferenceVerificationPage = () => {
           </span>
         </div>
 
-        <div className="d-flex align-items-center flex-wrap gap-1 mt-3">
+        <div className="ref-scale-grid mt-3">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
             const isSelected = value === score;
             return (
@@ -392,20 +428,18 @@ const ReferenceVerificationPage = () => {
                 type="button"
                 onClick={() => onChange(score)}
                 disabled={submittingFeedback}
-                className="btn btn-sm font-weight-bold transition-all"
+                className="btn btn-sm font-weight-bold transition-all p-0 d-flex align-items-center justify-content-center"
                 style={{
-                  flex: '1 0 32px',
-                  minWidth: '34px',
                   height: '42px',
                   borderRadius: '10px',
                   background: isSelected
                     ? 'linear-gradient(135deg, #00D294 0%, #059669 100%)'
                     : '#f8fafc',
                   color: isSelected ? '#ffffff' : '#334155',
-                  border: isSelected ? '1px solid #00D294' : '1px solid #e2e8f0',
+                  border: isSelected ? '1px solid #00D294' : '1.5px solid #e2e8f0',
                   boxShadow: isSelected ? '0 4px 12px rgba(0, 210, 148, 0.35)' : 'none',
-                  transform: isSelected ? 'scale(1.06)' : 'none',
-                  fontSize: '14px',
+                  transform: isSelected ? 'scale(1.05)' : 'none',
+                  fontSize: '14.5px',
                   cursor: 'pointer',
                 }}
               >
@@ -569,18 +603,14 @@ const ReferenceVerificationPage = () => {
             </div>
           ) : pageState === 'ready' || pageState === 'otp_sent' ? (
             /* STEP 1: IDENTITY VERIFICATION (EMAIL OTP) */
-            <div
-              className="card border-0 rounded-2xl overflow-hidden"
-              style={{
-                boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
-                borderRadius: '20px',
-              }}
-            >
+            <div className="card ref-verification-card">
               {/* Header */}
               <div
                 className="p-4 p-md-5 text-white"
                 style={{
-                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0d9488 100%)',
+                  background:
+                    'radial-gradient(circle at 15% 50%, rgba(0, 210, 148, 0.18) 0%, transparent 55%), radial-gradient(circle at 85% 50%, rgba(0, 102, 255, 0.16) 0%, transparent 55%), #07152B',
+                  borderTop: '3px solid #00D294',
                 }}
               >
                 <div className="d-inline-flex align-items-center badge px-3 py-1 font-weight-bold mb-3" style={{ background: 'rgba(255,255,255,0.15)', color: '#ffffff', borderRadius: '20px', fontSize: '11.5px' }}>
@@ -733,18 +763,14 @@ const ReferenceVerificationPage = () => {
             </div>
           ) : pageState === 'otp_verified' ? (
             /* STEP 2: POST-OTP FEEDBACK & VERIFICATION SCREEN */
-            <div
-              className="card border-0 rounded-2xl overflow-hidden"
-              style={{
-                boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
-                borderRadius: '20px',
-              }}
-            >
+            <div className="card ref-verification-card">
               {/* Premium Hero Header */}
               <div
                 className="p-4 p-md-4 text-white"
                 style={{
-                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0d9488 100%)',
+                  background:
+                    'radial-gradient(circle at 15% 50%, rgba(0, 210, 148, 0.18) 0%, transparent 55%), radial-gradient(circle at 85% 50%, rgba(0, 102, 255, 0.16) 0%, transparent 55%), #07152B',
+                  borderTop: '3px solid #00D294',
                 }}
               >
                 <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
@@ -797,9 +823,11 @@ const ReferenceVerificationPage = () => {
                     <span
                       className="rounded-circle d-inline-flex align-items-center justify-content-center mr-2 text-white font-weight-bold shadow-2xs"
                       style={{
-                        width: '30px',
-                        height: '30px',
-                        background: '#0f172a',
+                        width: '32px',
+                        height: '32px',
+                        background: '#07152B',
+                        color: '#00D294',
+                        border: '1.5px solid rgba(0, 210, 148, 0.4)',
                         fontSize: '13px',
                       }}
                     >
@@ -824,52 +852,85 @@ const ReferenceVerificationPage = () => {
                       borderRadius: '16px',
                     }}
                   >
-                    {/* Organization Selector (if candidate has multiple verified companies) */}
-                    {sessionData?.allCompanies && sessionData.allCompanies.length > 1 && (
-                      <div className="mb-3 p-3 rounded-xl bg-white border">
-                        <label className="text-dark small font-weight-bold mb-1 d-flex align-items-center">
-                          <span className="mr-1">🏢</span> Organization being verified:
-                        </label>
-                        <select
-                          className="form-control font-weight-bold"
-                          value={selectedCompany || companyName}
-                          onChange={(e) => handleCompanyChange(e.target.value)}
-                          disabled={submittingFeedback}
+                    {/* Organization Display - Only Company Name (No Radio Button, No Dropdown) */}
+                    <div
+                      className="mb-4 p-3 rounded-xl bg-white border d-flex align-items-center justify-content-between flex-wrap gap-2"
+                      style={{
+                        borderColor: '#e2e8f0',
+                        borderRadius: '14px',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                      }}
+                    >
+                      <div className="d-flex align-items-center">
+                        <div
+                          className="rounded-circle d-flex align-items-center justify-content-center mr-3 shadow-2xs flex-shrink-0"
                           style={{
-                            borderRadius: '10px',
+                            width: '42px',
                             height: '42px',
-                            border: '1.5px solid #cbd5e1',
-                            fontSize: '13.5px',
-                            color: '#0f172a',
+                            background: 'rgba(0, 210, 148, 0.12)',
+                            color: '#00a876',
+                            fontSize: '20px',
+                            border: '1px solid rgba(0, 210, 148, 0.25)',
                           }}
                         >
-                          {sessionData.allCompanies.map((c, idx) => (
-                            <option key={idx} value={c.companyName}>
-                              {c.companyName} {c.isCurrent ? '(Current / Active)' : `(${c.joiningDate || ''} — ${c.exitDate || 'Present'})`}
-                            </option>
-                          ))}
-                        </select>
-                        <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
-                          💡 Pre-selected previous completed company for reference verification. You can switch if verifying for another organization.
-                        </small>
+                          🏢
+                        </div>
+                        <div>
+                          <span
+                            className="text-muted small d-block font-weight-bold text-uppercase"
+                            style={{ fontSize: '10.5px', letterSpacing: '0.5px' }}
+                          >
+                            Organization being verified
+                          </span>
+                          <div className="font-weight-bold text-dark" style={{ fontSize: '15.5px' }}>
+                            {selectedCompany || companyName}
+                          </div>
+                          {(startDate || endDate || isCurrentlyWorking) && (
+                            <span className="text-muted" style={{ fontSize: '11.5px' }}>
+                              {isCurrentlyWorking ? 'Current Employee (Active)' : `${startDate || 'Joined'} — ${endDate || 'Present'}`}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    )}
-
-                    <p className="text-dark mb-3" style={{ fontSize: '15px', lineHeight: '1.6' }}>
-                      Did <strong className="text-dark font-weight-bold" style={{ color: '#0f766e' }}>{candidateName}</strong> work with you at{' '}
                       <span
-                        className="badge badge-light border px-2 py-1 font-weight-bold text-dark shadow-2xs"
+                        className="badge px-3 py-1 font-weight-bold"
                         style={{
-                          fontSize: '14px',
-                          background: '#ffffff',
-                          borderRadius: '8px',
-                          border: '1.5px solid #cbd5e1',
+                          background: '#ecfdf5',
+                          color: '#065f46',
+                          border: '1px solid #a7f3d0',
+                          borderRadius: '20px',
+                          fontSize: '11px',
                         }}
                       >
-                        🏢 {selectedCompany || companyName}
+                        ✓ Official Verified Record
                       </span>
-                      ?
-                    </p>
+                    </div>
+
+                    <div
+                      className="p-3 rounded-xl mb-3"
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      <p className="text-dark mb-0 font-weight-medium" style={{ fontSize: '14.5px', lineHeight: '1.5' }}>
+                        Did <strong style={{ color: '#0f766e' }}>{candidateName}</strong> work with you at{' '}
+                        <span
+                          className="badge px-2 py-1 font-weight-bold text-dark"
+                          style={{
+                            fontSize: '13.5px',
+                            background: '#f1f5f9',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                          }}
+                        >
+                          🏢 {selectedCompany || companyName}
+                        </span>
+                        ?
+                      </p>
+                    </div>
 
                     {/* Interactive Selection Cards: Yes / No */}
                     <div className="row g-3 mb-3">
@@ -1034,22 +1095,42 @@ const ReferenceVerificationPage = () => {
                                 </span>
                               )}
                             </div>
-                            <input
-                              type="month"
-                              className="form-control font-weight-bold"
-                              value={isCurrentlyWorking ? '' : endDate}
-                              onChange={(e) => setEndDate(e.target.value)}
-                              disabled={isCurrentlyWorking || submittingFeedback}
-                              placeholder={isCurrentlyWorking ? 'Present / Active' : ''}
-                              style={{
-                                borderRadius: '10px',
-                                height: '44px',
-                                border: '1.5px solid #cbd5e1',
-                                fontSize: '14px',
-                                background: isCurrentlyWorking ? '#f1f5f9' : '#ffffff',
-                                color: '#0f172a',
-                              }}
-                            />
+                            {isCurrentlyWorking ? (
+                              <div
+                                className="form-control font-weight-bold d-flex align-items-center justify-content-between text-success"
+                                style={{
+                                  borderRadius: '10px',
+                                  height: '44px',
+                                  border: '1.5px solid #a7f3d0',
+                                  fontSize: '14px',
+                                  background: '#f0fdf4',
+                                }}
+                              >
+                                <span>Present / Currently Working</span>
+                                <span className="badge badge-success px-2 py-1" style={{ fontSize: '11px', background: '#00D294' }}>
+                                  Active
+                                </span>
+                              </div>
+                            ) : (
+                              <input
+                                type="month"
+                                className="form-control font-weight-bold"
+                                value={endDate}
+                                onChange={(e) => {
+                                  setEndDate(e.target.value);
+                                  setSavedEndDate(e.target.value);
+                                }}
+                                disabled={submittingFeedback}
+                                style={{
+                                  borderRadius: '10px',
+                                  height: '44px',
+                                  border: '1.5px solid #cbd5e1',
+                                  fontSize: '14px',
+                                  background: '#ffffff',
+                                  color: '#0f172a',
+                                }}
+                              />
+                            )}
 
                             {/* Checkbox: Currently working here */}
                             <div
@@ -1060,11 +1141,7 @@ const ReferenceVerificationPage = () => {
                                 borderRadius: '8px',
                                 cursor: 'pointer',
                               }}
-                              onClick={() => {
-                                const nextState = !isCurrentlyWorking;
-                                setIsCurrentlyWorking(nextState);
-                                if (nextState) setEndDate('');
-                              }}
+                              onClick={() => handleToggleCurrentlyWorking(!isCurrentlyWorking)}
                             >
                               <input
                                 className="form-check-input mr-2 mt-0 ml-1"
@@ -1072,8 +1149,8 @@ const ReferenceVerificationPage = () => {
                                 id="currentlyWorkingCheck"
                                 checked={isCurrentlyWorking}
                                 onChange={(e) => {
-                                  setIsCurrentlyWorking(e.target.checked);
-                                  if (e.target.checked) setEndDate('');
+                                  e.stopPropagation();
+                                  handleToggleCurrentlyWorking(e.target.checked);
                                 }}
                                 disabled={submittingFeedback}
                                 style={{ cursor: 'pointer', transform: 'scale(1.15)' }}
@@ -1081,10 +1158,12 @@ const ReferenceVerificationPage = () => {
                               <label
                                 className="form-check-label small font-weight-bold mb-0 ml-2"
                                 htmlFor="currentlyWorkingCheck"
+                                onClick={(e) => e.stopPropagation()}
                                 style={{
                                   cursor: 'pointer',
                                   color: isCurrentlyWorking ? '#065f46' : '#334155',
                                   fontSize: '12.5px',
+                                  padding:"20px"
                                 }}
                               >
                                 Currently working here (Present)
@@ -1220,33 +1299,37 @@ const ReferenceVerificationPage = () => {
                         Would you recommend this candidate for future roles?
                       </label>
                       <div className="row g-2">
-                        <div className="col-6">
+                        <div className="col-12 col-sm-6 mb-2 mb-sm-0">
                           <button
                             type="button"
                             onClick={() => setRecommendation('Yes')}
-                            className="btn btn-block py-2 font-weight-bold transition-all"
+                            className="btn btn-block py-2 px-3 font-weight-bold transition-all d-flex align-items-center justify-content-center"
                             style={{
                               borderRadius: '10px',
+                              minHeight: '44px',
                               background: recommendation === 'Yes' ? '#ecfdf5' : '#ffffff',
                               border: recommendation === 'Yes' ? '2px solid #00D294' : '1.5px solid #cbd5e1',
                               color: recommendation === 'Yes' ? '#065f46' : '#475569',
                               fontSize: '13.5px',
+                              boxShadow: recommendation === 'Yes' ? '0 4px 12px rgba(0, 210, 148, 0.2)' : 'none',
                             }}
                           >
                             ✓ Yes, Recommended
                           </button>
                         </div>
-                        <div className="col-6">
+                        <div className="col-12 col-sm-6">
                           <button
                             type="button"
                             onClick={() => setRecommendation('No')}
-                            className="btn btn-block py-2 font-weight-bold transition-all"
+                            className="btn btn-block py-2 px-3 font-weight-bold transition-all d-flex align-items-center justify-content-center"
                             style={{
                               borderRadius: '10px',
+                              minHeight: '44px',
                               background: recommendation === 'No' ? '#fff1f2' : '#ffffff',
                               border: recommendation === 'No' ? '2px solid #f43f5e' : '1.5px solid #cbd5e1',
                               color: recommendation === 'No' ? '#9f1239' : '#475569',
                               fontSize: '13.5px',
+                              boxShadow: recommendation === 'No' ? '0 4px 12px rgba(244, 63, 94, 0.2)' : 'none',
                             }}
                           >
                             ✗ No

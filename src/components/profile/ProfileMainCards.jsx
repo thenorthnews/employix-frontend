@@ -7,7 +7,7 @@ const ProfileMainCards = ({ user: propUser }) => {
   const user = propUser || reduxUser;
 
   const { isAadhaarDone, isVoterDone: isAddressDone, isDlDone } = getKycVerificationFlags(user);
-  const voterAddress = formatCandidateAddress(user?.address || user?.voterData?.address) || 'Address not provided';
+  const voterAddress = formatCandidateAddress(user?.currentAddress || user?.address || user?.voterData?.address || user?.aadhaarData?.address) || 'Address not provided';
 
   // Dynamic Employment Records (EPFO + Manual)
   const manualJobs = Array.isArray(user?.manualEmployment) ? user.manualEmployment : [];
@@ -218,13 +218,6 @@ const ProfileMainCards = ({ user: propUser }) => {
             </svg>
             Educational Qualifications
           </h3>
-          <div className="d-flex align-items-center gap-2">
-            <span className={`badge ${qualifications.some(q => q.isVerified && q.verificationStatus === 'verified') ? 'badge-success' : qualifications.length > 0 ? 'badge-danger text-white' : 'badge-light text-muted border'} px-2 py-1 font-weight-bold small`}>
-              {qualifications.length > 0
-                ? `${qualifications.filter(q => q.isVerified && q.verificationStatus === 'verified').length} / ${qualifications.length} Verified`
-                : 'Not Added'}
-            </span>
-          </div>
         </div>
 
         {qualifications.length > 0 ? (
@@ -297,13 +290,6 @@ const ProfileMainCards = ({ user: propUser }) => {
             </svg>
             Professional Certifications &amp; Credentials
           </h3>
-          <div className="d-flex align-items-center gap-2">
-            <span className={`badge ${certifications.some(c => c.isVerified && c.verificationStatus === 'verified') ? 'badge-success' : certifications.length > 0 ? 'badge-danger text-white' : 'badge-light text-muted border'} px-2 py-1 font-weight-bold small`}>
-              {certifications.length > 0
-                ? `${certifications.filter(c => c.isVerified && c.verificationStatus === 'verified').length} / ${certifications.length} Verified`
-                : 'Not Added'}
-            </span>
-          </div>
         </div>
 
         {certifications.length > 0 ? (

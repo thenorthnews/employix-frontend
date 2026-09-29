@@ -170,15 +170,16 @@ const RegisterPage = () => {
 
               {/* Right Registration Form Column */}
               <div className="col-lg-6 col-md-10">
-                <div className="auth-card p-4 p-md-5">
+                <div className="auth-card">
                   {/* Form Header */}
-                  <div className="auth-form-header mb-4 text-center">
+                  <div className="auth-card-header text-center">
                     <h3 className="auth-card-heading mb-1">Create EMPLOYIX ID</h3>
-                    <p className="auth-card-sub">Start building your verified professional identity</p>
+                    <p className="auth-card-sub mb-0">Start building your verified professional identity</p>
                   </div>
 
-                  {/* Register Form */}
-                  <form onSubmit={handleSubmit} noValidate>
+                  <div className="auth-card-body p-4 p-md-5">
+                    {/* Register Form */}
+                    <form onSubmit={handleSubmit} noValidate>
                     {/* Full Name */}
                     <div className="form-group mb-3">
                       <label htmlFor="regFullName" className="auth-label">Full Name (as per Govt ID)</label>
@@ -312,6 +313,7 @@ const RegisterPage = () => {
                       <Link to="/login" className="auth-teal-link ml-1 font-weight-bold">Sign In</Link>
                     </div>
                   </form>
+                  </div>
                 </div>
               </div>
             </div>

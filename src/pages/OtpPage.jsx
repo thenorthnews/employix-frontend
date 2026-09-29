@@ -182,30 +182,33 @@ const OtpPage = () => {
             <div className="row align-items-center justify-content-center">
               {/* Centered OTP Verification Card */}
               <div className="col-lg-5 col-md-8">
-                <div className="auth-card p-4 p-md-5 text-center">
-                  {/* Security Badge Icon */}
-                  <div className="otp-badge-icon mx-auto mb-3">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00D294" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                      <polyline points="9 12 11 14 15 10"></polyline>
-                    </svg>
-                  </div>
-
+                <div className="auth-card text-center">
                   {/* Card Header */}
-                  <h3 className="auth-card-heading mb-2">Enter Verification Code</h3>
-                  <p className="auth-card-sub mb-3">
-                    We've sent a 6-digit security code to your email
-                  </p>
+                  <div className="auth-card-header text-center">
+                    {/* Security Badge Icon */}
+                    <div className="otp-badge-icon mx-auto mb-3">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00D294" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <polyline points="9 12 11 14 15 10"></polyline>
+                      </svg>
+                    </div>
 
-                  {/* Target Identifier Info Pill */}
-                  <div className="otp-target-pill mb-4 p-2 rounded d-inline-flex align-items-center justify-content-center">
-                    <span className="small text-muted mr-1">Sent to:</span>
-                    <span className="font-weight-bold text-dark mx-1">{targetEmail}</span>
-                    <Link to="/login" className="auth-teal-link ml-2 small font-weight-bold">Change</Link>
+                    <h3 className="auth-card-heading mb-1">Enter Verification Code</h3>
+                    <p className="auth-card-sub mb-0">
+                      We've sent a 6-digit security code to your email
+                    </p>
                   </div>
 
-                  {/* OTP Form */}
-                  <form onSubmit={handleSubmit}>
+                  <div className="auth-card-body p-4 p-md-5">
+                    {/* Target Identifier Info Pill */}
+                    <div className="otp-target-pill mb-4 p-2 rounded d-inline-flex align-items-center justify-content-center">
+                      <span className="small text-muted mr-1">Sent to:</span>
+                      <span className="font-weight-bold text-dark mx-1">{targetEmail}</span>
+                      <Link to="/login" className="auth-teal-link ml-2 small font-weight-bold">Change</Link>
+                    </div>
+
+                    {/* OTP Form */}
+                    <form onSubmit={handleSubmit}>
                     {/* Expiration Notice Alert */}
                     {timer <= 0 && (
                       <div
@@ -281,6 +284,7 @@ const OtpPage = () => {
                       )}
                     </div>
                   </form>
+                  </div>
                 </div>
               </div>
             </div>

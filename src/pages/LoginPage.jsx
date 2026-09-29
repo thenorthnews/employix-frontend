@@ -112,15 +112,16 @@ const LoginPage = () => {
 
               {/* Right Form Column */}
               <div className="col-lg-5 col-md-8">
-                <div className="auth-card p-4 p-md-5">
+                <div className="auth-card">
                   {/* Form Header */}
-                  <div className="auth-form-header mb-4 text-center">
+                  <div className="auth-card-header text-center">
                     <h3 className="auth-card-heading mb-1">Sign In to EMPLOYIX</h3>
-                    <p className="auth-card-sub">Enter your verified credentials to continue</p>
+                    <p className="auth-card-sub mb-0">Enter your verified credentials to continue</p>
                   </div>
 
-                  {/* Login Form */}
-                  <form onSubmit={handleSubmit} noValidate>
+                  <div className="auth-card-body p-4 p-md-5">
+                    {/* Login Form */}
+                    <form onSubmit={handleSubmit} noValidate>
                     {/* Email Input */}
                     <div className="form-group mb-4">
                       <label htmlFor="loginEmail" className="auth-label">Email Address</label>
@@ -187,6 +188,7 @@ const LoginPage = () => {
                       <Link to="/register" className="auth-teal-link ml-1 font-weight-bold">Register Now</Link>
                     </div>
                   </form>
+                  </div>
                 </div>
               </div>
             </div>

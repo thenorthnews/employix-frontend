@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -26,6 +26,33 @@ import {
   getScoreConfigApi,
 } from '../api/kycApi';
 import { updateProfileApi, getProfileApi } from '../api/authApi';
+
+const MONTH_OPTIONS = [
+  { value: '01', label: '01 - January' },
+  { value: '02', label: '02 - February' },
+  { value: '03', label: '03 - March' },
+  { value: '04', label: '04 - April' },
+  { value: '05', label: '05 - May' },
+  { value: '06', label: '06 - June' },
+  { value: '07', label: '07 - July' },
+  { value: '08', label: '08 - August' },
+  { value: '09', label: '09 - September' },
+  { value: '10', label: '10 - October' },
+  { value: '11', label: '11 - November' },
+  { value: '12', label: '12 - December' },
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1970 + 1 }, (_, i) => String(CURRENT_YEAR - i));
+
+const formatMonthYear = (dateStr) => {
+  if (!dateStr) return '';
+  const [y, m] = dateStr.split('-');
+  if (!y) return dateStr;
+  const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthName = monthNames[parseInt(m, 10)] || m;
+  return monthName ? `${monthName} ${y}` : y;
+};
 
 const KycVerificationPage = () => {
   const navigate = useNavigate();
@@ -82,11 +109,37 @@ const KycVerificationPage = () => {
   const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState(null);
   const [aadhaarBack, setAadhaarBack] = useState(null);
   const [aadhaarBackPreview, setAadhaarBackPreview] = useState(null);
+  const [dragActiveFront, setDragActiveFront] = useState(false);
+  const [dragActiveBack, setDragActiveBack] = useState(false);
+  const aadhaarFrontInputRef = useRef(null);
+  const aadhaarBackInputRef = useRef(null);
   // Default disabled (false) as required
   const [aadhaarConsent, setAadhaarConsent] = useState(false);
   const [aadhaarLoading, setAadhaarLoading] = useState(false);
   const [aadhaarVerified, setAadhaarVerified] = useState(false);
   const [aadhaarResult, setAadhaarResult] = useState(null);
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  };
+
+  const handleRemoveAadhaarFront = (e) => {
+    if (e) e.stopPropagation();
+    setAadhaarFront(null);
+    setAadhaarFrontPreview(null);
+    if (aadhaarFrontInputRef.current) aadhaarFrontInputRef.current.value = '';
+  };
+
+  const handleRemoveAadhaarBack = (e) => {
+    if (e) e.stopPropagation();
+    setAadhaarBack(null);
+    setAadhaarBackPreview(null);
+    if (aadhaarBackInputRef.current) aadhaarBackInputRef.current.value = '';
+  };
 
   const [empMethod, setEmpMethod] = useState('uan'); // 'uan' | 'manual'
   const [uanNumber, setUanNumber] = useState('');     // 12-digit UAN
@@ -802,11 +855,11 @@ const KycVerificationPage = () => {
         updateUserKycStatus({
           voterStatus: 1,
           address: data.address?.fullAddress || addressText,
-          employixScore: data.newScore || score + 20,
+          employixScore: data.newScore || score + (scoreConfig.voterScore ?? 20),
           kycStatus: ocrKycSt,
         })
       );
-      toast.success('Voter ID and address verified successfully (+20 points).');
+      toast.success(`Voter ID and address verified successfully (+${scoreConfig.voterScore ?? 20} points).`);
     } catch (err) {
       let msg = err.response?.data?.message || err.message || 'Voter ID OCR processing failed.';
       const lower = String(msg).toLowerCase();
@@ -886,11 +939,11 @@ const KycVerificationPage = () => {
       dispatch(
         updateUserKycStatus({
           dlStatus: 1,
-          employixScore: data.newScore || Math.min(100, score + 5),
+          employixScore: data.newScore || score,
           kycStatus: dlNextKyc,
         })
       );
-      toast.success('Driving License verified successfully (+5 points).');
+      toast.success('Driving License verified successfully.');
     } catch (err) {
       console.error('DL OCR Error:', err);
       let msg = err.response?.data?.message || err.message || 'Driving License OCR verification failed.';
@@ -1006,7 +1059,7 @@ const KycVerificationPage = () => {
       });
       setKycStatus(nextStatus);
       dispatch(updateUserKycStatus({ employmentStatus: 1, kycStatus: nextStatus }));
-      toast.success('Employment records verified successfully (+35 points).');
+      toast.success(`Employment records verified successfully (+${scoreConfig.employmentScore ?? 30} points).`);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'EPFO fetch failed. Try adding manually.');
     } finally {
@@ -1014,11 +1067,60 @@ const KycVerificationPage = () => {
     }
   };
 
+  // Option B: Add Manual Job - Date Selection Helpers
+  const jobStartParts = (jobForm.startDate || '').split('-');
+  const jobStartYear = jobStartParts[0] || '';
+  const jobStartMonth = jobStartParts[1] || '';
+
+  const jobEndParts = (jobForm.endDate || '').split('-');
+  const jobEndYear = jobEndParts[0] || '';
+  const jobEndMonth = jobEndParts[1] || '';
+
+  const handleJobStartMonth = (val) => {
+    if (!val) {
+      setJobForm((p) => ({ ...p, startDate: '' }));
+      return;
+    }
+    const yr = jobStartYear || String(CURRENT_YEAR);
+    setJobForm((p) => ({ ...p, startDate: `${yr}-${val}` }));
+  };
+
+  const handleJobStartYear = (val) => {
+    if (!val) {
+      setJobForm((p) => ({ ...p, startDate: '' }));
+      return;
+    }
+    const mo = jobStartMonth || '01';
+    setJobForm((p) => ({ ...p, startDate: `${val}-${mo}` }));
+  };
+
+  const handleJobEndMonth = (val) => {
+    if (!val) {
+      setJobForm((p) => ({ ...p, endDate: '' }));
+      return;
+    }
+    const yr = jobEndYear || String(CURRENT_YEAR);
+    setJobForm((p) => ({ ...p, endDate: `${yr}-${val}` }));
+  };
+
+  const handleJobEndYear = (val) => {
+    if (!val) {
+      setJobForm((p) => ({ ...p, endDate: '' }));
+      return;
+    }
+    const mo = jobEndMonth || '01';
+    setJobForm((p) => ({ ...p, endDate: `${val}-${mo}` }));
+  };
+
   // Option B: Add Manual Job
   const handleAddManualJob = async (e) => {
     e.preventDefault();
-    if (!jobForm.companyName || !jobForm.designation || !jobForm.startDate) {
+    if (!jobForm.companyName.trim() || !jobForm.designation.trim() || !jobForm.startDate) {
       toast.error('Company name, designation, and start date are required.');
+      return;
+    }
+    if (!jobForm.isCurrent && jobForm.startDate && jobForm.endDate && jobForm.endDate < jobForm.startDate) {
+      toast.error('End date cannot be earlier than start date.');
       return;
     }
     setJobFormLoading(true);
@@ -1313,11 +1415,14 @@ const KycVerificationPage = () => {
             {/* STEP 1: Personal Profile, Designation & Photo Setup */}
             <div className="row justify-content-center mb-5">
               <div className="col-lg-10">
-                <div className="auth-card p-4 p-md-5">
-                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div className="auth-card">
+                  <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
                       <span className="setup-step-badge mr-2">Step 1</span>
-                      <h3 className="auth-card-heading mb-0">Candidate Profile &amp; Professional Designation</h3>
+                      <div>
+                        <h3 className="auth-card-heading mb-0">Candidate Profile &amp; Professional Designation</h3>
+                        <p className="auth-card-sub small mb-0">Primary profile details, contact information &amp; avatar</p>
+                      </div>
                     </div>
                     {profileSaved && (
                       <span className="badge badge-success px-3 py-2 font-weight-bold">
@@ -1326,7 +1431,8 @@ const KycVerificationPage = () => {
                     )}
                   </div>
 
-                  <form onSubmit={handleSaveProfile}>
+                  <div className="auth-card-body p-4 p-md-5">
+                    <form onSubmit={handleSaveProfile}>
                     <div className="row align-items-center mb-4">
                       {/* Profile Photo Uploader */}
                       <div className="col-md-3 text-center mb-4 mb-md-0">
@@ -1477,6 +1583,7 @@ const KycVerificationPage = () => {
                       </div>
                     </div>
                   </form>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1484,13 +1591,13 @@ const KycVerificationPage = () => {
             {/* STEP 2: Aadhaar Identity Verification (Number OR OCR) */}
             <div className="row justify-content-center mb-5">
               <div className="col-lg-10">
-                <div className="auth-card p-4 p-md-5">
-                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div className="auth-card">
+                  <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
                       <span className="setup-step-badge mr-2">Step 2</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Aadhaar Identity Verification</h3>
-                        <p className="small text-muted mb-0">Official UIDAI Identity Verification (+{scoreConfig.aadhaarScore ?? 20} Points Boost)</p>
+                        <p className="auth-card-sub small mb-0">Official UIDAI Identity Verification (+{scoreConfig.aadhaarScore ?? 20} Points Boost)</p>
                       </div>
                     </div>
 
@@ -1505,7 +1612,8 @@ const KycVerificationPage = () => {
                     )}
                   </div>
 
-                  {aadhaarVerified ? (
+                  <div className="auth-card-body p-4 p-md-5">
+                    {aadhaarVerified ? (
                     <div className="p-4 rounded-lg bg-light border border-success">
                       <div className="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
                         <div className="d-flex align-items-center mb-2 mb-sm-0">
@@ -1575,97 +1683,368 @@ const KycVerificationPage = () => {
                     </div>
                   ) : (
                     <form onSubmit={handleVerifyAadhaarOcr}>
-                          <div className="row g-3 mb-4">
-                            <div className="col-md-6 mb-3">
-                              <label className="auth-label">Aadhaar Card Front Document *</label>
-                              <div className="kyc-upload-dropzone p-4 text-center border rounded">
-                                {aadhaarFrontPreview ? (
-                                  aadhaarFrontPreview === 'pdf' ? (
-                                    <div className="p-3 bg-light rounded text-teal font-weight-bold mb-2 small">
-                                      📄 {aadhaarFront?.name || 'Aadhaar Front (PDF)'}
-                                    </div>
-                                  ) : (
-                                    <img src={aadhaarFrontPreview} alt="Aadhaar Front" className="kyc-preview-thumb mb-2" />
-                                  )
-                                ) : (
-                                  <div className="kyc-upload-icon">&#128247;</div>
-                                )}
-                                <input
-                                  type="file"
-                                  className="form-control-file mt-2"
-                                  accept="image/jpeg,image/png,image/jpg,application/pdf"
-                                  onChange={(e) => {
-                                    const f = e.target.files[0];
-                                    if (f) {
-                                      handleAadhaarFrontChange(f, e.target);
-                                    }
-                                  }}
-                                />
-                                <small className="text-muted d-block mt-1">
-                                  Upload Front side photo or PDF.
-                                </small>
-                              </div>
-                            </div>
-
-                            <div className="col-md-6 mb-3">
-                              <label className="auth-label">Aadhaar Card Back Document *</label>
-                              <div className="kyc-upload-dropzone p-4 text-center border rounded">
-                                {aadhaarBackPreview ? (
-                                  aadhaarBackPreview === 'pdf' ? (
-                                    <div className="p-3 bg-light rounded text-teal font-weight-bold mb-2 small">
-                                      📄 {aadhaarBack?.name || 'Aadhaar Back (PDF)'}
-                                    </div>
-                                  ) : (
-                                    <img src={aadhaarBackPreview} alt="Aadhaar Back" className="kyc-preview-thumb mb-2" />
-                                  )
-                                ) : (
-                                  <div className="kyc-upload-icon">&#128247;</div>
-                                )}
-                                <input
-                                  type="file"
-                                  className="form-control-file mt-2"
-                                  accept="image/jpeg,image/png,image/jpg,application/pdf"
-                                  onChange={(e) => {
-                                    const f = e.target.files[0];
-                                    if (f) {
-                                      handleAadhaarBackChange(f, e.target);
-                                    }
-                                  }}
-                                />
-                                <small className="text-muted d-block mt-1">
-                                  Upload Back side photo or PDF.
-                                </small>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="kyc-consent-box p-3 rounded mb-4">
-                            <div className="form-check d-flex align-items-start">
-                              <input
-                                className="form-check-input mt-1 mr-3"
-                                type="checkbox"
-                                id="aadhaarOcrConsent"
-                                checked={aadhaarConsent}
-                                onChange={(e) => setAadhaarConsent(e.target.checked)}
-                              />
-                              <label className="form-check-label" htmlFor="aadhaarOcrConsent">
-                                <div className="kyc-consent-title">Mandatory UIDAI OCR Consent:</div>
-                                <div className="kyc-consent-desc">
-                                  I grant explicit consent to extract and verify details from my uploaded Aadhaar card document under UIDAI regulations.
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-
-                          <button
-                            type="submit"
-                            className="btn btn-primary-teal btn-block py-3 font-weight-bold"
-                            disabled={aadhaarLoading || !aadhaarConsent || !aadhaarFront || !aadhaarBack}
+                      {/* Document Guidelines & Security Notice */}
+                      <div className="kyc-upload-guide-banner mb-4">
+                        <div className="d-flex align-items-center gap-3">
+                          <div
+                            style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '10px',
+                              background: 'rgba(0, 210, 148, 0.16)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              color: '#00B880',
+                            }}
                           >
-                            {aadhaarLoading ? <ButtonSpinner text="Scanning Aadhaar Card..." /> : `Scan & Verify Aadhaar (OCR) (+${scoreConfig.aadhaarScore ?? 20} Points)`}
-                          </button>
-                        </form>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="16" rx="2" />
+                              <circle cx="9" cy="10" r="2" />
+                              <line x1="15" y1="8" x2="17" y2="8" />
+                              <line x1="15" y1="12" x2="17" y2="12" />
+                              <line x1="7" y1="16" x2="17" y2="16" />
+                            </svg>
+                          </div>
+                          <div className="flex-grow-1">
+                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                              <h6 className="font-weight-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
+                                Official Aadhaar Smart OCR Verification
+                              </h6>
+                              <span className="badge badge-light text-muted border small font-weight-normal px-2 py-1">
+                                🔒 UIDAI Compliant &amp; Masked
+                              </span>
+                            </div>
+                            <p className="text-muted small mb-0 mt-1" style={{ lineHeight: '1.45' }}>
+                              Upload clear, high-resolution original photos or scans of your Aadhaar card (Front &amp; Back). Both sides are required for automated name, DOB, gender &amp; address authentication.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dual Upload Cards: Front and Back */}
+                      <div className="row g-4 mb-4">
+                        {/* FRONT SIDE CARD */}
+                        <div className="col-md-6 mb-3 mb-md-0">
+                          <div className="kyc-doc-card">
+                            <div className="kyc-doc-card-header">
+                              <div>
+                                <span className="kyc-tag-pill kyc-badge-front mr-2">FRONT SIDE</span>
+                                <span className="font-weight-bold text-dark small">Aadhaar Front Document *</span>
+                              </div>
+                              <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Photo &amp; Aadhaar No.</span>
+                            </div>
+
+                            <div className="kyc-doc-card-body">
+                              <input
+                                ref={aadhaarFrontInputRef}
+                                type="file"
+                                className="d-none"
+                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                onChange={(e) => {
+                                  const f = e.target.files[0];
+                                  if (f) {
+                                    handleAadhaarFrontChange(f, e.target);
+                                  }
+                                }}
+                              />
+
+                              {!aadhaarFront ? (
+                                <div
+                                  className={`kyc-modern-dropzone ${dragActiveFront ? 'drag-active' : ''}`}
+                                  onClick={() => aadhaarFrontInputRef.current?.click()}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setDragActiveFront(true);
+                                  }}
+                                  onDragLeave={() => setDragActiveFront(false)}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    setDragActiveFront(false);
+                                    const f = e.dataTransfer.files[0];
+                                    if (f) handleAadhaarFrontChange(f, aadhaarFrontInputRef.current);
+                                  }}
+                                >
+                                  <div className="kyc-upload-icon-wrapper">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                      <polyline points="17 8 12 3 7 8" />
+                                      <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                  </div>
+                                  <div className="font-weight-bold text-dark mb-1" style={{ fontSize: '0.92rem' }}>
+                                    Upload Aadhaar Front
+                                  </div>
+                                  <div className="text-muted small mb-3">
+                                    Drag &amp; drop or <span className="text-teal font-weight-bold">Browse file</span>
+                                  </div>
+                                  <div className="d-flex align-items-center gap-1">
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">JPG</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">PNG</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">PDF</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">&lt; 5MB</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="kyc-preview-container">
+                                    {aadhaarFrontPreview === 'pdf' ? (
+                                      <div className="kyc-preview-pdf">
+                                        <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📄</div>
+                                        <strong className="text-white small text-center" style={{ wordBreak: 'break-all', maxWidth: '90%' }}>
+                                          {aadhaarFront.name}
+                                        </strong>
+                                        <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
+                                      </div>
+                                    ) : (
+                                      <img src={aadhaarFrontPreview} alt="Aadhaar Front Preview" className="kyc-preview-image" />
+                                    )}
+                                  </div>
+
+                                  <div className="kyc-file-meta-bar">
+                                    <div className="d-flex align-items-center overflow-hidden" style={{ minWidth: 0, flex: 1 }}>
+                                      <span className="text-teal mr-2 font-weight-bold">✓</span>
+                                      <div className="text-truncate" style={{ minWidth: 0 }}>
+                                        <span className="text-dark font-weight-bold small d-block text-truncate" title={aadhaarFront.name}>
+                                          {aadhaarFront.name}
+                                        </span>
+                                        <span className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                                          {formatFileSize(aadhaarFront.size)} • Ready for OCR
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-1">
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light border py-1 px-2 text-dark small"
+                                        onClick={() => aadhaarFrontInputRef.current?.click()}
+                                        title="Change Front Document"
+                                      >
+                                        Change
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger py-1 px-2 small"
+                                        onClick={handleRemoveAadhaarFront}
+                                        title="Remove Front Document"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="text-muted small mt-2" style={{ fontSize: '0.78rem' }}>
+                                📌 Front side must clearly show your <strong>Photo, Name, DOB, and Aadhaar number</strong>.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* BACK SIDE CARD */}
+                        <div className="col-md-6">
+                          <div className="kyc-doc-card">
+                            <div className="kyc-doc-card-header">
+                              <div>
+                                <span className="kyc-tag-pill kyc-badge-back mr-2">BACK SIDE</span>
+                                <span className="font-weight-bold text-dark small">Aadhaar Back Document *</span>
+                              </div>
+                              <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Address &amp; QR Code</span>
+                            </div>
+
+                            <div className="kyc-doc-card-body">
+                              <input
+                                ref={aadhaarBackInputRef}
+                                type="file"
+                                className="d-none"
+                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                onChange={(e) => {
+                                  const f = e.target.files[0];
+                                  if (f) {
+                                    handleAadhaarBackChange(f, e.target);
+                                  }
+                                }}
+                              />
+
+                              {!aadhaarBack ? (
+                                <div
+                                  className={`kyc-modern-dropzone ${dragActiveBack ? 'drag-active' : ''}`}
+                                  onClick={() => aadhaarBackInputRef.current?.click()}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setDragActiveBack(true);
+                                  }}
+                                  onDragLeave={() => setDragActiveBack(false)}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    setDragActiveBack(false);
+                                    const f = e.dataTransfer.files[0];
+                                    if (f) handleAadhaarBackChange(f, aadhaarBackInputRef.current);
+                                  }}
+                                >
+                                  <div className="kyc-upload-icon-wrapper">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                      <polyline points="17 8 12 3 7 8" />
+                                      <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                  </div>
+                                  <div className="font-weight-bold text-dark mb-1" style={{ fontSize: '0.92rem' }}>
+                                    Upload Aadhaar Back
+                                  </div>
+                                  <div className="text-muted small mb-3">
+                                    Drag &amp; drop or <span className="text-teal font-weight-bold">Browse file</span>
+                                  </div>
+                                  <div className="d-flex align-items-center gap-1">
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">JPG</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">PNG</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">PDF</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">&lt; 5MB</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="kyc-preview-container">
+                                    {aadhaarBackPreview === 'pdf' ? (
+                                      <div className="kyc-preview-pdf">
+                                        <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📄</div>
+                                        <strong className="text-white small text-center" style={{ wordBreak: 'break-all', maxWidth: '90%' }}>
+                                          {aadhaarBack.name}
+                                        </strong>
+                                        <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
+                                      </div>
+                                    ) : (
+                                      <img src={aadhaarBackPreview} alt="Aadhaar Back Preview" className="kyc-preview-image" />
+                                    )}
+                                  </div>
+
+                                  <div className="kyc-file-meta-bar">
+                                    <div className="d-flex align-items-center overflow-hidden" style={{ minWidth: 0, flex: 1 }}>
+                                      <span className="text-teal mr-2 font-weight-bold">✓</span>
+                                      <div className="text-truncate" style={{ minWidth: 0 }}>
+                                        <span className="text-dark font-weight-bold small d-block text-truncate" title={aadhaarBack.name}>
+                                          {aadhaarBack.name}
+                                        </span>
+                                        <span className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                                          {formatFileSize(aadhaarBack.size)} • Ready for OCR
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-1">
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light border py-1 px-2 text-dark small"
+                                        onClick={() => aadhaarBackInputRef.current?.click()}
+                                        title="Change Back Document"
+                                      >
+                                        Change
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger py-1 px-2 small"
+                                        onClick={handleRemoveAadhaarBack}
+                                        title="Remove Back Document"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="text-muted small mt-2" style={{ fontSize: '0.78rem' }}>
+                                📌 Back side must clearly show your <strong>Registered Address, Father/Husband Name &amp; QR Code</strong>.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Verification Readiness Summary Strip */}
+                      <div className="kyc-status-summary-bar mb-3">
+                        <div>
+                          <span className="text-muted mr-1">Front Document:</span>
+                          {aadhaarFront ? (
+                            <span className="text-success font-weight-bold">✓ Selected ({formatFileSize(aadhaarFront.size)})</span>
+                          ) : (
+                            <span className="text-warning font-weight-bold">⏳ Required</span>
+                          )}
+                        </div>
+                        <div style={{ color: '#cbd5e1' }}>•</div>
+                        <div>
+                          <span className="text-muted mr-1">Back Document:</span>
+                          {aadhaarBack ? (
+                            <span className="text-success font-weight-bold">✓ Selected ({formatFileSize(aadhaarBack.size)})</span>
+                          ) : (
+                            <span className="text-warning font-weight-bold">⏳ Required</span>
+                          )}
+                        </div>
+                        <div style={{ color: '#cbd5e1' }}>•</div>
+                        <div>
+                          <span className="text-muted mr-1">UIDAI Consent:</span>
+                          {aadhaarConsent ? (
+                            <span className="text-success font-weight-bold">✓ Authorized</span>
+                          ) : (
+                            <span className="text-danger font-weight-bold">⏳ Required</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Modern Consent Card */}
+                      <div className={`kyc-consent-card-modern mb-4 ${aadhaarConsent ? 'consented' : ''}`}>
+                        <div className="form-check d-flex align-items-start">
+                          <input
+                            className="form-check-input mt-1 mr-3"
+                            type="checkbox"
+                            id="aadhaarOcrConsent"
+                            checked={aadhaarConsent}
+                            onChange={(e) => setAadhaarConsent(e.target.checked)}
+                            style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                          />
+                          <label className="form-check-label" htmlFor="aadhaarOcrConsent" style={{ cursor: 'pointer' }}>
+                            <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-weight-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                                Mandatory UIDAI Compliance &amp; OCR Verification Consent
+                              </span>
+                              <span className="badge badge-light border text-teal font-weight-bold small">Official UIDAI</span>
+                            </div>
+                            <div className="text-muted small" style={{ lineHeight: '1.45' }}>
+                              I grant explicit voluntary authorization to Employix to extract, process, and verify identity credentials (Name, Date of Birth, Gender, Masked Aadhaar Number, and Registered Address) from my uploaded Aadhaar card documents under UIDAI regulations. All identity records are encrypted using AES-256.
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Submit Action Button */}
+                      <button
+                        type="submit"
+                        className="btn btn-primary-teal btn-block py-3 font-weight-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
+                        disabled={aadhaarLoading || !aadhaarConsent || !aadhaarFront || !aadhaarBack}
+                        style={{ fontSize: '1rem', letterSpacing: '0.02em', borderRadius: '10px' }}
+                      >
+                        {aadhaarLoading ? (
+                          <ButtonSpinner text="Scanning &amp; Extracting Aadhaar Details (AI OCR)..." />
+                        ) : (
+                          <>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M4 7V4h3" />
+                              <path d="M20 7V4h-3" />
+                              <path d="M4 17v3h3" />
+                              <path d="M20 17v3h-3" />
+                              <line x1="4" y1="12" x2="20" y2="12" />
+                            </svg>
+                            <span>Scan &amp; Verify Aadhaar (OCR) (+{scoreConfig.aadhaarScore ?? 20} Points)</span>
+                          </>
+                        )}
+                      </button>
+                      <div className="text-center mt-2">
+                        <span className="text-muted small" style={{ fontSize: '0.78rem' }}>
+                          🔒 256-Bit SSL Encrypted • UIDAI Identity Verification • Masked Document Storage
+                        </span>
+                      </div>
+                    </form>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1673,13 +2052,13 @@ const KycVerificationPage = () => {
             {/* STEP 3: Employment Verification */}
             <div className="row justify-content-center mb-5">
               <div className="col-lg-10">
-                <div className="auth-card p-4 p-md-5">
-                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div className="auth-card">
+                  <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
                       <span className="setup-step-badge mr-2">Step 3</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Employment Verification</h3>
-                        <p className="small text-muted mb-0">Add employment history via UAN Number, EPFO Mobile, or manually (+{scoreConfig.employmentScore ?? 30} Points)</p>
+                        <p className="auth-card-sub small mb-0">Add employment history via UAN Number, EPFO Mobile, or manually (+{scoreConfig.employmentScore ?? 30} Points)</p>
                       </div>
                     </div>
                     {employmentVerified ? (
@@ -1705,6 +2084,8 @@ const KycVerificationPage = () => {
                       </div>
                     )}
                   </div>
+
+                  <div className="auth-card-body p-4 p-md-5">
 
                   {/* Verified Employment Job Cards */}
                   {(manualJobs.length > 0 || epfoRecords.length > 0) && (
@@ -1743,10 +2124,15 @@ const KycVerificationPage = () => {
                                 <div>
                                   <h6 className="font-weight-bold text-dark mb-0">{job.designation}</h6>
                                   <div className="text-teal font-weight-bold small">{job.companyName}</div>
-                                  <small className="text-muted">{job.startDate} &mdash; {job.isCurrent ? 'Present' : (job.endDate || '—')}</small>
+                                  <small className="text-muted">
+                                    {formatMonthYear(job.startDate)} &mdash; {job.isCurrent ? <span className="text-success font-weight-bold">Present</span> : (formatMonthYear(job.endDate) || '—')}
+                                  </small>
                                   {job.description && <p className="small text-muted mt-1 mb-1">{job.description}</p>}
                                   <div className="mt-1">
                                     <span className="badge badge-secondary px-2 py-1 mr-1" style={{ fontSize: '10px' }}>&#10003; Manually Added</span>
+                                    {job.isCurrent && (
+                                      <span className="badge badge-success px-2 py-1" style={{ fontSize: '10px' }}>Active</span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1846,59 +2232,321 @@ const KycVerificationPage = () => {
                   {empMethod === 'manual' && (
                     <div>
                       {!showJobForm ? (
-                        <div className="text-center py-3">
-                          <p className="text-muted mb-3">
-                            {manualJobs.length > 0 ? `${manualJobs.length} employment record(s) added.` : 'No employment records added yet.'}
+                        <div className="text-center py-4 px-3 bg-light rounded-3 border">
+                          <p className="text-muted mb-3 font-weight-500">
+                            {manualJobs.length > 0
+                              ? `You have added ${manualJobs.length} employment record(s).`
+                              : 'No employment records added yet. Add your current or previous job details manually.'}
                           </p>
-                          <button type="button" className="btn btn-primary-teal px-4 py-2 font-weight-bold" onClick={() => setShowJobForm(true)}>
+                          <button
+                            type="button"
+                            className="btn btn-primary-teal px-4 py-2 font-weight-bold shadow-sm"
+                            style={{ borderRadius: '10px' }}
+                            onClick={() => setShowJobForm(true)}
+                          >
                             + Add Employment Record
                           </button>
                         </div>
                       ) : (
-                        <form onSubmit={handleAddManualJob} className="mt-2">
-                          <div className="row g-3">
-                            <div className="col-md-6 mb-3">
-                              <label className="auth-label">Company / Organization Name *</label>
-                              <input type="text" className="form-control auth-input-group px-3 py-2" placeholder="e.g. TechCorp Solutions Pvt Ltd" value={jobForm.companyName} onChange={e => setJobForm(p => ({...p, companyName: e.target.value}))} required />
-                            </div>
-                            <div className="col-md-6 mb-3">
-                              <label className="auth-label">Designation / Role *</label>
-                              <input type="text" className="form-control auth-input-group px-3 py-2" placeholder="e.g. Senior Full Stack Engineer" value={jobForm.designation} onChange={e => setJobForm(p => ({...p, designation: e.target.value}))} required />
-                            </div>
-                            <div className="col-md-5 mb-3">
-                              <label className="auth-label">Start Date *</label>
-                              <input type="month" className="form-control auth-input-group px-3 py-2" value={jobForm.startDate} onChange={e => setJobForm(p => ({...p, startDate: e.target.value}))} required />
-                            </div>
-                            <div className="col-md-5 mb-3">
-                              <label className="auth-label">End Date</label>
-                              <input type="month" className="form-control auth-input-group px-3 py-2" value={jobForm.endDate} onChange={e => setJobForm(p => ({...p, endDate: e.target.value}))} disabled={jobForm.isCurrent} />
-                            </div>
-                            <div className="col-md-2 mb-3 d-flex align-items-end">
-                              <div className="form-check">
-                                <input className="form-check-input" type="checkbox" id="isCurrentJob" checked={jobForm.isCurrent} onChange={e => setJobForm(p => ({...p, isCurrent: e.target.checked, endDate: ''}))} />
-                                <label className="form-check-label small" htmlFor="isCurrentJob">Current Job</label>
+                        <div
+                          className="p-3 p-md-4 rounded-3 border bg-white shadow-sm my-2"
+                          style={{ borderColor: '#e2e8f0' }}
+                        >
+                          <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                            <div className="d-flex align-items-center gap-2">
+                              <div
+                                style={{
+                                  width: '36px',
+                                  height: '36px',
+                                  borderRadius: '10px',
+                                  background: '#ecfdf5',
+                                  color: '#059669',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '18px',
+                                }}
+                              >
+                                💼
+                              </div>
+                              <div>
+                                <h6 className="mb-0 font-weight-bold text-dark" style={{ fontSize: '15px' }}>
+                                  Add Employment Record
+                                </h6>
+                                <small className="text-muted" style={{ fontSize: '12px' }}>
+                                  Enter your past or present employment experience
+                                </small>
                               </div>
                             </div>
-                            <div className="col-12 mb-3">
-                              <label className="auth-label">Job Description (optional)</label>
-                              <textarea className="form-control auth-input-group px-3 py-2" rows={2} placeholder="Brief description of your role and responsibilities" value={jobForm.description} onChange={e => setJobForm(p => ({...p, description: e.target.value}))} />
+                            <span className="badge bg-light text-muted border px-2 py-1 small mt-1 mt-sm-0">
+                              * Required fields
+                            </span>
+                          </div>
+
+                          <form onSubmit={handleAddManualJob}>
+                            <div className="row g-3">
+                              {/* Company Name */}
+                              <div className="col-md-6 mb-3">
+                                <label className="auth-label font-weight-bold small mb-1 d-flex align-items-center gap-1">
+                                  <span>🏢 Company / Organization Name</span>
+                                  <span className="text-danger">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  className="form-control auth-input-group px-3"
+                                  style={{ height: '42px', borderRadius: '10px', fontSize: '14px' }}
+                                  placeholder="e.g. TechCorp Solutions Pvt Ltd"
+                                  value={jobForm.companyName}
+                                  onChange={(e) =>
+                                    setJobForm((p) => ({ ...p, companyName: e.target.value }))
+                                  }
+                                  required
+                                />
+                              </div>
+
+                              {/* Designation */}
+                              <div className="col-md-6 mb-3">
+                                <label className="auth-label font-weight-bold small mb-1 d-flex align-items-center gap-1">
+                                  <span>💼 Designation / Role</span>
+                                  <span className="text-danger">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  className="form-control auth-input-group px-3"
+                                  style={{ height: '42px', borderRadius: '10px', fontSize: '14px' }}
+                                  placeholder="e.g. Senior Full Stack Engineer"
+                                  value={jobForm.designation}
+                                  onChange={(e) =>
+                                    setJobForm((p) => ({ ...p, designation: e.target.value }))
+                                  }
+                                  required
+                                />
+                              </div>
+
+                              {/* Start Date */}
+                              <div className="col-md-6 mb-3">
+                                <label className="auth-label font-weight-bold small mb-1 d-flex align-items-center gap-1">
+                                  <span>📅 Start Date</span>
+                                  <span className="text-danger">*</span>
+                                </label>
+                                <div className="row g-2">
+                                  <div className="col-7">
+                                    <select
+                                      className="form-control auth-input-group px-2"
+                                      style={{
+                                        height: '42px',
+                                        borderRadius: '10px',
+                                        fontSize: '13.5px',
+                                        background: '#fff',
+                                        cursor: 'pointer',
+                                      }}
+                                      value={jobStartMonth}
+                                      onChange={(e) => handleJobStartMonth(e.target.value)}
+                                      required
+                                    >
+                                      <option value="">Select Month</option>
+                                      {MONTH_OPTIONS.map((m) => (
+                                        <option key={m.value} value={m.value}>
+                                          {m.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div className="col-5">
+                                    <select
+                                      className="form-control auth-input-group px-2"
+                                      style={{
+                                        height: '42px',
+                                        borderRadius: '10px',
+                                        fontSize: '13.5px',
+                                        background: '#fff',
+                                        cursor: 'pointer',
+                                      }}
+                                      value={jobStartYear}
+                                      onChange={(e) => handleJobStartYear(e.target.value)}
+                                      required
+                                    >
+                                      <option value="">Select Year</option>
+                                      {YEAR_OPTIONS.map((yr) => (
+                                        <option key={yr} value={yr}>
+                                          {yr}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* End Date */}
+                              <div className="col-md-6 mb-3">
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                  <label className="auth-label font-weight-bold small mb-0 d-flex align-items-center gap-1">
+                                    <span>📅 End Date</span>
+                                  </label>
+                                  <div className="form-check form-switch m-0 d-flex align-items-center gap-1">
+                                    <input
+                                      className="form-check-input"
+                                      type="checkbox"
+                                      id="isCurrentJob"
+                                      checked={jobForm.isCurrent}
+                                      onChange={(e) =>
+                                        setJobForm((p) => ({
+                                          ...p,
+                                          isCurrent: e.target.checked,
+                                          endDate: '',
+                                        }))
+                                      }
+                                      style={{ cursor: 'pointer' }}
+                                    />
+                                    <label
+                                      className="form-check-label small font-weight-bold text-success"
+                                      htmlFor="isCurrentJob"
+                                      style={{ cursor: 'pointer' }}
+                                    >
+                                      Current Job
+                                    </label>
+                                  </div>
+                                </div>
+
+                                {jobForm.isCurrent ? (
+                                  <div
+                                    className="d-flex align-items-center justify-content-between px-3 rounded-3"
+                                    style={{
+                                      height: '42px',
+                                      borderRadius: '10px',
+                                      background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                                      border: '1.5px solid #86efac',
+                                    }}
+                                  >
+                                    <div className="d-flex align-items-center gap-2">
+                                      <span
+                                        style={{
+                                          width: '18px',
+                                          height: '18px',
+                                          borderRadius: '50%',
+                                          background: '#10b981',
+                                          color: '#fff',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontSize: '11px',
+                                          fontWeight: 'bold',
+                                        }}
+                                      >
+                                        ✓
+                                      </span>
+                                      <span className="small font-weight-bold text-success">
+                                        Present / Currently Working Here
+                                      </span>
+                                    </div>
+                                    <span className="badge bg-white text-success border border-success px-2 py-1 small">
+                                      Active
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="row g-2">
+                                    <div className="col-7">
+                                      <select
+                                        className="form-control auth-input-group px-2"
+                                        style={{
+                                          height: '42px',
+                                          borderRadius: '10px',
+                                          fontSize: '13.5px',
+                                          background: '#fff',
+                                          cursor: 'pointer',
+                                        }}
+                                        value={jobEndMonth}
+                                        onChange={(e) => handleJobEndMonth(e.target.value)}
+                                      >
+                                        <option value="">Select Month</option>
+                                        {MONTH_OPTIONS.map((m) => (
+                                          <option key={m.value} value={m.value}>
+                                            {m.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="col-5">
+                                      <select
+                                        className="form-control auth-input-group px-2"
+                                        style={{
+                                          height: '42px',
+                                          borderRadius: '10px',
+                                          fontSize: '13.5px',
+                                          background: '#fff',
+                                          cursor: 'pointer',
+                                        }}
+                                        value={jobEndYear}
+                                        onChange={(e) => handleJobEndYear(e.target.value)}
+                                      >
+                                        <option value="">Select Year</option>
+                                        {YEAR_OPTIONS.map((yr) => (
+                                          <option key={yr} value={yr}>
+                                            {yr}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Description */}
+                              <div className="col-12 mb-3">
+                                <label className="auth-label font-weight-bold small mb-1 d-flex align-items-center gap-1">
+                                  <span>📝 Job Description</span>
+                                  <span className="text-muted fw-normal small">(optional)</span>
+                                </label>
+                                <textarea
+                                  className="form-control auth-input-group px-3 py-2"
+                                  style={{ borderRadius: '10px', fontSize: '14px' }}
+                                  rows={2}
+                                  placeholder="Brief description of your role, key projects, and responsibilities"
+                                  value={jobForm.description}
+                                  onChange={(e) =>
+                                    setJobForm((p) => ({ ...p, description: e.target.value }))
+                                  }
+                                />
+                              </div>
                             </div>
-                          </div>
-                          <div className="d-flex gap-2 justify-content-end">
-                            <button type="button" className="btn btn-outline-dark-custom px-4 py-2" onClick={() => setShowJobForm(false)}>Cancel</button>
-                            <button type="submit" className="btn btn-primary-teal px-4 py-2 font-weight-bold" disabled={jobFormLoading}>
-                              {jobFormLoading ? <ButtonSpinner text="Saving..." /> : 'Save Employment Record'}
-                            </button>
-                          </div>
-                        </form>
+
+                            {/* Buttons */}
+                            <div className="d-flex gap-2 justify-content-end align-items-center mt-2 pt-2 border-top">
+                              <button
+                                type="button"
+                                className="btn btn-outline-dark-custom px-4 py-2"
+                                style={{ borderRadius: '10px' }}
+                                onClick={() => setShowJobForm(false)}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                className="btn btn-primary-teal px-4 py-2 font-weight-bold"
+                                style={{ borderRadius: '10px' }}
+                                disabled={jobFormLoading}
+                              >
+                                {jobFormLoading ? <ButtonSpinner text="Saving..." /> : 'Save Employment Record'}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
                       )}
                       {manualJobs.length > 0 && !showJobForm && !isSetupCompleted && kycStatus !== 8 && (
-                        <div className="text-center mt-2">
-                          <button type="button" className="btn btn-sm btn-outline-dark-custom px-3" onClick={() => setShowJobForm(true)}>+ Add Another Job</button>
+                        <div className="text-center mt-3">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-dark-custom px-3 py-1 font-weight-500"
+                            style={{ borderRadius: '8px' }}
+                            onClick={() => setShowJobForm(true)}
+                          >
+                            + Add Another Job
+                          </button>
                         </div>
                       )}
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1906,13 +2554,13 @@ const KycVerificationPage = () => {
             {/* STEP 4: Address Proof via Voter ID Card */}
             <div className="row justify-content-center mb-5">
               <div className="col-lg-10">
-                <div className="auth-card p-4 p-md-5">
-                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div className="auth-card">
+                  <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
                       <span className="setup-step-badge mr-2">Step 4</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Address Verification via Voter ID Card</h3>
-                        <p className="small text-muted mb-0">Election Commission of India (ECI) Residential Address Proof (+{scoreConfig.voterScore ?? 20} Points)</p>
+                        <p className="auth-card-sub small mb-0">Election Commission of India (ECI) Residential Address Proof (+{scoreConfig.voterScore ?? 20} Points)</p>
                       </div>
                     </div>
 
@@ -1939,6 +2587,8 @@ const KycVerificationPage = () => {
                       </div>
                     )}
                   </div>
+
+                  <div className="auth-card-body p-4 p-md-5">
 
                   {voterVerified ? (
                     <div className="p-4 rounded-lg bg-light border border-success">
@@ -2177,6 +2827,7 @@ const KycVerificationPage = () => {
                       )}
                     </>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2184,13 +2835,13 @@ const KycVerificationPage = () => {
             {/* STEP 5: Driving License (DL) Verification (OCR Document Scan) */}
             <div className="row justify-content-center mb-5">
               <div className="col-lg-10">
-                <div className="auth-card p-4 p-md-5">
-                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div className="auth-card">
+                  <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
                       <span className="setup-step-badge mr-2">Step 5</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Driving License (DL) Verification</h3>
-                        <p className="small text-muted mb-0">Government MoRTH Driving License OCR Document Scan (+5 Points)</p>
+                        <p className="auth-card-sub small mb-0">Government MoRTH Driving License OCR Document Scan</p>
                       </div>
                     </div>
 
@@ -2205,11 +2856,13 @@ const KycVerificationPage = () => {
                     )}
                   </div>
 
+                  <div className="auth-card-body p-4 p-md-5">
+
                   {dlVerified ? (
                     <div className="setup-address-box">
                       <div className="d-flex align-items-center justify-content-between mb-2">
                         <span className="font-weight-bold text-success">&#10003; Official MoRTH Driving License Verified</span>
-                        <span className="badge badge-success px-2 py-1">+5 Points Secured</span>
+                        <span className="badge badge-success px-2 py-1">Verified</span>
                       </div>
                       <div className="row g-2 mb-2">
                         <div className="col-md-6 mb-2">
@@ -2366,10 +3019,11 @@ const KycVerificationPage = () => {
                         className="btn btn-primary-teal btn-block py-3 font-weight-bold"
                         disabled={dlLoading || !dlConsent || !dlFront || !dlBack}
                       >
-                        {dlLoading ? <ButtonSpinner text="Scanning Driving License OCR..." /> : 'Scan & Extract Driving License (OCR) (+5 Points)'}
+                        {dlLoading ? <ButtonSpinner text="Scanning Driving License OCR..." /> : 'Scan & Extract Driving License (OCR)'}
                       </button>
                     </form>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2377,13 +3031,13 @@ const KycVerificationPage = () => {
             {/* STEP 6: Educational Qualifications & Professional Certifications */}
             <div className="row justify-content-center mb-5" id="step-education">
               <div className="col-lg-10">
-                <div className="auth-card p-4 p-md-5">
-                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div className="auth-card">
+                  <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
                       <span className="setup-step-badge mr-2">Step 6</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Educational Qualifications &amp; Professional Certifications</h3>
-                        <p className="small text-muted mb-0">Add academic degrees and vendor certifications with document proof (+{scoreConfig.educationScore ?? 20} Points)</p>
+                        <p className="auth-card-sub small mb-0">Add academic degrees and vendor certifications with document proof (+{scoreConfig.educationScore ?? 20} Points)</p>
                       </div>
                     </div>
 
@@ -2404,6 +3058,8 @@ const KycVerificationPage = () => {
                       </span>
                     )}
                   </div>
+
+                  <div className="auth-card-body p-4 p-md-5">
 
                   {/* SECTION 6A: Academic Qualifications (Degrees / Diplomas) */}
                   <div className="mb-5 pb-4 border-bottom">
@@ -2768,12 +3424,13 @@ const KycVerificationPage = () => {
                       </p>
                     )}
                   </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Professional Reference Verification Section */}
-            <div className="row justify-content-center mt-4">
+            <div className="row justify-content-center mb-5">
               <div className="col-lg-10">
                 <ProfessionalReferenceSection
                   isSetupCompleted={isSetupCompleted}
