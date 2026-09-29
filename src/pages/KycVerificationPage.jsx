@@ -2093,26 +2093,134 @@ const KycVerificationPage = () => {
                       <h6 className="font-weight-bold text-dark mb-3">&#128188; Verified Employment History</h6>
                       <div style={{ borderLeft: '3px solid #00D294', paddingLeft: '1rem' }}>
                         {/* EPFO Records */}
-                        {epfoRecords.map((epfo, i) =>
-                          epfo.records?.map((rec, j) => (
-                            <div key={`epfo-${i}-${j}`} className="p-3 mb-3 rounded border" style={{ background: 'rgba(0,210,148,0.04)' }}>
-                              <div className="d-flex align-items-start justify-content-between">
-                                <div className="d-flex align-items-start">
-                                  <div className="stat-icon-light bg-teal-light mr-3 mt-1" style={{ width: '32px', height: '32px', minWidth: '32px' }}>
-                                    <span className="text-teal" style={{ fontSize: '14px' }}>&#10003;</span>
-                                  </div>
-                                  <div>
-                                    <h6 className="font-weight-bold text-dark mb-0">{rec.employerName}</h6>
-                                    <small className="text-muted">{rec.joiningDate} &mdash; {rec.exitDate || 'Present'}</small>
-                                    <div className="mt-1">
-                                      <span className="badge badge-success px-2 py-1 mr-1" style={{ fontSize: '10px' }}>&#10003; EPFO Authenticated</span>
+                        {epfoRecords.map((epfo, i) => {
+                          const recordsToDisplay = Array.isArray(epfo.records) ? epfo.records : (epfo.employerName ? [epfo] : []);
+                          return recordsToDisplay.map((rec, j) => {
+                            const empCandidateName = rec.name || epfo.name || fullName || user?.name || '';
+                            const isCurrentEmp = Boolean(rec.isCurrent || !rec.exitDate || rec.exitDate === 'Present');
+                            return (
+                              <div
+                                key={`epfo-${i}-${j}`}
+                                className="p-3 mb-3 rounded border"
+                                style={{
+                                  background: 'linear-gradient(135deg, rgba(0,210,148,0.04) 0%, rgba(2,12,31,0.02) 100%)',
+                                  borderColor: 'rgba(0,210,148,0.22)',
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                                }}
+                              >
+                                <div className="d-flex align-items-start justify-content-between flex-wrap">
+                                  <div className="d-flex align-items-start flex-grow-1">
+                                    <div
+                                      className="stat-icon-light bg-teal-light mr-3 mt-1 d-flex align-items-center justify-content-center"
+                                      style={{ width: '36px', height: '36px', minWidth: '36px', borderRadius: '10px' }}
+                                    >
+                                      <span className="text-teal font-weight-bold" style={{ fontSize: '16px' }}>&#10003;</span>
+                                    </div>
+                                    <div className="flex-grow-1">
+                                      {/* Employer Name */}
+                                      <div className="d-flex align-items-center flex-wrap justify-content-between mb-1">
+                                        <h6 className="font-weight-bold text-dark mb-0" style={{ fontSize: '15px' }}>
+                                          {rec.employerName}
+                                        </h6>
+                                      </div>
+
+                                      {/* Detailed Metadata Grid */}
+                                      <div className="mt-2 pt-2 border-top" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+                                        <div className="row no-gutters">
+                                          {/* Employee Name */}
+                                          {empCandidateName && (
+                                            <div className="col-12 col-md-6 mb-2 pr-md-2">
+                                              <div className="d-flex align-items-center">
+                                                <span className="text-muted small mr-2">
+                                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1">
+                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                    <circle cx="12" cy="7" r="4"></circle>
+                                                  </svg>
+                                                  Employee Name:
+                                                </span>
+                                                <span className="font-weight-bold text-dark small" style={{ letterSpacing: '0.2px' }}>
+                                                  {empCandidateName}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Member ID */}
+                                          {rec.memberId && (
+                                            <div className="col-12 col-md-6 mb-2">
+                                              <div className="d-flex align-items-center">
+                                                <span className="text-muted small mr-2">
+                                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1">
+                                                    <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                                                    <line x1="7" y1="8" x2="17" y2="8"></line>
+                                                    <line x1="7" y1="12" x2="13" y2="12"></line>
+                                                  </svg>
+                                                  Member ID:
+                                                </span>
+                                                <code className="small font-weight-bold" style={{ color: '#00875A', background: 'rgba(0,210,148,0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                                                  {rec.memberId}
+                                                </code>
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Service Period */}
+                                          <div className="col-12 col-md-6 mb-2 pr-md-2">
+                                            <div className="d-flex align-items-center">
+                                              <span className="text-muted small mr-2">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1">
+                                                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                                                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                                                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                                                </svg>
+                                                Period:
+                                              </span>
+                                              <span className="text-dark font-weight-500 small">
+                                                {rec.joiningDate || 'N/A'} &mdash; {rec.exitDate || <span className="text-teal font-weight-bold">Present</span>}
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          {/* Father / Guardian Name if available */}
+                                          {rec.guardian && (
+                                            <div className="col-12 col-md-6 mb-2">
+                                              <div className="d-flex align-items-center">
+                                                <span className="text-muted small mr-2">Father / Guardian:</span>
+                                                <span className="text-dark font-weight-500 small">{rec.guardian}</span>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Badges / Authentication Tags */}
+                                      <div className="mt-1 d-flex align-items-center flex-wrap">
+                                        <span className="badge badge-success px-2 py-1 mr-2" style={{ fontSize: '10px', fontWeight: 600 }}>
+                                          &#10003; EPFO Authenticated
+                                        </span>
+                                        {isCurrentEmp && (
+                                          <span
+                                            className="badge px-2 py-1"
+                                            style={{
+                                              fontSize: '10px',
+                                              fontWeight: 600,
+                                              background: 'rgba(0,210,148,0.15)',
+                                              color: '#00875A',
+                                              border: '1px solid rgba(0,210,148,0.3)',
+                                            }}
+                                          >
+                                            Active Employment
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ))
-                        )}
+                            );
+                          });
+                        })}
                         {/* Manual Records */}
                         {manualJobs.map((job) => (
                           <div key={job._id} className="p-3 mb-3 rounded border" style={{ background: 'rgba(0,210,148,0.04)' }}>

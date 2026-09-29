@@ -164,11 +164,18 @@ const ProfileMainCards = ({ user: propUser }) => {
                     </span>
                   </div>
                   <p className="text-teal font-weight-bold mb-2">{rec.employerName}</p>
-                  {rec.memberId && (
-                    <p className="small text-secondary mb-2">
-                      EPFO Member ID: <code>{rec.memberId}</code> &middot; Authenticated Employee Record
-                    </p>
-                  )}
+                  <div className="small text-secondary mb-2 d-flex flex-wrap align-items-center">
+                    {(rec.name || user?.name) && (
+                      <span className="mr-3 text-dark">
+                        Employee Name: <strong>{rec.name || user?.name}</strong>
+                      </span>
+                    )}
+                    {rec.memberId && (
+                      <span>
+                        EPFO Member ID: <code>{rec.memberId}</code> &middot; Authenticated Employee Record
+                      </span>
+                    )}
+                  </div>
                   <div className="d-flex gap-2 flex-wrap">
                     <span className="verified-source-tag tag-teal mr-2">&#10003; EPFO Authenticated</span>
                     <span className="verified-source-tag tag-teal">&#10003; UAN Synced</span>
