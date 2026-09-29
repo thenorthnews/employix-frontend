@@ -80,36 +80,41 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
                 <div className="small font-weight-bold text-uppercase letter-spacing-1 text-muted mb-2">
                   KYC Verification Weights ({verifiedPillars}/5 Completed):
                 </div>
-                <div className="d-flex flex-wrap gap-2">
+                <div className="d-flex flex-wrap" style={{ gap: '10px' }}>
                   <span className={`kyc-weight-badge ${isAadhaarDone ? 'completed' : 'pending'}`}>
                     <span className={isAadhaarDone ? 'text-teal font-weight-bold mr-1' : 'text-danger font-weight-bold mr-1'}>
                       {isAadhaarDone ? '✓' : '✗'}
                     </span>
-                    Aadhaar Identity <span className="weight-pts font-weight-normal">({isAadhaarDone ? aadhaarWeight : 0}/{aadhaarWeight} Pts)</span>
+                    Aadhaar Identity{' '}
+                    <span className="weight-pts font-weight-normal">({isAadhaarDone ? aadhaarWeight : 0}/{aadhaarWeight} Pts)</span>
                   </span>
                   <span className={`kyc-weight-badge ${isVoterDone ? 'completed' : 'pending'}`}>
                     <span className={isVoterDone ? 'text-teal font-weight-bold mr-1' : 'text-danger font-weight-bold mr-1'}>
                       {isVoterDone ? '✓' : '✗'}
                     </span>
-                    Voter Address <span className="weight-pts font-weight-normal">({isVoterDone ? voterWeight : 0}/{voterWeight} Pts)</span>
+                    Voter Address{' '}
+                    <span className="weight-pts font-weight-normal">({isVoterDone ? voterWeight : 0}/{voterWeight} Pts)</span>
                   </span>
                   <span className={`kyc-weight-badge ${isEmpDone ? 'completed' : 'pending'}`}>
                     <span className={isEmpDone ? 'text-teal font-weight-bold mr-1' : 'text-danger font-weight-bold mr-1'}>
                       {isEmpDone ? '✓' : '✗'}
                     </span>
-                    EPFO Employment <span className="weight-pts font-weight-normal">({isEmpDone ? empWeight : 0}/{empWeight} Pts)</span>
+                    EPFO Employment{' '}
+                    <span className="weight-pts font-weight-normal">({isEmpDone ? empWeight : 0}/{empWeight} Pts)</span>
                   </span>
                   <span className={`kyc-weight-badge ${isEduVerified ? 'completed' : 'pending'}`}>
                     <span className={isEduVerified ? 'text-teal font-weight-bold mr-1' : 'text-danger font-weight-bold mr-1'}>
                       {isEduVerified ? '✓' : '✗'}
                     </span>
-                    Qualifications &amp; Certs <span className="weight-pts font-weight-normal">({isEduVerified ? eduWeight : 0}/{eduWeight} Pts)</span>
+                    Qualifications &amp; Certs{' '}
+                    <span className="weight-pts font-weight-normal">({isEduVerified ? eduWeight : 0}/{eduWeight} Pts)</span>
                   </span>
                   <span className={`kyc-weight-badge ${isRefDone ? 'completed' : 'pending'}`}>
                     <span className={isRefDone ? 'text-teal font-weight-bold mr-1' : 'text-danger font-weight-bold mr-1'}>
                       {isRefDone ? '✓' : '✗'}
                     </span>
-                    Professional References <span className="weight-pts font-weight-normal">({scoreData.referenceScore}/{maxRefWeight} Pts)</span>
+                    Professional References{' '}
+                    <span className="weight-pts font-weight-normal">({scoreData.referenceScore}/{maxRefWeight} Pts)</span>
                   </span>
                 </div>
               </div>

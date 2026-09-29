@@ -103,6 +103,7 @@ const KycVerificationPage = () => {
   const [profilePhotoPreview, setProfilePhotoPreview] = useState(user?.profileImage || null);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(initialDesignation.length > 0);
+  const [profileErrors, setProfileErrors] = useState({ photo: '', name: '', phone: '', designation: '' });
 
   // STEP 2: Aadhaar State (OCR Scan & Verification)
   const [aadhaarFront, setAadhaarFront] = useState(null);
@@ -169,7 +170,8 @@ const KycVerificationPage = () => {
   const [voterFrontPreview, setVoterFrontPreview] = useState(null);
   const [voterBack, setVoterBack] = useState(null);
   const [voterBackPreview, setVoterBackPreview] = useState(null);
-  const [voterConsent, setVoterConsent] = useState(false);
+  const [voterNumConsent, setVoterNumConsent] = useState(false);
+  const [voterOcrConsent, setVoterOcrConsent] = useState(false);
   const [voterLoading, setVoterLoading] = useState(false);
   const [voterVerified, setVoterVerified] = useState(false);
   const [voterResult, setVoterResult] = useState(null);
@@ -388,6 +390,7 @@ const KycVerificationPage = () => {
       setProfilePhotoFile(file);
       setProfilePhotoPreview(URL.createObjectURL(file));
       setProfileSaved(false);
+      setProfileErrors((prev) => ({ ...prev, photo: '' }));
     }
   };
 
@@ -395,10 +398,40 @@ const KycVerificationPage = () => {
   const handleSaveProfile = async (e, isSilent = false) => {
     if (e && e.preventDefault) e.preventDefault();
     if (profileSaved) return;
+
+    const newErrors = { photo: '', name: '', phone: '', designation: '' };
+    let hasError = false;
+
+    if (!profilePhotoFile && !profilePhotoPreview && !user?.profileImage) {
+      newErrors.photo = 'Profile Photo is required.';
+      hasError = true;
+    }
+    if (!fullName || !fullName.trim()) {
+      newErrors.name = 'Full Name is required.';
+      hasError = true;
+    }
+    const cleanPhone = (phone || '').replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      newErrors.phone = 'Valid 10-digit Mobile Number is required.';
+      hasError = true;
+    }
     if (!designation.trim()) {
-      if (!isSilent) toast.error('Please enter your Current Role / Professional Designation.');
+      newErrors.designation = 'Professional Designation / Role is required.';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setProfileErrors(newErrors);
+      if (!isSilent) {
+        if (newErrors.designation) toast.error(newErrors.designation);
+        else if (newErrors.photo) toast.error(newErrors.photo);
+        else if (newErrors.name) toast.error(newErrors.name);
+        else if (newErrors.phone) toast.error(newErrors.phone);
+      }
       return;
     }
+
+    setProfileErrors({ photo: '', name: '', phone: '', designation: '' });
 
     setProfileSaving(true);
     try {
@@ -748,7 +781,7 @@ const KycVerificationPage = () => {
   // Submit Voter ID Address Verification - Option 1: EPIC Number
   const handleVerifyVoterNumber = async (e) => {
     e.preventDefault();
-    if (!voterConsent) {
+    if (!voterNumConsent) {
       toast.error('Please give consent to verify Voter ID.');
       return;
     }
@@ -803,7 +836,7 @@ const KycVerificationPage = () => {
   // Submit Voter ID Address Verification - Option 2: OCR Document Upload
   const handleVerifyVoterOcr = async (e) => {
     e.preventDefault();
-    if (!voterConsent) {
+    if (!voterOcrConsent) {
       toast.error('Please give consent to scan Voter ID.');
       return;
     }
@@ -1432,11 +1465,16 @@ const KycVerificationPage = () => {
                   </div>
 
                   <div className="auth-card-body p-4 p-md-5">
-                    <form onSubmit={handleSaveProfile}>
+                    <form onSubmit={handleSaveProfile} noValidate>
                     <div className="row align-items-center mb-4">
                       {/* Profile Photo Uploader */}
                       <div className="col-md-3 text-center mb-4 mb-md-0">
-                        <div className="setup-photo-wrap mb-2">
+                        <div
+                          className="setup-photo-wrap mb-2"
+                          onClick={() => !profileSaved && document.getElementById('photoUploadInput')?.click()}
+                          style={{ cursor: profileSaved ? 'default' : 'pointer' }}
+                          title={profileSaved ? '' : 'Click to upload photo'}
+                        >
                           {profilePhotoPreview ? (
                             <img
                               src={profilePhotoPreview}
@@ -1461,7 +1499,7 @@ const KycVerificationPage = () => {
                           )}
                           {!profileSaved && (
                             <>
-                              <label htmlFor="photoUploadInput" className="setup-photo-badge" title="Change Photo">
+                              <label htmlFor="photoUploadInput" className="setup-photo-badge" title="Upload Photo" onClick={(e) => e.stopPropagation()}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                                   <circle cx="12" cy="13" r="4"></circle>
@@ -1478,8 +1516,17 @@ const KycVerificationPage = () => {
                           )}
                         </div>
                         <span className="small text-muted font-weight-bold d-block">
-                          {profileSaved ? 'Verified Profile Photo' : 'Upload Profile Photo'}
+                          {profileSaved && (profilePhotoPreview || user?.profileImage) ? (
+                            'Verified Profile Photo'
+                          ) : (
+                            <>Upload Profile Photo <span className="text-danger">*</span></>
+                          )}
                         </span>
+                        {profileErrors.photo && !profileSaved && (
+                          <small className="text-danger font-weight-bold mt-1 d-block" style={{ fontSize: '0.82rem' }}>
+                            ⚠ {profileErrors.photo}
+                          </small>
+                        )}
                       </div>
 
                       {/* Full Name & Details */}
@@ -1487,16 +1534,28 @@ const KycVerificationPage = () => {
                         <div className="row g-3">
                           {/* Full Name (Full width, Prefix removed) */}
                           <div className="col-12 mb-3">
-                            <label className="auth-label">Full Name</label>
+                            <label className="auth-label">
+                              Full Name <span className="text-danger">*</span>
+                            </label>
                             <input
                               type="text"
-                              className={`form-control auth-input-group px-3 py-2 ${profileSaved ? 'bg-light text-muted' : ''}`}
+                              className={`form-control auth-input-group px-3 py-2 ${profileSaved ? 'bg-light text-muted' : ''} ${profileErrors.name ? 'is-invalid border-danger' : ''}`}
+                              style={profileErrors.name ? { borderColor: '#dc3545', boxShadow: '0 0 0 2px rgba(220,53,69,0.15)' } : {}}
                               value={fullName}
                               disabled={profileSaved}
-                              onChange={(e) => setFullName(e.target.value)}
+                              onChange={(e) => {
+                                setFullName(e.target.value);
+                                if (profileErrors.name) {
+                                  setProfileErrors((prev) => ({ ...prev, name: '' }));
+                                }
+                              }}
                               placeholder="e.g. Full Name"
-                              required
                             />
+                            {profileErrors.name && !profileSaved && (
+                              <small className="text-danger font-weight-bold mt-1 d-flex align-items-center" style={{ fontSize: '0.84rem' }}>
+                                <span className="mr-1">⚠</span> {profileErrors.name}
+                              </small>
+                            )}
                           </div>
 
                           {/* Email (Read-Only) */}
@@ -1514,7 +1573,9 @@ const KycVerificationPage = () => {
 
                           {/* Phone */}
                           <div className="col-sm-6 mb-3">
-                            <label className="auth-label">Mobile Number</label>
+                            <label className="auth-label">
+                              Mobile Number <span className="text-danger">*</span>
+                            </label>
                             <div className="input-group">
                               <div className="input-group-prepend">
                                 <span className="input-group-text bg-light font-weight-bold text-dark border-right-0" style={{ borderRadius: '30px 0 0 30px' }}>
@@ -1523,14 +1584,28 @@ const KycVerificationPage = () => {
                               </div>
                               <input
                                 type="tel"
-                                className={`form-control auth-input-group px-3 ${profileSaved ? 'bg-light text-muted' : ''}`}
-                                style={{ borderRadius: '0 30px 30px 0' }}
+                                className={`form-control auth-input-group px-3 ${profileSaved ? 'bg-light text-muted' : ''} ${profileErrors.phone ? 'is-invalid border-danger' : ''}`}
+                                style={{
+                                  borderRadius: '0 30px 30px 0',
+                                  ...(profileErrors.phone ? { borderColor: '#dc3545', boxShadow: '0 0 0 2px rgba(220,53,69,0.15)' } : {})
+                                }}
                                 value={phone}
                                 disabled={profileSaved}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={(e) => {
+                                  setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+                                  if (profileErrors.phone) {
+                                    setProfileErrors((prev) => ({ ...prev, phone: '' }));
+                                  }
+                                }}
                                 placeholder="9876543210"
+                                maxLength={10}
                               />
                             </div>
+                            {profileErrors.phone && !profileSaved && (
+                              <small className="text-danger font-weight-bold mt-1 d-flex align-items-center" style={{ fontSize: '0.84rem' }}>
+                                <span className="mr-1">⚠</span> {profileErrors.phone}
+                              </small>
+                            )}
                           </div>
 
                           {/* Designation */}
@@ -1547,13 +1622,23 @@ const KycVerificationPage = () => {
                             </div>
                             <input
                               type="text"
-                              className={`form-control auth-input-group px-3 py-2 ${profileSaved ? 'bg-light text-muted' : ''}`}
+                              className={`form-control auth-input-group px-3 py-2 ${profileSaved ? 'bg-light text-muted' : ''} ${profileErrors.designation ? 'is-invalid border-danger' : ''}`}
+                              style={profileErrors.designation ? { borderColor: '#dc3545', boxShadow: '0 0 0 2px rgba(220,53,69,0.15)' } : {}}
                               value={designation}
                               disabled={profileSaved}
-                              onChange={(e) => setDesignation(e.target.value)}
-                              placeholder="e.g. Senior Full Stack Engineer · TechCorp Solutions"
-                              required
+                              onChange={(e) => {
+                                setDesignation(e.target.value);
+                                if (profileErrors.designation) {
+                                  setProfileErrors((prev) => ({ ...prev, designation: '' }));
+                                }
+                              }}
+                              placeholder="e.g. Senior Software Engineer"
                             />
+                            {profileErrors.designation && !profileSaved && (
+                              <small className="text-danger font-weight-bold mt-1 d-flex align-items-center" style={{ fontSize: '0.84rem' }}>
+                                <span className="mr-1">⚠</span> {profileErrors.designation}
+                              </small>
+                            )}
                             {profileSaved && (
                               <small className="text-success font-weight-bold mt-1 d-block">
                                 ✓ Designation details saved and locked.
@@ -2072,13 +2157,27 @@ const KycVerificationPage = () => {
                       </div>
                     ) : (
                       <div className="kyc-method-tabs d-flex">
-                        <button type="button" className={`kyc-method-btn ${empMethod === 'uan' ? 'active' : ''}`} onClick={() => setEmpMethod('uan')}>
+                        <button
+                          type="button"
+                          className={`kyc-method-btn ${empMethod === 'uan' ? 'active' : ''}`}
+                          onClick={() => {
+                            setEmpMethod('uan');
+                            setEmpConsent(false);
+                          }}
+                        >
                           🆔 UAN Lookup
                         </button>
                         {/* <button type="button" className={`kyc-method-btn ${empMethod === 'mobile' ? 'active' : ''}`} onClick={() => setEmpMethod('mobile')}>
                           📱 Mobile Lookup
                         </button> */}
-                        <button type="button" className={`kyc-method-btn ${empMethod === 'manual' ? 'active' : ''}`} onClick={() => setEmpMethod('manual')}>
+                        <button
+                          type="button"
+                          className={`kyc-method-btn ${empMethod === 'manual' ? 'active' : ''}`}
+                          onClick={() => {
+                            setEmpMethod('manual');
+                            setEmpConsent(false);
+                          }}
+                        >
                           ✏️ Add Manually
                         </button>
                       </div>
@@ -2422,11 +2521,13 @@ const KycVerificationPage = () => {
                                   type="text"
                                   className="form-control auth-input-group px-3"
                                   style={{ height: '42px', borderRadius: '10px', fontSize: '14px' }}
-                                  placeholder="e.g. Senior Full Stack Engineer"
+                                  placeholder="e.g. Senior Software Engineer"
                                   value={jobForm.designation}
-                                  onChange={(e) =>
-                                    setJobForm((p) => ({ ...p, designation: e.target.value }))
-                                  }
+                                  onChange={(e) => {
+                                    e.target.setCustomValidity('');
+                                    setJobForm((p) => ({ ...p, designation: e.target.value }));
+                                  }}
+                                  onInvalid={(e) => e.target.setCustomValidity('Designation / Role is required.')}
                                   required
                                 />
                               </div>
@@ -2681,14 +2782,22 @@ const KycVerificationPage = () => {
                         <button
                           type="button"
                           className={`kyc-method-btn ${voterMethod === 'number' ? 'active' : ''}`}
-                          onClick={() => setVoterMethod('number')}
+                          onClick={() => {
+                            setVoterMethod('number');
+                            setVoterNumConsent(false);
+                            setVoterOcrConsent(false);
+                          }}
                         >
                           🔢 Voter ID Number
                         </button>
                         <button
                           type="button"
                           className={`kyc-method-btn ${voterMethod === 'ocr' ? 'active' : ''}`}
-                          onClick={() => setVoterMethod('ocr')}
+                          onClick={() => {
+                            setVoterMethod('ocr');
+                            setVoterNumConsent(false);
+                            setVoterOcrConsent(false);
+                          }}
                         >
                           📷 Voter Card OCR Upload
                         </button>
@@ -2793,8 +2902,8 @@ const KycVerificationPage = () => {
                                 className="form-check-input mt-1 mr-3"
                                 type="checkbox"
                                 id="voterNumConsent"
-                                checked={voterConsent}
-                                onChange={(e) => setVoterConsent(e.target.checked)}
+                                checked={voterNumConsent}
+                                onChange={(e) => setVoterNumConsent(e.target.checked)}
                               />
                               <label className="form-check-label" htmlFor="voterNumConsent">
                                 <div className="kyc-consent-title">Address &amp; Voter Record Consent:</div>
@@ -2808,7 +2917,7 @@ const KycVerificationPage = () => {
                           <button
                             type="submit"
                             className="btn btn-primary-teal btn-block py-3 font-weight-bold"
-                            disabled={voterLoading || !voterConsent || !voterNumber.trim()}
+                            disabled={voterLoading || !voterNumConsent || !voterNumber.trim()}
                           >
                             {voterLoading ? <ButtonSpinner text="Verifying Voter ID & Address..." /> : `Verify Voter ID Address (+${scoreConfig.voterScore ?? 20} Points)`}
                           </button>
@@ -2912,8 +3021,8 @@ const KycVerificationPage = () => {
                                 className="form-check-input mt-1 mr-3"
                                 type="checkbox"
                                 id="voterOcrConsent"
-                                checked={voterConsent}
-                                onChange={(e) => setVoterConsent(e.target.checked)}
+                                checked={voterOcrConsent}
+                                onChange={(e) => setVoterOcrConsent(e.target.checked)}
                               />
                               <label className="form-check-label" htmlFor="voterOcrConsent">
                                 <div className="kyc-consent-title">Address Extraction Consent:</div>
@@ -2927,7 +3036,7 @@ const KycVerificationPage = () => {
                           <button
                             type="submit"
                             className="btn btn-primary-teal btn-block py-3 font-weight-bold"
-                            disabled={voterLoading || !voterConsent || !voterFront || !voterBack}
+                            disabled={voterLoading || !voterOcrConsent || !voterFront || !voterBack}
                           >
                             {voterLoading ? <ButtonSpinner text="Scanning Voter Card Address..." /> : `Scan & Extract Address (OCR) (+${scoreConfig.voterScore ?? 20} Points)`}
                           </button>
@@ -3195,51 +3304,198 @@ const KycVerificationPage = () => {
 
                     {/* Qualifications Existing List */}
                     {qualifications.length > 0 && (
-                      <div className="mb-3">
+                      <div className="mb-4">
                         {qualifications.map((qual, idx) => (
                           <div
                             key={qual._id || `q-${idx}`}
-                            className="p-3 mb-2 rounded border bg-light d-flex align-items-center justify-content-between flex-wrap gap-2"
-                            style={{ borderLeft: '4px solid #ef4444' }}
+                            className="p-3 p-md-4 mb-3 rounded-lg border bg-white shadow-sm"
+                            style={{
+                              borderLeft: '5px solid #00D294',
+                              borderColor: 'rgba(0, 210, 148, 0.28)',
+                              borderRadius: '14px',
+                              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
+                              transition: 'all 0.2s ease',
+                            }}
                           >
-                            <div style={{ flex: '1 1 280px' }}>
-                              <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                <h6 className="font-weight-bold text-dark mb-0">{qual.degree}</h6>
-                                {qual.grade && (
-                                  <span className="badge badge-light border text-dark font-weight-bold small">
-                                    {qual.grade}
+                            <div className="d-flex align-items-start justify-content-between flex-wrap" style={{ gap: '16px' }}>
+                              {/* Left Info Cluster */}
+                              <div className="d-flex align-items-start flex-grow-1" style={{ minWidth: '260px', gap: '16px' }}>
+                                <div
+                                  className="d-flex align-items-center justify-content-center flex-shrink-0 mr-3"
+                                  style={{
+                                    width: '50px',
+                                    height: '50px',
+                                    borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, rgba(0, 210, 148, 0.16) 0%, rgba(2, 43, 58, 0.08) 100%)',
+                                    border: '1.5px solid rgba(0, 210, 148, 0.35)',
+                                    fontSize: '24px',
+                                  }}
+                                >
+                                  🎓
+                                </div>
+                                <div className="flex-grow-1">
+                                  {/* Title & Grade */}
+                                  <div className="d-flex align-items-center flex-wrap mb-2" style={{ gap: '10px' }}>
+                                    <h6 className="font-weight-bold text-dark mb-0 mr-2" style={{ fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+                                      {qual.degree}
+                                    </h6>
+                                    {qual.grade && (
+                                      <span
+                                        className="badge font-weight-bold"
+                                        style={{
+                                          fontSize: '11px',
+                                          padding: '4px 10px',
+                                          background: 'rgba(0, 210, 148, 0.12)',
+                                          color: '#00875A',
+                                          border: '1px solid rgba(0, 210, 148, 0.28)',
+                                          borderRadius: '20px',
+                                        }}
+                                      >
+                                        Grade: {qual.grade}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Detailed Meta Tags */}
+                                  <div className="d-flex align-items-center flex-wrap mb-3" style={{ gap: '10px', fontSize: '13px' }}>
+                                    <div
+                                      className="d-inline-flex align-items-center mr-2 mb-1"
+                                      style={{
+                                        background: '#F8FAFC',
+                                        padding: '4px 10px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #E2E8F0',
+                                        color: '#1E293B',
+                                        fontWeight: 500,
+                                      }}
+                                    >
+                                      <span style={{ marginRight: '6px', fontSize: '14px' }}>🏛️</span>
+                                      <span>{qual.institution}</span>
+                                    </div>
+                                    {qual.fieldOfStudy && (
+                                      <div
+                                        className="d-inline-flex align-items-center mr-2 mb-1"
+                                        style={{
+                                          background: '#F8FAFC',
+                                          padding: '4px 10px',
+                                          borderRadius: '6px',
+                                          border: '1px solid #E2E8F0',
+                                          color: '#475569',
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        <span style={{ marginRight: '6px', fontSize: '14px' }}>📚</span>
+                                        <span>{qual.fieldOfStudy}</span>
+                                      </div>
+                                    )}
+                                    {qual.year && (
+                                      <div
+                                        className="d-inline-flex align-items-center mr-2 mb-1"
+                                        style={{
+                                          background: '#F8FAFC',
+                                          padding: '4px 10px',
+                                          borderRadius: '6px',
+                                          border: '1px solid #E2E8F0',
+                                          color: '#475569',
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        <span style={{ marginRight: '6px', fontSize: '14px' }}>📅</span>
+                                        <span>Class of {qual.year}</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Action: Document Proof */}
+                                  {qual.documentUrl && (
+                                    <div className="d-flex align-items-center flex-wrap pt-1" style={{ gap: '10px' }}>
+                                      <a
+                                        href={qual.documentUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn btn-sm d-inline-flex align-items-center"
+                                        style={{
+                                          background: '#F0FDF4',
+                                          color: '#166534',
+                                          border: '1px solid #BBF7D0',
+                                          borderRadius: '8px',
+                                          fontSize: '12px',
+                                          fontWeight: 600,
+                                          padding: '6px 14px',
+                                          textDecoration: 'none',
+                                          gap: '6px',
+                                        }}
+                                      >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                          <polyline points="14 2 14 8 20 8" />
+                                        </svg>
+                                        <span style={{ marginRight: '4px' }}>View Document Proof</span>
+                                        <span style={{ fontSize: '13px' }}>↗</span>
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Right Status Badge & Delete */}
+                              <div className="d-flex align-items-center flex-shrink-0 align-self-start" style={{ gap: '10px' }}>
+                                {qual.isVerified ? (
+                                  <span
+                                    className="badge font-weight-bold mr-2"
+                                    style={{
+                                      fontSize: '11px',
+                                      padding: '6px 12px',
+                                      borderRadius: '20px',
+                                      background: '#ECFDF5',
+                                      color: '#047857',
+                                      border: '1px solid #A7F3D0',
+                                    }}
+                                  >
+                                    ✓ Verified
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="badge font-weight-bold mr-2"
+                                    style={{
+                                      fontSize: '11px',
+                                      padding: '6px 12px',
+                                      borderRadius: '20px',
+                                      background: '#FFF1F2',
+                                      color: '#BE123C',
+                                      border: '1px solid #FECDD3',
+                                    }}
+                                  >
+                                    Pending Verification
                                   </span>
                                 )}
-                                <span className="badge badge-danger text-white px-2 py-1 small font-weight-bold" style={{ fontSize: '10px' }}>
-                                  Not Verified
-                                </span>
-                              </div>
-                              <span className="small text-muted d-block">
-                                {qual.institution} {qual.fieldOfStudy ? `· ${qual.fieldOfStudy}` : ''} {qual.year ? `· Class of ${qual.year}` : ''}
-                              </span>
-                              {qual.documentUrl && (
-                                <a
-                                  href={qual.documentUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="small text-teal font-weight-bold mt-1 d-inline-block"
-                                >
-                                  📄 View Certificate / Document &nearr;
-                                </a>
-                              )}
-                            </div>
 
-                            {!isSetupCompleted && (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-danger"
-                                onClick={() => handleDeleteQualification(qual._id)}
-                                title="Delete qualification"
-                                style={{ borderRadius: '50%', width: '30px', height: '30px', padding: 0, lineHeight: 1 }}
-                              >
-                                &times;
-                              </button>
-                            )}
+                                {!isSetupCompleted && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleDeleteQualification(qual._id)}
+                                    title="Remove qualification"
+                                    style={{
+                                      borderRadius: '8px',
+                                      width: '32px',
+                                      height: '32px',
+                                      padding: 0,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                                      background: 'rgba(239, 68, 68, 0.04)',
+                                    }}
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -3369,63 +3625,210 @@ const KycVerificationPage = () => {
 
                     {/* Certifications Existing List */}
                     {certifications.length > 0 && (
-                      <div className="mb-3">
+                      <div className="mb-4">
                         {certifications.map((cert, idx) => (
                           <div
                             key={cert._id || `c-${idx}`}
-                            className="p-3 mb-2 rounded border bg-light d-flex align-items-center justify-content-between flex-wrap gap-2"
-                            style={{ borderLeft: '4px solid #ef4444' }}
+                            className="p-3 p-md-4 mb-3 rounded-lg border bg-white shadow-sm"
+                            style={{
+                              borderLeft: '5px solid #F59E0B',
+                              borderColor: 'rgba(245, 158, 11, 0.3)',
+                              borderRadius: '14px',
+                              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
+                              transition: 'all 0.2s ease',
+                            }}
                           >
-                            <div style={{ flex: '1 1 280px' }}>
-                              <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                <h6 className="font-weight-bold text-dark mb-0">{cert.title}</h6>
-                                {cert.credentialId && (
-                                  <span className="badge badge-light border text-muted small font-weight-bold">
-                                    ID: {cert.credentialId}
+                            <div className="d-flex align-items-start justify-content-between flex-wrap" style={{ gap: '16px' }}>
+                              {/* Left Info Cluster */}
+                              <div className="d-flex align-items-start flex-grow-1" style={{ minWidth: '260px', gap: '16px' }}>
+                                <div
+                                  className="d-flex align-items-center justify-content-center flex-shrink-0 mr-3"
+                                  style={{
+                                    width: '50px',
+                                    height: '50px',
+                                    borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(2, 43, 58, 0.08) 100%)',
+                                    border: '1.5px solid rgba(245, 158, 11, 0.35)',
+                                    fontSize: '24px',
+                                  }}
+                                >
+                                  🏆
+                                </div>
+                                <div className="flex-grow-1">
+                                  {/* Title & Credential ID */}
+                                  <div className="d-flex align-items-center flex-wrap mb-2" style={{ gap: '10px' }}>
+                                    <h6 className="font-weight-bold text-dark mb-0 mr-2" style={{ fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+                                      {cert.title}
+                                    </h6>
+                                    {cert.credentialId && (
+                                      <span
+                                        className="badge font-weight-bold"
+                                        style={{
+                                          fontSize: '11px',
+                                          padding: '4px 10px',
+                                          background: '#F1F5F9',
+                                          color: '#334155',
+                                          border: '1px solid #CBD5E1',
+                                          borderRadius: '20px',
+                                        }}
+                                      >
+                                        ID: {cert.credentialId}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Detailed Meta Tags */}
+                                  <div className="d-flex align-items-center flex-wrap mb-3" style={{ gap: '10px', fontSize: '13px' }}>
+                                    <div
+                                      className="d-inline-flex align-items-center mr-2 mb-1"
+                                      style={{
+                                        background: '#F8FAFC',
+                                        padding: '4px 10px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #E2E8F0',
+                                        color: '#1E293B',
+                                        fontWeight: 500,
+                                      }}
+                                    >
+                                      <span style={{ marginRight: '6px', fontSize: '14px' }}>🏢</span>
+                                      <span>{cert.issuer}</span>
+                                    </div>
+                                    {cert.year && (
+                                      <div
+                                        className="d-inline-flex align-items-center mr-2 mb-1"
+                                        style={{
+                                          background: '#F8FAFC',
+                                          padding: '4px 10px',
+                                          borderRadius: '6px',
+                                          border: '1px solid #E2E8F0',
+                                          color: '#475569',
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        <span style={{ marginRight: '6px', fontSize: '14px' }}>📅</span>
+                                        <span>Issued {cert.year}</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Action Buttons: Verification & Proof */}
+                                  {(cert.credentialUrl || cert.documentUrl) && (
+                                    <div className="d-flex align-items-center flex-wrap pt-1" style={{ gap: '10px' }}>
+                                      {cert.credentialUrl && (
+                                        <a
+                                          href={cert.credentialUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="btn btn-sm d-inline-flex align-items-center mr-2 mb-1"
+                                          style={{
+                                            background: '#F8FAFC',
+                                            color: '#0F172A',
+                                            border: '1px solid #CBD5E1',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: 600,
+                                            padding: '6px 14px',
+                                            textDecoration: 'none',
+                                            gap: '6px',
+                                          }}
+                                        >
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                          </svg>
+                                          <span style={{ marginRight: '4px' }}>Verify Credential</span>
+                                          <span style={{ fontSize: '13px' }}>↗</span>
+                                        </a>
+                                      )}
+                                      {cert.documentUrl && (
+                                        <a
+                                          href={cert.documentUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="btn btn-sm d-inline-flex align-items-center mb-1"
+                                          style={{
+                                            background: '#F0FDF4',
+                                            color: '#166534',
+                                            border: '1px solid #BBF7D0',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: 600,
+                                            padding: '6px 14px',
+                                            textDecoration: 'none',
+                                            gap: '6px',
+                                          }}
+                                        >
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                          </svg>
+                                          <span style={{ marginRight: '4px' }}>View Document Proof</span>
+                                          <span style={{ fontSize: '13px' }}>↗</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Right Status Badge & Delete */}
+                              <div className="d-flex align-items-center flex-shrink-0 align-self-start" style={{ gap: '10px' }}>
+                                {cert.isVerified ? (
+                                  <span
+                                    className="badge font-weight-bold mr-2"
+                                    style={{
+                                      fontSize: '11px',
+                                      padding: '6px 12px',
+                                      borderRadius: '20px',
+                                      background: '#ECFDF5',
+                                      color: '#047857',
+                                      border: '1px solid #A7F3D0',
+                                    }}
+                                  >
+                                    ✓ Verified
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="badge font-weight-bold mr-2"
+                                    style={{
+                                      fontSize: '11px',
+                                      padding: '6px 12px',
+                                      borderRadius: '20px',
+                                      background: '#FFF1F2',
+                                      color: '#BE123C',
+                                      border: '1px solid #FECDD3',
+                                    }}
+                                  >
+                                    Pending Verification
                                   </span>
                                 )}
-                                <span className="badge badge-danger text-white px-2 py-1 small font-weight-bold" style={{ fontSize: '10px' }}>
-                                  Not Verified
-                                </span>
-                              </div>
-                              <span className="small text-muted d-block">
-                                {cert.issuer} {cert.year ? `· Issued ${cert.year}` : ''}
-                              </span>
-                              <div className="d-flex align-items-center gap-3 mt-1 flex-wrap">
-                                {cert.credentialUrl && (
-                                  <a
-                                    href={cert.credentialUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="small text-teal font-weight-bold"
+
+                                {!isSetupCompleted && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleDeleteCertification(cert._id)}
+                                    title="Remove certification"
+                                    style={{
+                                      borderRadius: '8px',
+                                      width: '32px',
+                                      height: '32px',
+                                      padding: 0,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                                      background: 'rgba(239, 68, 68, 0.04)',
+                                    }}
                                   >
-                                    🔗 Verification Link &nearr;
-                                  </a>
-                                )}
-                                {cert.documentUrl && (
-                                  <a
-                                    href={cert.documentUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="small text-teal font-weight-bold"
-                                  >
-                                    📄 Certificate Document &nearr;
-                                  </a>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                  </button>
                                 )}
                               </div>
                             </div>
-
-                            {!isSetupCompleted && (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-danger"
-                                onClick={() => handleDeleteCertification(cert._id)}
-                                title="Delete certification"
-                                style={{ borderRadius: '50%', width: '30px', height: '30px', padding: 0, lineHeight: 1 }}
-                              >
-                                &times;
-                              </button>
-                            )}
                           </div>
                         ))}
                       </div>

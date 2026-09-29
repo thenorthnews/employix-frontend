@@ -4321,7 +4321,17 @@ p {
     border-color: #FECACA;
 }
 
+.kyc-weight-badge .weight-pts {
+    margin-left: 5px;
+}
+
 .kyc-weight-badge.pending .weight-pts {
     color: #DC2626;
-    margin-left: 3px;
-}
+}
+
+/* Flex gap utility helpers for Bootstrap 4 */
+.gap-1 { gap: 0.25rem !important; }
+.gap-2 { gap: 0.5rem !important; }
+.gap-3 { gap: 1rem !important; }
+.gap-4 { gap: 1.5rem !important; }
+

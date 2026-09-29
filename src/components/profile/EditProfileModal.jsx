@@ -25,6 +25,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('/images/identity.jpg');
   const [saving, setSaving] = useState(false);
+  const [designationError, setDesignationError] = useState('');
 
   // Helper for image url resolution
   const resolveImageUrl = (imgPath) => {
@@ -126,9 +127,11 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
     }
 
     if (!designation.trim()) {
+      setDesignationError('Professional Designation / Role is required.');
       toast.error('Professional Designation / Role is required.');
       return;
     }
+    setDesignationError('');
 
     setSaving(true);
     try {
@@ -297,6 +300,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
 
         {/* Modal Form Body */}
         <form
+          noValidate
           onSubmit={handleSubmit}
           style={{
             display: 'flex',
@@ -549,14 +553,16 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                 <input
                   type="text"
                   value={designation}
-                  onChange={(e) => setDesignation(e.target.value)}
-                  placeholder="e.g. Senior Full Stack Engineer"
-                  required
+                  onChange={(e) => {
+                    setDesignation(e.target.value);
+                    if (designationError) setDesignationError('');
+                  }}
+                  placeholder="e.g. Senior Software Engineer"
                   style={{
                     width: '100%',
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    border: '1.5px solid #CBD5E1',
+                    border: designationError ? '1.5px solid #EF4444' : '1.5px solid #CBD5E1',
                     fontSize: '0.94rem',
                     color: '#0F172A',
                     outline: 'none',
@@ -564,14 +570,19 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                     transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#00D294';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(0, 210, 148, 0.18)';
+                    e.target.style.borderColor = designationError ? '#EF4444' : '#00D294';
+                    e.target.style.boxShadow = designationError ? '0 0 0 3px rgba(239, 68, 68, 0.18)' : '0 0 0 3px rgba(0, 210, 148, 0.18)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = '#CBD5E1';
+                    e.target.style.borderColor = designationError ? '#EF4444' : '#CBD5E1';
                     e.target.style.boxShadow = 'none';
                   }}
                 />
+                {designationError && (
+                  <small style={{ color: '#EF4444', fontWeight: 600, fontSize: '0.84rem', marginTop: '6px', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ marginRight: '4px' }}>⚠</span> {designationError}
+                  </small>
+                )}
               </div>
 
               {/* Current Residential Address */}
