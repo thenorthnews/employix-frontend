@@ -26,6 +26,7 @@ import {
   getScoreConfigApi,
 } from '../api/kycApi';
 import { updateProfileApi, getProfileApi } from '../api/authApi';
+import { resolveImageUrl, resolveDocumentUrl } from '../utils/profileUtils';
 
 const MONTH_OPTIONS = [
   { value: '01', label: '01 - January' },
@@ -1477,7 +1478,7 @@ const KycVerificationPage = () => {
                         >
                           {profilePhotoPreview ? (
                             <img
-                              src={profilePhotoPreview}
+                              src={resolveImageUrl(profilePhotoPreview)}
                               onError={() => setProfilePhotoPreview(null)}
                               alt="Profile Avatar"
                               className="setup-photo-img"
@@ -1532,30 +1533,21 @@ const KycVerificationPage = () => {
                       {/* Full Name & Details */}
                       <div className="col-md-9">
                         <div className="row g-3">
-                          {/* Full Name (Full width, Prefix removed) */}
+                          {/* Full Name (Registered - Non-editable) */}
                           <div className="col-12 mb-3">
-                            <label className="auth-label">
-                              Full Name <span className="text-danger">*</span>
+                            <label className="auth-label d-flex justify-content-between align-items-center">
+                              <span>Full Name (Registered)</span>
+                              <span className="text-muted small" style={{ fontSize: '0.8rem' }}>🔒 Non-editable</span>
                             </label>
                             <input
                               type="text"
-                              className={`form-control auth-input-group px-3 py-2 ${profileSaved ? 'bg-light text-muted' : ''} ${profileErrors.name ? 'is-invalid border-danger' : ''}`}
-                              style={profileErrors.name ? { borderColor: '#dc3545', boxShadow: '0 0 0 2px rgba(220,53,69,0.15)' } : {}}
+                              className="form-control auth-input-group px-3 py-2 bg-light text-muted"
+                              style={{ cursor: 'not-allowed', backgroundColor: '#f8fafc' }}
                               value={fullName}
-                              disabled={profileSaved}
-                              onChange={(e) => {
-                                setFullName(e.target.value);
-                                if (profileErrors.name) {
-                                  setProfileErrors((prev) => ({ ...prev, name: '' }));
-                                }
-                              }}
+                              readOnly
+                              disabled
                               placeholder="e.g. Full Name"
                             />
-                            {profileErrors.name && !profileSaved && (
-                              <small className="text-danger font-weight-bold mt-1 d-flex align-items-center" style={{ fontSize: '0.84rem' }}>
-                                <span className="mr-1">⚠</span> {profileErrors.name}
-                              </small>
-                            )}
                           </div>
 
                           {/* Email (Read-Only) */}
@@ -2346,7 +2338,7 @@ const KycVerificationPage = () => {
                               {!isSetupCompleted && kycStatus !== 8 && (
                                 <button
                                   type="button"
-                                  className="btn btn-sm btn-outline-danger ml-2"
+                                  className="item-delete-btn-danger ml-2"
                                   onClick={() => handleDeleteJob(job._id)}
                                   title="Remove record"
                                   style={{ borderRadius: '50%', width: '28px', height: '28px', padding: 0, lineHeight: 1 }}
@@ -3261,7 +3253,7 @@ const KycVerificationPage = () => {
                     {(qualifications.length > 0 || certifications.length > 0) ? (
                       <div className="d-flex align-items-center gap-2 flex-wrap">
                         <span className="badge badge-info px-3 py-2 font-weight-bold">
-                          &#10003; {qualifications.length} Degree(s) &middot; {certifications.length} Cert(s) Added
+                          &#10003; {qualifications.length} Degree(s) &middot; {certifications.length} Certificate Added
                         </span>
                         {(qualifications.some(q => q.isVerified && q.verificationStatus === 'verified') || certifications.some(c => c.isVerified && c.verificationStatus === 'verified')) && (
                           <span className="badge badge-success px-2 py-1 ml-2 font-weight-bold">
@@ -3410,7 +3402,7 @@ const KycVerificationPage = () => {
                                   {qual.documentUrl && (
                                     <div className="d-flex align-items-center flex-wrap pt-1" style={{ gap: '10px' }}>
                                       <a
-                                        href={qual.documentUrl}
+                                        href={resolveDocumentUrl(qual.documentUrl)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="btn btn-sm d-inline-flex align-items-center"
@@ -3473,20 +3465,9 @@ const KycVerificationPage = () => {
                                 {!isSetupCompleted && (
                                   <button
                                     type="button"
-                                    className="btn btn-sm btn-outline-danger"
+                                    className="item-delete-btn-danger"
                                     onClick={() => handleDeleteQualification(qual._id)}
                                     title="Remove qualification"
-                                    style={{
-                                      borderRadius: '8px',
-                                      width: '32px',
-                                      height: '32px',
-                                      padding: 0,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      border: '1px solid rgba(239, 68, 68, 0.25)',
-                                      background: 'rgba(239, 68, 68, 0.04)',
-                                    }}
                                   >
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                       <polyline points="3 6 5 6 21 6" />
@@ -3716,7 +3697,7 @@ const KycVerificationPage = () => {
                                     <div className="d-flex align-items-center flex-wrap pt-1" style={{ gap: '10px' }}>
                                       {cert.credentialUrl && (
                                         <a
-                                          href={cert.credentialUrl}
+                                          href={cert.credentialUrl && (cert.credentialUrl.startsWith('http://') || cert.credentialUrl.startsWith('https://')) ? cert.credentialUrl : `https://${cert.credentialUrl}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="btn btn-sm d-inline-flex align-items-center mr-2 mb-1"
@@ -3742,7 +3723,7 @@ const KycVerificationPage = () => {
                                       )}
                                       {cert.documentUrl && (
                                         <a
-                                          href={cert.documentUrl}
+                                          href={resolveDocumentUrl(cert.documentUrl)}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="btn btn-sm d-inline-flex align-items-center mb-1"
@@ -3806,20 +3787,9 @@ const KycVerificationPage = () => {
                                 {!isSetupCompleted && (
                                   <button
                                     type="button"
-                                    className="btn btn-sm btn-outline-danger"
+                                    className="item-delete-btn-danger"
                                     onClick={() => handleDeleteCertification(cert._id)}
                                     title="Remove certification"
-                                    style={{
-                                      borderRadius: '8px',
-                                      width: '32px',
-                                      height: '32px',
-                                      padding: 0,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      border: '1px solid rgba(239, 68, 68, 0.25)',
-                                      background: 'rgba(239, 68, 68, 0.04)',
-                                    }}
                                   >
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                       <polyline points="3 6 5 6 21 6" />

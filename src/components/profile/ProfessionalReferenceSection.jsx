@@ -77,10 +77,23 @@ const ProfessionalReferenceSection = ({
   };
 
   useEffect(() => {
+    fetchReferences();
+  }, []);
+
+  useEffect(() => {
     if (initialReferences !== null && initialReferences !== undefined) {
-      setReferences(Array.isArray(initialReferences) ? initialReferences : []);
+      setReferences((prev) => {
+        if (prev.length > 0 && prev.some((r) => r.feedback)) return prev;
+        return Array.isArray(initialReferences) ? initialReferences : [];
+      });
       setRewardPoints(initialRewardPoints || 0);
       setLoading(false);
+      const hasMissingFeedback = Array.isArray(initialReferences) && initialReferences.some(
+        (r) => (r.status === 'completed' || r.isFeedbackSubmitted) && !r.feedback
+      );
+      if (hasMissingFeedback) {
+        fetchReferences();
+      }
     }
   }, [initialReferences, initialRewardPoints]);
 
@@ -335,10 +348,34 @@ const ProfessionalReferenceSection = ({
     }
   };
 
+  const handleViewFeedback = async (ref) => {
+    if (ref?.feedback && ref.feedback.relationship) {
+      setFeedbackModal({ isOpen: true, reference: ref });
+      return;
+    }
+
+    try {
+      const res = await getReferencesApi();
+      const payload = res?.data || res;
+      const allRefs = payload?.references || [];
+      const freshRef = allRefs.find((r) => String(r._id) === String(ref._id));
+      if (freshRef) {
+        setReferences(allRefs);
+        setFeedbackModal({ isOpen: true, reference: freshRef });
+        return;
+      }
+    } catch (err) {
+      console.error('Error fetching reference feedback:', err);
+    }
+
+    setFeedbackModal({ isOpen: true, reference: ref });
+  };
+
   const maxReached = references.length >= 2;
   const scores = calculateReferenceScores(references);
   const displayEarned = scores.totalEarnedPoints || rewardPoints;
 
+      console.log("🚀 ~ ProfessionalReferenceSection ~ feedbackModal.reference:", feedbackModal.reference)
   return (
     <div className="auth-card" id="step-references">
       {/* Modern Highlighted Header matching Step 6 & Image 2 */}
@@ -622,7 +659,7 @@ const ProfessionalReferenceSection = ({
                           {isCompleted ? (
                             <button
                               type="button"
-                              onClick={() => setFeedbackModal({ isOpen: true, reference: ref })}
+                              onClick={() => handleViewFeedback(ref)}
                               className="btn btn-sm font-weight-bold"
                               style={{
                                 background: '#e6fffa',
@@ -632,7 +669,7 @@ const ProfessionalReferenceSection = ({
                               }}
                               title="View reference ratings and feedback"
                             >
-                              ★ View Feedback
+                               View Feedback
                             </button>
                           ) : (
                             <button
@@ -1184,10 +1221,18 @@ const ProfessionalReferenceSection = ({
                       </strong>
                     </div>
                   )}
+                  {feedbackModal.reference.feedback?.companyName && (
+                    <div className="d-flex align-items-center justify-content-between mb-1 small">
+                      <span className="text-muted">Company / Org:</span>
+                      <strong className="text-dark font-weight-bold">
+                        🏢 {feedbackModal.reference.feedback.companyName}
+                      </strong>
+                    </div>
+                  )}
                   <div className="d-flex align-items-center justify-content-between small">
-                    <span className="text-muted">Relationship:</span>
-                    <strong className="text-dark">
-                      {feedbackModal.reference.feedback?.relationship || 'Colleague / Manager'}
+                    <span className="text-muted">Relationship / Capacity:</span>
+                    <strong className="text-dark font-weight-bold">
+                      {feedbackModal.reference.feedback?.relationship || feedbackModal.reference.refereeRole || 'Colleague / Manager'}
                     </strong>
                   </div>
                 </div>
@@ -1206,9 +1251,10 @@ const ProfessionalReferenceSection = ({
                       ⭐ Conduct &amp; Soft Skills (1 - 10):
                     </span>
                     <strong className="text-warning font-weight-bold" style={{ fontSize: '13px' }}>
-                      {'★'.repeat(feedbackModal.reference.feedback?.rating || 5)}{' '}
+                      {'★'.repeat(typeof feedbackModal.reference.feedback?.rating === 'number' ? feedbackModal.reference.feedback.rating : 5)}
+                      {'☆'.repeat(Math.max(0, 5 - (typeof feedbackModal.reference.feedback?.rating === 'number' ? feedbackModal.reference.feedback.rating : 5)))}{' '}
                       <span className="text-dark" style={{ fontSize: '12px' }}>
-                        ({feedbackModal.reference.feedback?.rating || 5} / 5)
+                        ({typeof feedbackModal.reference.feedback?.rating === 'number' ? feedbackModal.reference.feedback.rating : 5} / 5)
                       </span>
                     </strong>
                   </div>

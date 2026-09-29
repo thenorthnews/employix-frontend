@@ -78,6 +78,47 @@ export const resolveImageUrl = (imgPath, fallback = '/images/identity.jpg') => {
 };
 
 /**
+ * Resolves document URLs safely to open via browser / new tab
+ * Converts relative upload paths (/uploads/documents/...) into full accessible URLs
+ * @param {string} docPath
+ * @returns {string}
+ */
+export const resolveDocumentUrl = (docPath) => {
+  if (!docPath || typeof docPath !== 'string') return '';
+
+  const trimmed = docPath.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+
+  const isLocal = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+
+  let cleanPath = trimmed;
+
+  // On local machine, if pointing to remote 13.232.68.44:3000, redirect to local port 5000
+  if (isLocal && cleanPath.includes('13.232.68.44:3000/uploads/')) {
+    return cleanPath.replace(/http:\/\/13\.232\.68\.44:3000/, 'http://localhost:5000');
+  }
+
+  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+    return cleanPath;
+  }
+
+  cleanPath = cleanPath.replace(/\\/g, '/');
+  if (!cleanPath.startsWith('/')) {
+    cleanPath = `/${cleanPath}`;
+  }
+
+  const backendBase = getBackendBaseUrl();
+  return `${backendBase}${cleanPath}`;
+};
+
+/**
  * Formats user ID into official Employix candidate ID format
  * @param {string} rawId - Stored user.employixId or empty
  * @param {string} userId - Mongo user._id

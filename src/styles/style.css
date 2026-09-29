@@ -3536,6 +3536,26 @@ p {
     border-color: #EF4444;
 }
 
+.item-delete-btn-danger,
+.item-delete-btn-danger:hover,
+.item-delete-btn-danger:focus,
+.item-delete-btn-danger:active,
+.item-delete-btn-danger:focus-visible {
+    background: rgba(239, 68, 68, 0.05) !important;
+    border: 1px solid rgba(239, 68, 68, 0.28) !important;
+    color: #EF4444 !important;
+    border-radius: 50% !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transition: opacity 0.15s ease !important;
+}
+
 .doc-view-btn {
     display: inline-flex;
     align-items: center;
@@ -4334,4 +4354,29 @@ p {
 .gap-2 { gap: 0.5rem !important; }
 .gap-3 { gap: 1rem !important; }
 .gap-4 { gap: 1.5rem !important; }
+
+/* Action Delete Button (removes hover white background and flash) */
+.item-delete-btn-danger,
+.item-delete-btn-danger:hover,
+.item-delete-btn-danger:focus,
+.item-delete-btn-danger:active,
+.item-delete-btn-danger:focus-visible {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    border: 1px solid rgba(239, 68, 68, 0.28) !important;
+    background: rgba(239, 68, 68, 0.05) !important;
+    background-color: rgba(239, 68, 68, 0.05) !important;
+    color: #EF4444 !important;
+    cursor: pointer !important;
+    outline: none !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    transition: none !important;
+}
+
 
