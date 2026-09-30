@@ -55,6 +55,50 @@ const CandidateScoreCard = ({ user, onEdit }) => {
   const clampedScore = Math.max(0, Math.min(100, displayScore));
   const strokeOffset = ARC_LENGTH - (ARC_LENGTH * clampedScore) / 100;
 
+  // Adaptive Color Tiers matching KYC Verification:
+  // - <= 20: Red Gradient (#DC2626 -> #EF4444 -> #FB7185)
+  // - 21 - 70: Amber Gradient (#EA580C -> #F59E0B -> #FDE047)
+  // - > 70: Green Gradient (#00D294 -> #00E5A3)
+  let scoreTier = {
+    gradientId: 'candidateScoreGradRed',
+    stops: [
+      { offset: '0%', color: '#DC2626' },
+      { offset: '50%', color: '#EF4444' },
+      { offset: '100%', color: '#FB7185' },
+    ],
+    accentColor: '#EF4444',
+    tierPillBg: 'rgba(239, 68, 68, 0.2)',
+    tierPillBorder: 'rgba(239, 68, 68, 0.45)',
+    tierPillColor: '#FCA5A5',
+  };
+
+  if (clampedScore > 70) {
+    scoreTier = {
+      gradientId: 'candidateScoreGradGreen',
+      stops: [
+        { offset: '0%', color: '#00D294' },
+        { offset: '100%', color: '#00E5A3' },
+      ],
+      accentColor: '#00D294',
+      tierPillBg: 'rgba(0, 210, 148, 0.2)',
+      tierPillBorder: 'rgba(0, 210, 148, 0.45)',
+      tierPillColor: '#6EE7B7',
+    };
+  } else if (clampedScore > 20) {
+    scoreTier = {
+      gradientId: 'candidateScoreGradAmber',
+      stops: [
+        { offset: '0%', color: '#EA580C' },
+        { offset: '50%', color: '#F59E0B' },
+        { offset: '100%', color: '#FDE047' },
+      ],
+      accentColor: '#EE740D',
+      tierPillBg: 'rgba(245, 158, 11, 0.2)',
+      tierPillBorder: 'rgba(245, 158, 11, 0.45)',
+      tierPillColor: '#FCD34D',
+    };
+  }
+
   return (
     <div className="candidate-card-container">
       {/* Top Candidate Avatar */}
@@ -91,9 +135,10 @@ const CandidateScoreCard = ({ user, onEdit }) => {
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
-            <linearGradient id="candidateScoreGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#00D294" />
-              <stop offset="100%" stopColor="#00E5A3" />
+            <linearGradient id={scoreTier.gradientId} x1="0%" y1="100%" x2="100%" y2="0%">
+              {scoreTier.stops.map((s, idx) => (
+                <stop key={idx} offset={s.offset} stopColor={s.color} />
+              ))}
             </linearGradient>
           </defs>
 
@@ -110,12 +155,12 @@ const CandidateScoreCard = ({ user, onEdit }) => {
           <path
             d="M 44.8 141.3 A 72 72 0 1 1 155.2 141.3"
             fill="none"
-            stroke="url(#candidateScoreGrad)"
+            stroke={`url(#${scoreTier.gradientId})`}
             strokeWidth="14"
             strokeLinecap="round"
             strokeDasharray={ARC_LENGTH}
             strokeDashoffset={strokeOffset}
-            style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease' }}
           />
         </svg>
 
@@ -130,7 +175,16 @@ const CandidateScoreCard = ({ user, onEdit }) => {
 
       {/* Tier Badge Pill */}
       <div className="mt-2 mb-3">
-        <span className="candidate-tier-pill">{tierText}</span>
+        <span
+          className="candidate-tier-pill"
+          style={{
+            background: scoreTier.tierPillBg,
+            border: `1px solid ${scoreTier.tierPillBorder}`,
+            color: scoreTier.tierPillColor,
+          }}
+        >
+          {tierText}
+        </span>
       </div>
 
       {/* Candidate Name */}
@@ -140,7 +194,7 @@ const CandidateScoreCard = ({ user, onEdit }) => {
       <p className="candidate-role-text">{roleAndLocation}</p>
 
       {/* Employix ID */}
-      <div className="candidate-id-code">{formattedId}</div>
+      <div className="candidate-id-code" style={{ color: scoreTier.accentColor }}>{formattedId}</div>
 
       {/* Skill Pills */}
       {/* <div className="candidate-skills-row">

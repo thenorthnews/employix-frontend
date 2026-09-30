@@ -1771,7 +1771,7 @@ const KycVerificationPage = () => {
                       <div className="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
                         <div className="d-flex align-items-center mb-2 mb-sm-0">
                           <div className="stat-icon-light bg-teal-light mr-3" style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span className="text-teal h4 mb-0 font-weight-bold">&#10003;</span>
+                            <span className="text-white h4 mb-0 font-weight-bold">&#10003;</span>
                           </div>
                           <div>
                             <h6 className="font-weight-bold text-dark mb-0">
@@ -2254,7 +2254,7 @@ const KycVerificationPage = () => {
                       <div className="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
                         <div className="d-flex align-items-center mb-2 mb-sm-0">
                           <div className="stat-icon-light bg-teal-light mr-3" style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span className="text-teal h4 mb-0 font-weight-bold">&#10003;</span>
+                            <span className="text-white h4 mb-0 font-weight-bold">&#10003;</span>
                           </div>
                           <div>
                             <h6 className="font-weight-bold text-dark mb-0">
@@ -2682,8 +2682,8 @@ const KycVerificationPage = () => {
                           <div key={job._id} className="p-3 mb-3 rounded border" style={{ background: 'rgba(0,210,148,0.04)' }}>
                             <div className="d-flex align-items-start justify-content-between">
                               <div className="d-flex align-items-start">
-                                <div className="stat-icon-light bg-teal-light mr-3 mt-1" style={{ width: '32px', height: '32px', minWidth: '32px' }}>
-                                  <span className="text-teal" style={{ fontSize: '14px' }}>&#10003;</span>
+                                <div className="stat-icon-light bg-teal-light mr-3 mt-1 d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', minWidth: '32px', borderRadius: '8px' }}>
+                                  <span className="text-white font-weight-bold" style={{ fontSize: '14px' }}>&#10003;</span>
                                 </div>
                                 <div>
                                   <h6 className="font-weight-bold text-dark mb-0">{job.designation}</h6>

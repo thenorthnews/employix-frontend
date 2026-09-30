@@ -545,8 +545,13 @@ img {
 }
 
 .stat-icon-light.bg-teal-light {
-    background-color: rgba(0, 210, 148, 0.12);
-    border: 1px solid rgba(0, 210, 148, 0.25);
+    background-color: #00ab78;
+    border: 1px solid #00ab78;
+    color: #ffffff;
+}
+
+.stat-icon-light.bg-teal-light svg {
+    stroke: #ffffff;
 }
 
 .stat-icon-light.bg-pink-light {

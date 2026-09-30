@@ -23,15 +23,15 @@ const KycScoreGauge = ({ score = 0 }) => {
   if (numericScore > 70) {
     tier = {
       gradientId: 'scoreGradGreen',
-      gradientCss: 'linear-gradient(135deg, #00F5A0 0%, #00D294 50%, #059669 100%)',
+      gradientCss: 'linear-gradient(135deg, #00D294 0%, #00E5A3 100%)',
       color: '#00D294',
       scoreColor: '#00D294',
-      textColor: '#047857',
+      textColor: '#00875a',
       scoreBgLight: 'rgba(0, 210, 148, 0.12)',
       scoreBorderLight: 'rgba(0, 210, 148, 0.4)',
       glowLight: 'rgba(0, 210, 148, 0.35)',
       scoreLabel: 'High Trust',
-      knobColor: '#059669',
+      knobColor: '#00D294',
     };
   } else if (numericScore > 20) {
     tier = {
@@ -92,30 +92,24 @@ const KycScoreGauge = ({ score = 0 }) => {
         <svg width={size} height={size} style={{ overflow: 'visible' }}>
           <defs>
             {/* Red Gradient (<= 20) */}
-            <linearGradient id="scoreGradRed" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FB7185" />
+            <linearGradient id="scoreGradRed" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#DC2626" />
               <stop offset="50%" stopColor="#EF4444" />
-              <stop offset="100%" stopColor="#DC2626" />
+              <stop offset="100%" stopColor="#FB7185" />
             </linearGradient>
 
             {/* Amber Gradient (21 - 70) */}
-            <linearGradient id="scoreGradAmber" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FDE047" />
+            <linearGradient id="scoreGradAmber" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#EA580C" />
               <stop offset="50%" stopColor="#F59E0B" />
-              <stop offset="100%" stopColor="#EA580C" />
+              <stop offset="100%" stopColor="#FDE047" />
             </linearGradient>
 
-            {/* Green Gradient (> 70) */}
-            <linearGradient id="scoreGradGreen" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00F5A0" />
-              <stop offset="50%" stopColor="#00D294" />
-              <stop offset="100%" stopColor="#059669" />
+            {/* Green Gradient (> 70) - Exactly matching CandidateScoreCard (#00D294 -> #00E5A3) */}
+            <linearGradient id="scoreGradGreen" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#00D294" />
+              <stop offset="100%" stopColor="#00E5A3" />
             </linearGradient>
-
-            {/* Luminous Soft Glow Filter */}
-            <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor={tier.glowLight} floodOpacity="0.65" />
-            </filter>
           </defs>
 
           {/* Background grey track */}
@@ -129,7 +123,7 @@ const KycScoreGauge = ({ score = 0 }) => {
             strokeLinecap="round"
           />
 
-          {/* Dynamic gradient-filled progress arc with soft luminous glow */}
+          {/* Dynamic gradient-filled progress arc */}
           <circle
             cx={cx}
             cy={cy}
@@ -140,7 +134,6 @@ const KycScoreGauge = ({ score = 0 }) => {
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
-            filter="url(#gaugeGlow)"
             style={{
               transform: 'rotate(-90deg)',
               transformOrigin: 'center',
@@ -154,23 +147,12 @@ const KycScoreGauge = ({ score = 0 }) => {
               <circle
                 cx={knobX}
                 cy={knobY}
-                r={strokeWidth / 2 + 5}
-                fill={tier.knobColor}
-                opacity="0.22"
-                style={{
-                  transition:
-                    'cx 0.85s cubic-bezier(0.16, 1, 0.3, 1), cy 0.85s cubic-bezier(0.16, 1, 0.3, 1), fill 0.4s ease',
-                }}
-              />
-              <circle
-                cx={knobX}
-                cy={knobY}
                 r={strokeWidth / 2 + 2}
                 fill={tier.knobColor}
                 stroke="#FFFFFF"
                 strokeWidth="3.5"
                 style={{
-                  filter: 'drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28))',
+                  filter: 'drop-shadow(0 2px 5px rgba(0, 0, 0, 0.22))',
                   transition:
                     'cx 0.85s cubic-bezier(0.16, 1, 0.3, 1), cy 0.85s cubic-bezier(0.16, 1, 0.3, 1), fill 0.4s ease',
                 }}
@@ -226,16 +208,11 @@ const KycScoreGauge = ({ score = 0 }) => {
             {tier.scoreLabel}
           </span>
 
-          {/* Adaptive Gradient Score Number */}
+          {/* Score Number matching Image 2 */}
           <div
             style={{
-              fontSize: '2.5rem',
+              fontSize: '2.55rem',
               fontWeight: 900,
-              backgroundImage: tier.gradientCss,
-              WebkitBackgroundImage: tier.gradientCss,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
               color: tier.color,
               lineHeight: 1,
               letterSpacing: '-0.03em',
