@@ -221,8 +221,8 @@ const Navbar = () => {
 
             {/* Right Action Items - Simple Click-Only Downside Profile Dropdown */}
             <div className="header-actions d-flex align-items-center mt-3 mt-lg-0">
-              {/* Profile Dropdown Component - Hidden on Login/Register screens */}
-              {location.pathname !== '/login' && location.pathname !== '/register' && (
+              {/* Profile Dropdown Component - Only shown for logged-in users, hidden for guests and login/register */}
+              {hasValidSession && location.pathname !== '/login' && location.pathname !== '/register' && (
                 <div className="meesho-profile-wrapper" ref={dropdownRef}>
                 <button
                   className={`meesho-profile-tab ${dropdownOpen ? 'active' : ''}`}

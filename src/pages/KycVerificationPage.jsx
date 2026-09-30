@@ -28,6 +28,7 @@ import {
 import { updateProfileApi, getProfileApi } from '../api/authApi';
 import { resolveImageUrl, resolveDocumentUrl } from '../utils/profileUtils';
 import AadhaarSuccessModal from '../components/kyc/AadhaarSuccessModal';
+import KycScoreGauge from '../components/kyc/KycScoreGauge';
 
 const MONTH_OPTIONS = [
   { value: '01', label: '01 - January' },
@@ -1929,7 +1930,7 @@ const KycVerificationPage = () => {
                                     Upload Aadhaar Front
                                   </div>
                                   <div className="text-muted small mb-3">
-                                    Drag &amp; drop or <span className="text-teal font-weight-bold">Browse file</span>
+                                    Drag &amp; drop or <span className="text-white font-weight-bold">Browse file</span>
                                   </div>
                                   <div className="d-flex align-items-center gap-1">
                                     <span className="badge badge-light border text-muted px-2 py-1 small">JPG</span>
@@ -2569,7 +2570,7 @@ const KycVerificationPage = () => {
                                       className="stat-icon-light bg-teal-light mr-3 mt-1 d-flex align-items-center justify-content-center"
                                       style={{ width: '36px', height: '36px', minWidth: '36px', borderRadius: '10px' }}
                                     >
-                                      <span className="text-teal font-weight-bold" style={{ fontSize: '16px' }}>&#10003;</span>
+                                      <span className="text-white font-weight-bold" style={{ fontSize: '16px' }}>&#10003;</span>
                                     </div>
                                     <div className="flex-grow-1">
                                       {/* Employer Name */}
@@ -4022,31 +4023,38 @@ const KycVerificationPage = () => {
                         : 'Complete all steps to reach Status 7 / 7'}
                     </h5>
                   </div>
-                  <div className="d-flex flex-column flex-sm-row gap-2">
+                  <div className="d-flex flex-column flex-xl-row align-items-center gap-3">
                     {/* Step completion checklist pills */}
-                    <div className="d-flex gap-2 align-items-center mr-3 flex-wrap justify-content-center">
+                    <div className="d-flex gap-2 align-items-center flex-wrap justify-content-center">
                       <span className={`badge px-2 py-1 ${profileSaved ? 'badge-success' : 'badge-secondary'}`}>
                         {profileSaved ? '✓' : '1'} Profile
                       </span>
                       <span className={`badge px-2 py-1 ${aadhaarVerified ? 'badge-success' : 'badge-secondary'}`}>
                         {aadhaarVerified ? '✓' : '2'} Aadhaar
                       </span>
-                      <span className={`badge px-2 py-1 ${employmentVerified ? 'badge-success' : 'badge-secondary'}`}>
-                        {employmentVerified ? '✓' : '3'} Employment
-                      </span>
                       <span className={`badge px-2 py-1 ${voterVerified ? 'badge-success' : 'badge-secondary'}`}>
-                        {voterVerified ? '✓' : '4'} Voter ID
+                        {voterVerified ? '✓' : '3'} Voter ID
                       </span>
-                      <span className={`badge px-2 py-1 ${dlVerified ? 'badge-success' : 'badge-secondary'}`}>
-                        {dlVerified ? '✓' : '5'} Driving License
+                      <span className={`badge px-2 py-1 ${employmentVerified ? 'badge-success' : 'badge-secondary'}`}>
+                        {employmentVerified ? '✓' : '4'} Employment
+                      </span>
+                      <span className={`badge px-2 py-1 ${(userReferences && userReferences.length > 0) ? 'badge-success' : 'badge-secondary'}`}>
+                        {(userReferences && userReferences.length > 0) ? '✓' : '5'} References
                       </span>
                       <span className={`badge px-2 py-1 ${(qualifications.length > 0 || certifications.length > 0) ? 'badge-success' : 'badge-secondary'}`}>
                         {(qualifications.length > 0 || certifications.length > 0) ? '✓' : '6'} Education &amp; Certs
+                      </span>
+                      <span className={`badge px-2 py-1 ${dlVerified ? 'badge-success' : 'badge-secondary'}`}>
+                        {dlVerified ? '✓' : '7'} Driving License
                       </span>
                       <span className={`badge px-2 py-1 ${kycStatus >= 7 ? 'badge-success' : 'badge-info'}`}>
                         {kycStatus === 8 ? 'Status: 8/8 (Complete)' : `Status: ${kycStatus}/7`}
                       </span>
                     </div>
+
+                    {/* Circular Score Gauge at the End (Matching Image 2) */}
+                    <KycScoreGauge score={score} />
+
                     <button
                       type="button"
                       onClick={handleFinish}

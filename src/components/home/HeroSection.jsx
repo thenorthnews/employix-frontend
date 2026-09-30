@@ -23,8 +23,9 @@ const HeroSection = () => {
 
             {/* Headline */}
             <h1 className="hero-title section-heading mb-4">
-              One verified identity.{' '}
-              <span className="text-teal d-block">Trusted by every employer.</span>
+              One verified identity.   
+              <span className="text-teal"> Trusted by every employer. Curent for life.</span>
+              
             </h1>
 
             {/* Subtitle Paragraph */}
@@ -137,7 +138,7 @@ const HeroSection = () => {
 
                 {/* Hero Identity Image */}
                 <img
-                  src="/images/heroImg.png"
+                  src="/images/heroImg.jpg"
                   alt="Employix Verified Digital Employee Identity"
                   className="hero-visual-img img-fluid"
                 />

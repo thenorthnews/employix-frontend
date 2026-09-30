@@ -61,7 +61,7 @@ const LoginPage = () => {
           <div className="hero-glow-orb orb-teal" aria-hidden="true"></div>
           <div className="hero-glow-orb orb-blue" aria-hidden="true"></div>
 
-          <div className="container position-relative" style={{ zIndex: 2 }}>
+          <div className="top-spacing container position-relative" style={{ zIndex: 2 }}>
             <div className="row align-items-center justify-content-center">
               {/* Left Feature Branding Column */}
               <div className="col-lg-6 mb-5 mb-lg-0 pr-lg-5">
