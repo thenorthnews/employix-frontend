@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getKycVerificationFlags, formatCandidateAddress, isCandidateSetupCompleted, resolveImageUrl } from '../../utils/profileUtils';
+import AadhaarSuccessModal from '../kyc/AadhaarSuccessModal';
 
 const ProfileMainCards = ({ user: propUser }) => {
   const { user: reduxUser } = useSelector((state) => state.auth);
   const user = propUser || reduxUser;
+  const [showAadhaarModal, setShowAadhaarModal] = useState(false);
 
   const { isAadhaarDone, isVoterDone: isAddressDone, isDlDone } = getKycVerificationFlags(user);
   const voterAddress = formatCandidateAddress(user?.currentAddress || user?.address || user?.voterData?.address || user?.aadhaarData?.address) || 'Address not provided';
@@ -62,8 +64,15 @@ const ProfileMainCards = ({ user: propUser }) => {
           {/* Aadhaar Item */}
           <div className="col-sm-6 col-md-4 mb-3">
             <div
-              className="p-3 border rounded bg-light d-flex flex-column justify-content-between h-100"
-              style={{ borderLeft: isAadhaarDone ? '4px solid #00D294' : '4px solid #ef4444' }}
+              className={`p-3 border rounded bg-light d-flex flex-column justify-content-between h-100 ${
+                isAadhaarDone ? 'cursor-pointer hover-shadow transition-all' : ''
+              }`}
+              style={{
+                borderLeft: isAadhaarDone ? '4px solid #00D294' : '4px solid #ef4444',
+                cursor: isAadhaarDone ? 'pointer' : 'default',
+              }}
+              onClick={() => isAadhaarDone && setShowAadhaarModal(true)}
+              title={isAadhaarDone ? 'Click to view verified Aadhaar identity and +20 points' : 'Aadhaar not verified'}
             >
               <div className="d-flex align-items-center justify-content-between mb-2">
                 <div>
@@ -76,11 +85,16 @@ const ProfileMainCards = ({ user: propUser }) => {
                   {isAadhaarDone ? 'VERIFIED' : 'NOT VERIFIED'}
                 </span>
               </div>
-              <div className="mt-2 pt-2 border-top small text-muted">
-                <span>Doc: </span>
-                <strong className="text-dark">
-                  {user?.aadhaarData?.maskedDocumentNumber || (isAadhaarDone ? 'XXXX-XXXX-8921' : 'Not Verified')}
-                </strong>
+              <div className="mt-2 pt-2 border-top small text-muted d-flex justify-content-between align-items-center">
+                <div>
+                  <span>Doc: </span>
+                  <strong className="text-dark">
+                    {user?.aadhaarData?.maskedDocumentNumber || (isAadhaarDone ? 'XXXX-XXXX-8921' : 'Not Verified')}
+                  </strong>
+                </div>
+                {isAadhaarDone && (
+                  <span className="badge badge-success px-2 py-1 font-weight-bold small">+20 Pts</span>
+                )}
               </div>
             </div>
           </div>
@@ -368,6 +382,16 @@ const ProfileMainCards = ({ user: propUser }) => {
           </div>
         )}
       </div>
+
+      {/* Aadhaar Verified Celebration / Points Modal */}
+      <AadhaarSuccessModal
+        isOpen={showAadhaarModal}
+        onClose={() => setShowAadhaarModal(false)}
+        pointsEarned={20}
+        aadhaarData={user?.aadhaarData}
+        totalScore={user?.employixScore}
+        userName={user?.name}
+      />
     </div>
   );
 };

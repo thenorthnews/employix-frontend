@@ -381,7 +381,7 @@ const ProfessionalReferenceSection = ({
       {/* Modern Highlighted Header matching Step 6 & Image 2 */}
       <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
         <div className="d-flex align-items-center gap-3">
-          <span className="setup-step-badge mr-2">Step 7</span>
+          <span className="setup-step-badge mr-2">Step 5</span>
           <div>
             <h3 className="auth-card-heading mb-0">Professional Reference Verification</h3>
             <p className="auth-card-sub small mb-0">
