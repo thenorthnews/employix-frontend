@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import ButtonSpinner from '../common/Loader';
 import {
@@ -9,6 +10,7 @@ import {
   getReferenceShareLinkApi,
 } from '../../api/referenceApi';
 import { calculateReferenceScores } from '../../utils/referenceScoreCalculator';
+import { getSocket, joinUserRoom } from '../../utils/socket';
 
 // Strict Regex Constants
 const NAME_REGEX = /^[a-zA-Z\s.']{2,50}$/;
@@ -19,7 +21,9 @@ const ProfessionalReferenceSection = ({
   isSetupCompleted = false,
   initialReferences = null,
   initialRewardPoints = 0,
+  onReferenceUpdated = null,
 }) => {
+  const { user } = useSelector((state) => state.auth);
   const [references, setReferences] = useState(Array.isArray(initialReferences) ? initialReferences : []);
   const [rewardPoints, setRewardPoints] = useState(initialRewardPoints || 0);
   const [loading, setLoading] = useState(initialReferences === null);
@@ -67,8 +71,13 @@ const ProfessionalReferenceSection = ({
       const payload = res?.data || res;
       const isSuccess = Boolean(res?.success || res?.data?.success || payload?.references);
       if (isSuccess && payload) {
-        setReferences(payload.references || []);
-        setRewardPoints(payload.rewardPoints || 0);
+        const fetchedRefs = payload.references || [];
+        const fetchedPoints = payload.rewardPoints || 0;
+        setReferences(fetchedRefs);
+        setRewardPoints(fetchedPoints);
+        if (typeof onReferenceUpdated === 'function') {
+          onReferenceUpdated(fetchedRefs, fetchedPoints);
+        }
       }
     } catch (err) {
       console.error('Error fetching references:', err);
@@ -79,7 +88,33 @@ const ProfessionalReferenceSection = ({
 
   useEffect(() => {
     fetchReferences();
-  }, []);
+
+    const socket = getSocket();
+    const currentUserId = user?._id || user?.id;
+    if (currentUserId) {
+      joinUserRoom(currentUserId);
+    }
+
+    const handleReferenceVerified = (data) => {
+      console.log('⚡ [Real-time Reference Verified Event Received]:', data);
+      if (data?.targetUserId && currentUserId && String(data.targetUserId) !== String(currentUserId)) {
+        return;
+      }
+
+      toast.success(
+        `🎉 ${data?.refereeName ? `Reference verified by ${data.refereeName}!` : 'Professional Reference Verified!'} (+5 Points Awarded)`
+      );
+
+      // Instantly refresh references list and reward points without page refresh
+      fetchReferences();
+    };
+
+    socket.on('reference_verified', handleReferenceVerified);
+
+    return () => {
+      socket.off('reference_verified', handleReferenceVerified);
+    };
+  }, [user?._id, user?.id]);
 
   useEffect(() => {
     if (initialReferences !== null && initialReferences !== undefined) {

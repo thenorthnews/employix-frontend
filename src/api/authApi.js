@@ -55,4 +55,11 @@ export const updateProfileApi = async (formDataOrData) => {
   return await axiosInstance.put('/users/updateMe', formDataOrData);
 };
 
+/**
+ * Permanently delete current authenticated user account
+ */
+export const deleteAccountApi = async () => {
+  return await axiosInstance.delete('/users/deleteAccount');
+};
+
 

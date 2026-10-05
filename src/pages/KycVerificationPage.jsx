@@ -183,6 +183,34 @@ const KycVerificationPage = () => {
     if (aadhaarBackInputRef.current) aadhaarBackInputRef.current.value = '';
   };
 
+  const handleRemoveVoterFront = (e) => {
+    if (e) e.stopPropagation();
+    setVoterFront(null);
+    setVoterFrontPreview(null);
+    if (voterFrontInputRef.current) voterFrontInputRef.current.value = '';
+  };
+
+  const handleRemoveVoterBack = (e) => {
+    if (e) e.stopPropagation();
+    setVoterBack(null);
+    setVoterBackPreview(null);
+    if (voterBackInputRef.current) voterBackInputRef.current.value = '';
+  };
+
+  const handleRemoveDlFront = (e) => {
+    if (e) e.stopPropagation();
+    setDlFront(null);
+    setDlFrontPreview(null);
+    if (dlFrontInputRef.current) dlFrontInputRef.current.value = '';
+  };
+
+  const handleRemoveDlBack = (e) => {
+    if (e) e.stopPropagation();
+    setDlBack(null);
+    setDlBackPreview(null);
+    if (dlBackInputRef.current) dlBackInputRef.current.value = '';
+  };
+
   const [empMethod, setEmpMethod] = useState('uan'); // 'uan' | 'manual'
   const [uanNumber, setUanNumber] = useState('');     // 12-digit UAN
   const [empMobile, setEmpMobile] = useState('');     // Mobile fallback
@@ -211,6 +239,10 @@ const KycVerificationPage = () => {
   const [voterFrontPreview, setVoterFrontPreview] = useState(null);
   const [voterBack, setVoterBack] = useState(null);
   const [voterBackPreview, setVoterBackPreview] = useState(null);
+  const [dragActiveVoterFront, setDragActiveVoterFront] = useState(false);
+  const [dragActiveVoterBack, setDragActiveVoterBack] = useState(false);
+  const voterFrontInputRef = useRef(null);
+  const voterBackInputRef = useRef(null);
   const [voterNumConsent, setVoterNumConsent] = useState(false);
   const [voterOcrConsent, setVoterOcrConsent] = useState(false);
   const [voterLoading, setVoterLoading] = useState(false);
@@ -223,6 +255,10 @@ const KycVerificationPage = () => {
   const [dlFrontPreview, setDlFrontPreview] = useState(null);
   const [dlBack, setDlBack] = useState(null);
   const [dlBackPreview, setDlBackPreview] = useState(null);
+  const [dragActiveDlFront, setDragActiveDlFront] = useState(false);
+  const [dragActiveDlBack, setDragActiveDlBack] = useState(false);
+  const dlFrontInputRef = useRef(null);
+  const dlBackInputRef = useRef(null);
   // Default disabled (false) as required
   const [dlConsent, setDlConsent] = useState(false);
   const [dlLoading, setDlLoading] = useState(false);
@@ -884,6 +920,76 @@ const KycVerificationPage = () => {
     }
   };
 
+  const handleVoterFrontChange = (file, inputElem) => {
+    if (!file) return;
+
+    if (
+      voterBack &&
+      ((file.name === voterBack.name && file.size === voterBack.size) ||
+        (file.lastModified && voterBack.lastModified && file.lastModified === voterBack.lastModified))
+    ) {
+      toast.error('Front and Back side cannot be the same file. Please upload Front and Back sides separately.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    const fname = file.name?.toLowerCase() || '';
+    const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /voter[-_\s]*back/i.test(fname);
+    const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /voter[-_\s]*front/i.test(fname);
+    if (isBack && !isFront) {
+      toast.error('Voter ID (Back side) detected in Front side upload. Please upload the Front side of your Voter ID.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    if (!validateDocFile(file)) {
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    setVoterFront(file);
+    setVoterFrontPreview(
+      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+        ? 'pdf'
+        : URL.createObjectURL(file)
+    );
+  };
+
+  const handleVoterBackChange = (file, inputElem) => {
+    if (!file) return;
+
+    if (
+      voterFront &&
+      ((file.name === voterFront.name && file.size === voterFront.size) ||
+        (file.lastModified && voterFront.lastModified && file.lastModified === voterFront.lastModified))
+    ) {
+      toast.error('Front and Back side cannot be the same file. Please upload Front and Back sides separately.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    const fname = file.name?.toLowerCase() || '';
+    const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /voter[-_\s]*back/i.test(fname);
+    const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /voter[-_\s]*front/i.test(fname);
+    if (isFront && !isBack) {
+      toast.error('Voter ID (Front side) detected in Back side upload. Please upload the Back side of your Voter ID.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    if (!validateDocFile(file)) {
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    setVoterBack(file);
+    setVoterBackPreview(
+      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+        ? 'pdf'
+        : URL.createObjectURL(file)
+    );
+  };
+
   // Submit Voter ID Address Verification - Option 2: OCR Document Upload
   const handleVerifyVoterOcr = async (e) => {
     e.preventDefault();
@@ -964,6 +1070,76 @@ const KycVerificationPage = () => {
     } finally {
       setVoterLoading(false);
     }
+  };
+
+  const handleDlFrontChange = (file, inputElem) => {
+    if (!file) return;
+
+    if (
+      dlBack &&
+      ((file.name === dlBack.name && file.size === dlBack.size) ||
+        (file.lastModified && dlBack.lastModified && file.lastModified === dlBack.lastModified))
+    ) {
+      toast.error('Front and Back side cannot be the same file. Please upload Front and Back sides separately.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    const fname = file.name?.toLowerCase() || '';
+    const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /dl[-_\s]*back/i.test(fname);
+    const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /dl[-_\s]*front/i.test(fname);
+    if (isBack && !isFront) {
+      toast.error('Driving License (Back side) detected in Front side upload. Please upload the Front side of your Driving License.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    if (!validateDocFile(file)) {
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    setDlFront(file);
+    setDlFrontPreview(
+      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+        ? 'pdf'
+        : URL.createObjectURL(file)
+    );
+  };
+
+  const handleDlBackChange = (file, inputElem) => {
+    if (!file) return;
+
+    if (
+      dlFront &&
+      ((file.name === dlFront.name && file.size === dlFront.size) ||
+        (file.lastModified && dlFront.lastModified && file.lastModified === dlFront.lastModified))
+    ) {
+      toast.error('Front and Back side cannot be the same file. Please upload Front and Back sides separately.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    const fname = file.name?.toLowerCase() || '';
+    const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /dl[-_\s]*back/i.test(fname);
+    const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /dl[-_\s]*front/i.test(fname);
+    if (isFront && !isBack) {
+      toast.error('Driving License (Front side) detected in Back side upload. Please upload the Back side of your Driving License.');
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    if (!validateDocFile(file)) {
+      if (inputElem) inputElem.value = '';
+      return;
+    }
+
+    setDlBack(file);
+    setDlBackPreview(
+      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+        ? 'pdf'
+        : URL.createObjectURL(file)
+    );
   };
 
   // ── STEP 5: Driving License (DL) Handler ──────────────────────────────────
@@ -2369,95 +2545,315 @@ const KycVerificationPage = () => {
                       {/* Voter Option 2: OCR Upload */}
                       {voterMethod === 'ocr' && (
                         <form onSubmit={handleVerifyVoterOcr}>
-                          <div className="row g-3 mb-4">
-                            <div className="col-md-6 mb-3">
-                              <label className="auth-label">Voter Card Front Document *</label>
-                              <div className="kyc-upload-dropzone p-4 text-center border rounded">
-                                {voterFrontPreview ? (
-                                  voterFrontPreview === 'pdf' ? (
-                                    <div className="p-3 bg-light rounded text-teal font-weight-bold mb-2 small">
-                                      📄 {voterFront?.name || 'Voter Front (PDF)'}
-                                    </div>
-                                  ) : (
-                                    <img src={voterFrontPreview} alt="Voter Front" className="kyc-preview-thumb mb-2" />
-                                  )
-                                ) : (
-                                  <div className="kyc-upload-icon">&#128247;</div>
-                                )}
-                                <input
-                                  type="file"
-                                  className="form-control-file mt-2"
-                                  accept=".jpeg,.jpg,.png,.pdf,image/jpeg,image/png,image/jpg,application/pdf"
-                                  onChange={(e) => {
-                                    const f = e.target.files[0];
-                                    if (f && validateDocFile(f)) {
-                                      const fname = f.name?.toLowerCase() || '';
-                                      const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /voter[-_\s]*back/i.test(fname);
-                                      const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /voter[-_\s]*front/i.test(fname);
-                                      if (isBack && !isFront) {
-                                        toast.error('Voter ID (Back side) detected in Front side upload. Please upload the Front side of your Voter ID.');
-                                        e.target.value = '';
-                                        setVoterFront(null);
-                                        setVoterFrontPreview(null);
-                                        return;
-                                      }
-                                      setVoterFront(f);
-                                      setVoterFrontPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
-                                    }
-                                  }}
-                                  required
-                                />
-                                <small className="text-muted d-block mt-1">
-                                  Supported formats: JPEG, JPG, PNG, PDF. Mandatory. Maximum file size: 5MB.
-                                </small>
+                          {/* Document Guidelines & Security Notice */}
+                          <div className="kyc-upload-guide-banner mb-4">
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                style={{
+                                  width: '42px',
+                                  height: '42px',
+                                  borderRadius: '10px',
+                                  background: 'rgba(0, 210, 148, 0.16)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                  color: '#00B880',
+                                }}
+                              >
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                                  <circle cx="9" cy="10" r="2" />
+                                  <line x1="15" y1="8" x2="17" y2="8" />
+                                  <line x1="15" y1="12" x2="17" y2="12" />
+                                  <line x1="7" y1="16" x2="17" y2="16" />
+                                </svg>
                               </div>
-                            </div>
-
-                            <div className="col-md-6 mb-3">
-                              <label className="auth-label">Voter Card Back Document * (Mandatory with Address)</label>
-                              <div className="kyc-upload-dropzone p-4 text-center border rounded">
-                                {voterBackPreview ? (
-                                  voterBackPreview === 'pdf' ? (
-                                    <div className="p-3 bg-light rounded text-teal font-weight-bold mb-2 small">
-                                      📄 {voterBack?.name || 'Voter Back (PDF)'}
-                                    </div>
-                                  ) : (
-                                    <img src={voterBackPreview} alt="Voter Back" className="kyc-preview-thumb mb-2" />
-                                  )
-                                ) : (
-                                  <div className="kyc-upload-icon">&#128247;</div>
-                                )}
-                                <input
-                                  type="file"
-                                  className="form-control-file mt-2"
-                                  accept=".jpeg,.jpg,.png,.pdf,image/jpeg,image/png,image/jpg,application/pdf"
-                                  onChange={(e) => {
-                                    const f = e.target.files[0];
-                                    if (f && validateDocFile(f)) {
-                                      const fname = f.name?.toLowerCase() || '';
-                                      const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /voter[-_\s]*back/i.test(fname);
-                                      const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /voter[-_\s]*front/i.test(fname);
-                                      if (isFront && !isBack) {
-                                        toast.error('Voter ID (Front side) detected in Back side upload. Please upload the Back side of your Voter ID.');
-                                        e.target.value = '';
-                                        setVoterBack(null);
-                                        setVoterBackPreview(null);
-                                        return;
-                                      }
-                                      setVoterBack(f);
-                                      setVoterBackPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
-                                    }
-                                  }}
-                                  required
-                                />
-                                <small className="text-muted d-block mt-1">
-                                  Supported formats: JPEG, JPG, PNG, PDF. Mandatory. Maximum file size: 5MB.
-                                </small>
+                              <div className="flex-grow-1">
+                                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                  <h6 className="font-weight-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
+                                    Official Voter ID Card (EPIC) Smart OCR Verification
+                                  </h6>
+                                  <span className="badge badge-light text-muted border small font-weight-normal px-2 py-1">
+                                    🔒 ECI Compliant &amp; Encrypted
+                                  </span>
+                                </div>
+                                <p className="text-muted small mb-0 mt-1" style={{ lineHeight: '1.45' }}>
+                                  Upload clear, high-resolution original photos or scans of your Voter ID card (Front &amp; Back). Both sides are required for automated name, EPIC number &amp; residential address authentication.
+                                </p>
                               </div>
                             </div>
                           </div>
 
-                          <div className="kyc-consent-box p-3 rounded mb-4">
+                          {/* Dual Upload Cards: Front and Back */}
+                          <div className="row g-4 mb-4">
+                            {/* FRONT SIDE CARD */}
+                            <div className="col-md-6 mb-3 mb-md-0">
+                              <div className="kyc-doc-card">
+                                <div className="kyc-doc-card-header">
+                                  <div>
+                                    <span className="kyc-tag-pill kyc-badge-front mr-2">FRONT SIDE</span>
+                                    <span className="font-weight-bold text-dark small">Voter Card Front Document *</span>
+                                  </div>
+                                  <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Photo &amp; EPIC No.</span>
+                                </div>
+
+                                <div className="kyc-doc-card-body">
+                                  <input
+                                    ref={voterFrontInputRef}
+                                    type="file"
+                                    className="d-none"
+                                    accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                    onChange={(e) => {
+                                      const f = e.target.files[0];
+                                      if (f) {
+                                        handleVoterFrontChange(f, e.target);
+                                      }
+                                    }}
+                                  />
+
+                                  {!voterFront ? (
+                                    <div
+                                      className={`kyc-modern-dropzone ${dragActiveVoterFront ? 'drag-active' : ''}`}
+                                      onClick={() => voterFrontInputRef.current?.click()}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setDragActiveVoterFront(true);
+                                      }}
+                                      onDragLeave={() => setDragActiveVoterFront(false)}
+                                      onDrop={(e) => {
+                                        e.preventDefault();
+                                        setDragActiveVoterFront(false);
+                                        const f = e.dataTransfer.files[0];
+                                        if (f) handleVoterFrontChange(f, voterFrontInputRef.current);
+                                      }}
+                                    >
+                                      <div className="kyc-upload-icon-wrapper">
+                                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                          <polyline points="17 8 12 3 7 8" />
+                                          <line x1="12" y1="3" x2="12" y2="15" />
+                                        </svg>
+                                      </div>
+                                      <div className="font-weight-bold text-dark mb-1" style={{ fontSize: '0.92rem' }}>
+                                        Upload Voter Card Front
+                                      </div>
+                                      <div className="text-muted small mb-3">
+                                        Drag &amp; drop or <span className="text-teal font-weight-bold">Browse file</span>
+                                      </div>
+                                      <div className="d-flex align-items-center gap-1">
+                                        <span className="badge badge-light border text-muted px-2 py-1 small">JPG</span>
+                                        <span className="badge badge-light border text-muted px-2 py-1 small">PNG</span>
+                                        <span className="badge badge-light border text-muted px-2 py-1 small">PDF</span>
+                                        <span className="badge badge-light border text-muted px-2 py-1 small">&lt; 5MB</span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <div className="kyc-preview-container">
+                                        {voterFrontPreview === 'pdf' ? (
+                                          <div className="kyc-preview-pdf">
+                                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📄</div>
+                                            <strong className="text-white small text-center" style={{ wordBreak: 'break-all', maxWidth: '90%' }}>
+                                              {voterFront.name}
+                                            </strong>
+                                            <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
+                                          </div>
+                                        ) : (
+                                          <img src={voterFrontPreview} alt="Voter Front Preview" className="kyc-preview-image" />
+                                        )}
+                                      </div>
+
+                                      <div className="kyc-file-meta-bar">
+                                        <div className="d-flex align-items-center overflow-hidden" style={{ minWidth: 0, flex: 1 }}>
+                                          <span className="text-teal mr-2 font-weight-bold">✓</span>
+                                          <div className="text-truncate" style={{ minWidth: 0 }}>
+                                            <span className="text-dark font-weight-bold small d-block text-truncate" title={voterFront.name}>
+                                              {voterFront.name}
+                                            </span>
+                                            <span className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                                              {formatFileSize(voterFront.size)} • Ready for OCR
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="d-flex align-items-center gap-1">
+                                          <button
+                                            type="button"
+                                            className="btn btn-sm btn-light border py-1 px-2 text-dark small"
+                                            onClick={() => voterFrontInputRef.current?.click()}
+                                            title="Change Front Document"
+                                          >
+                                            Change
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-danger py-1 px-2 small"
+                                            onClick={handleRemoveVoterFront}
+                                            title="Remove Front Document"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="text-muted small mt-2" style={{ fontSize: '0.78rem' }}>
+                                    📌 Front side must clearly show your <strong>Photo, Name, and EPIC number</strong>.
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* BACK SIDE CARD */}
+                            <div className="col-md-6">
+                              <div className="kyc-doc-card">
+                                <div className="kyc-doc-card-header">
+                                  <div>
+                                    <span className="kyc-tag-pill kyc-badge-back mr-2">BACK SIDE</span>
+                                    <span className="font-weight-bold text-dark small">Voter Card Back Document *</span>
+                                  </div>
+                                  <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Address &amp; Assembly</span>
+                                </div>
+
+                                <div className="kyc-doc-card-body">
+                                  <input
+                                    ref={voterBackInputRef}
+                                    type="file"
+                                    className="d-none"
+                                    accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                    onChange={(e) => {
+                                      const f = e.target.files[0];
+                                      if (f) {
+                                        handleVoterBackChange(f, e.target);
+                                      }
+                                    }}
+                                  />
+
+                                  {!voterBack ? (
+                                    <div
+                                      className={`kyc-modern-dropzone ${dragActiveVoterBack ? 'drag-active' : ''}`}
+                                      onClick={() => voterBackInputRef.current?.click()}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setDragActiveVoterBack(true);
+                                      }}
+                                      onDragLeave={() => setDragActiveVoterBack(false)}
+                                      onDrop={(e) => {
+                                        e.preventDefault();
+                                        setDragActiveVoterBack(false);
+                                        const f = e.dataTransfer.files[0];
+                                        if (f) handleVoterBackChange(f, voterBackInputRef.current);
+                                      }}
+                                    >
+                                      <div className="kyc-upload-icon-wrapper">
+                                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                          <polyline points="17 8 12 3 7 8" />
+                                          <line x1="12" y1="3" x2="12" y2="15" />
+                                        </svg>
+                                      </div>
+                                      <div className="font-weight-bold text-dark mb-1" style={{ fontSize: '0.92rem' }}>
+                                        Upload Voter Card Back
+                                      </div>
+                                      <div className="text-muted small mb-3">
+                                        Drag &amp; drop or <span className="text-teal font-weight-bold">Browse file</span>
+                                      </div>
+                                      <div className="d-flex align-items-center gap-1">
+                                        <span className="badge badge-light border text-muted px-2 py-1 small">JPG</span>
+                                        <span className="badge badge-light border text-muted px-2 py-1 small">PNG</span>
+                                        <span className="badge badge-light border text-muted px-2 py-1 small">PDF</span>
+                                        <span className="badge badge-light border text-muted px-2 py-1 small">&lt; 5MB</span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <div className="kyc-preview-container">
+                                        {voterBackPreview === 'pdf' ? (
+                                          <div className="kyc-preview-pdf">
+                                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📄</div>
+                                            <strong className="text-white small text-center" style={{ wordBreak: 'break-all', maxWidth: '90%' }}>
+                                              {voterBack.name}
+                                            </strong>
+                                            <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
+                                          </div>
+                                        ) : (
+                                          <img src={voterBackPreview} alt="Voter Back Preview" className="kyc-preview-image" />
+                                        )}
+                                      </div>
+
+                                      <div className="kyc-file-meta-bar">
+                                        <div className="d-flex align-items-center overflow-hidden" style={{ minWidth: 0, flex: 1 }}>
+                                          <span className="text-teal mr-2 font-weight-bold">✓</span>
+                                          <div className="text-truncate" style={{ minWidth: 0 }}>
+                                            <span className="text-dark font-weight-bold small d-block text-truncate" title={voterBack.name}>
+                                              {voterBack.name}
+                                            </span>
+                                            <span className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                                              {formatFileSize(voterBack.size)} • Ready for OCR
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="d-flex align-items-center gap-1">
+                                          <button
+                                            type="button"
+                                            className="btn btn-sm btn-light border py-1 px-2 text-dark small"
+                                            onClick={() => voterBackInputRef.current?.click()}
+                                            title="Change Back Document"
+                                          >
+                                            Change
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-danger py-1 px-2 small"
+                                            onClick={handleRemoveVoterBack}
+                                            title="Remove Back Document"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="text-muted small mt-2" style={{ fontSize: '0.78rem' }}>
+                                    📌 Back side must clearly show your <strong>Registered Address, Father/Husband Name &amp; Assembly Constituency</strong>.
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Verification Readiness Summary Strip */}
+                          <div className="kyc-status-summary-bar mb-3">
+                            <div>
+                              <span className="text-muted mr-1">Front Document:</span>
+                              {voterFront ? (
+                                <span className="text-success font-weight-bold">✓ Selected ({formatFileSize(voterFront.size)})</span>
+                              ) : (
+                                <span className="text-warning font-weight-bold">⏳ Required</span>
+                              )}
+                            </div>
+                            <div style={{ color: '#cbd5e1' }}>•</div>
+                            <div>
+                              <span className="text-muted mr-1">Back Document:</span>
+                              {voterBack ? (
+                                <span className="text-success font-weight-bold">✓ Selected ({formatFileSize(voterBack.size)})</span>
+                              ) : (
+                                <span className="text-warning font-weight-bold">⏳ Required</span>
+                              )}
+                            </div>
+                            <div style={{ color: '#cbd5e1' }}>•</div>
+                            <div>
+                              <span className="text-muted mr-1">ECI Consent:</span>
+                              {voterOcrConsent ? (
+                                <span className="text-success font-weight-bold">✓ Authorized</span>
+                              ) : (
+                                <span className="text-danger font-weight-bold">⏳ Required</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Modern Consent Card */}
+                          <div className={`kyc-consent-card-modern mb-4 ${voterOcrConsent ? 'consented' : ''}`}>
                             <div className="form-check d-flex align-items-start">
                               <input
                                 className="form-check-input mt-1 mr-3"
@@ -2465,23 +2861,49 @@ const KycVerificationPage = () => {
                                 id="voterOcrConsent"
                                 checked={voterOcrConsent}
                                 onChange={(e) => setVoterOcrConsent(e.target.checked)}
+                                style={{ cursor: 'pointer', width: '18px', height: '18px' }}
                               />
-                              <label className="form-check-label" htmlFor="voterOcrConsent">
-                                <div className="kyc-consent-title">Address Extraction Consent:</div>
-                                <div className="kyc-consent-desc">
-                                  I grant explicit consent to extract and verify my residential address from my uploaded Voter Card document.
+                              <label className="form-check-label" htmlFor="voterOcrConsent" style={{ cursor: 'pointer' }}>
+                                <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                  <span className="font-weight-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                                    Mandatory ECI Compliance &amp; Address OCR Verification Consent
+                                  </span>
+                                  <span className="badge badge-light border text-teal font-weight-bold small">Official ECI</span>
+                                </div>
+                                <div className="text-muted small" style={{ lineHeight: '1.45' }}>
+                                  I grant explicit voluntary authorization to Employix to extract, process, and verify identity and address details (Name, EPIC Number, Father/Husband Name, and Registered Residential Address) from my uploaded Voter ID card documents under Election Commission records. All identity records are encrypted using AES-256.
                                 </div>
                               </label>
                             </div>
                           </div>
 
+                          {/* Submit Action Button */}
                           <button
                             type="submit"
-                            className="btn btn-primary-teal btn-block py-3 font-weight-bold"
+                            className="btn btn-primary-teal btn-block py-3 font-weight-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
                             disabled={voterLoading || !voterOcrConsent || !voterFront || !voterBack}
+                            style={{ fontSize: '1rem', letterSpacing: '0.02em', borderRadius: '10px' }}
                           >
-                            {voterLoading ? <ButtonSpinner text="Scanning Voter Card Address..." /> : `Scan & Extract Address (OCR) (+${scoreConfig.voterScore ?? 20} Points)`}
+                            {voterLoading ? (
+                              <ButtonSpinner text="Scanning &amp; Extracting Voter Card Details (AI OCR)..." />
+                            ) : (
+                              <>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M4 7V4h3" />
+                                  <path d="M20 7V4h-3" />
+                                  <path d="M4 17v3h3" />
+                                  <path d="M20 17v3h-3" />
+                                  <line x1="4" y1="12" x2="20" y2="12" />
+                                </svg>
+                                <span>Scan &amp; Verify Voter Card (OCR) (+{scoreConfig.voterScore ?? 20} Points)</span>
+                              </>
+                            )}
                           </button>
+                          <div className="text-center mt-2">
+                            <span className="text-muted small" style={{ fontSize: '0.78rem' }}>
+                              🔒 256-Bit SSL Encrypted • Election Commission of India Verified • Secure Document Storage
+                            </span>
+                          </div>
                         </form>
                       )}
                     </>
@@ -3124,6 +3546,12 @@ const KycVerificationPage = () => {
                   isSetupCompleted={isSetupCompleted}
                   initialReferences={userReferences}
                   initialRewardPoints={rewardPoints}
+                  onReferenceUpdated={(updatedRefs, updatedPoints) => {
+                    setUserReferences(updatedRefs);
+                    if (typeof updatedPoints === 'number') {
+                      setRewardPoints(updatedPoints);
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -3876,96 +4304,315 @@ const KycVerificationPage = () => {
                     </div>
                   ) : (
                     <form onSubmit={handleVerifyDlOcr}>
-                      <div className="row g-3 mb-4">
-                        <div className="col-md-6 mb-3">
-                          <label className="auth-label">Driving License Front Side Document *</label>
-                          <div className="kyc-upload-dropzone p-4 text-center border rounded">
-                            {dlFrontPreview ? (
-                              dlFrontPreview === 'pdf' ? (
-                                <div className="p-3 bg-light rounded text-teal font-weight-bold mb-2 small">
-                                  📄 {dlFront?.name || 'DL Front (PDF)'}
-                                </div>
-                              ) : (
-                                <img src={dlFrontPreview} alt="DL Front" className="kyc-preview-thumb mb-2" style={{ maxHeight: '110px' }} />
-                              )
-                            ) : (
-                              <div className="kyc-upload-icon">&#128247;</div>
-                            )}
-                            <input
-                              type="file"
-                              className="form-control-file mt-2"
-                              accept=".jpeg,.jpg,.png,.pdf,image/jpeg,image/png,image/jpg,application/pdf"
-                              onChange={(e) => {
-                                const f = e.target.files[0];
-                                if (f && validateDocFile(f)) {
-                                  const fname = f.name?.toLowerCase() || '';
-                                  const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /dl[-_\s]*back/i.test(fname);
-                                  const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /dl[-_\s]*front/i.test(fname);
-                                  if (isBack && !isFront) {
-                                    toast.error('Driving License (Back side) detected in Front side upload. Please upload the Front side of your Driving License.');
-                                    e.target.value = '';
-                                    setDlFront(null);
-                                    setDlFrontPreview(null);
-                                    return;
-                                  }
-                                  setDlFront(f);
-                                  setDlFrontPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
-                                }
-                              }}
-                              required
-                            />
-                            <small className="text-muted d-block mt-1">
-                              Supported formats: JPEG, JPG, PNG, PDF. Maximum file size: 5MB.
-                            </small>
+                      {/* Document Guidelines & Security Notice */}
+                      <div className="kyc-upload-guide-banner mb-4">
+                        <div className="d-flex align-items-center gap-3">
+                          <div
+                            style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '10px',
+                              background: 'rgba(0, 210, 148, 0.16)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              color: '#00B880',
+                            }}
+                          >
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="16" rx="2" />
+                              <circle cx="9" cy="10" r="2" />
+                              <path d="M15 8h2" />
+                              <path d="M15 12h2" />
+                              <path d="M7 16h10" />
+                            </svg>
                           </div>
-                        </div>
-
-                        <div className="col-md-6 mb-3">
-                          <label className="auth-label">Driving License Back Side Document *</label>
-                          <div className="kyc-upload-dropzone p-4 text-center border rounded">
-                            {dlBackPreview ? (
-                              dlBackPreview === 'pdf' ? (
-                                <div className="p-3 bg-light rounded text-teal font-weight-bold mb-2 small">
-                                  📄 {dlBack?.name || 'DL Back (PDF)'}
-                                </div>
-                              ) : (
-                                <img src={dlBackPreview} alt="DL Back" className="kyc-preview-thumb mb-2" style={{ maxHeight: '110px' }} />
-                              )
-                            ) : (
-                              <div className="kyc-upload-icon">&#128247;</div>
-                            )}
-                            <input
-                              type="file"
-                              className="form-control-file mt-2"
-                              accept=".jpeg,.jpg,.png,.pdf,image/jpeg,image/png,image/jpg,application/pdf"
-                              onChange={(e) => {
-                                const f = e.target.files[0];
-                                if (f && validateDocFile(f)) {
-                                  const fname = f.name?.toLowerCase() || '';
-                                  const isBack = /(^|[^a-z0-9])(back|piche|rear|bck)($|[^a-z0-9])/i.test(fname) || /[-_.]back[-_.]/i.test(fname) || /dl[-_\s]*back/i.test(fname);
-                                  const isFront = /(^|[^a-z0-9])(front|aage|frnt)($|[^a-z0-9])/i.test(fname) || /[-_.]front[-_.]/i.test(fname) || /dl[-_\s]*front/i.test(fname);
-                                  if (isFront && !isBack) {
-                                    toast.error('Driving License (Front side) detected in Back side upload. Please upload the Back side of your Driving License.');
-                                    e.target.value = '';
-                                    setDlBack(null);
-                                    setDlBackPreview(null);
-                                    return;
-                                  }
-                                  setDlBack(f);
-                                  setDlBackPreview(f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : URL.createObjectURL(f));
-                                }
-                              }}
-                              required
-                            />
-                            <small className="text-muted d-block mt-1">
-                              Supported formats: JPEG, JPG, PNG, PDF. Maximum file size: 5MB.
-                            </small>
+                          <div className="flex-grow-1">
+                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                              <h6 className="font-weight-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
+                                Official Driving License (DL) Smart OCR Verification
+                              </h6>
+                              <span className="badge badge-light text-muted border small font-weight-normal px-2 py-1">
+                                🔒 MoRTH / Sarathi Compliant
+                              </span>
+                            </div>
+                            <p className="text-muted small mb-0 mt-1" style={{ lineHeight: '1.45' }}>
+                              Upload clear, high-resolution original photos or scans of your Driving License (Front &amp; Back). Both sides are required for automated name, DL number, validity, vehicle classes &amp; address authentication.
+                            </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Consent Box - Disabled by default (checked=false) */}
-                      <div className="kyc-consent-box p-3 rounded mb-4">
+                      {/* Dual Upload Cards: Front and Back */}
+                      <div className="row g-4 mb-4">
+                        {/* FRONT SIDE CARD */}
+                        <div className="col-md-6 mb-3 mb-md-0">
+                          <div className="kyc-doc-card">
+                            <div className="kyc-doc-card-header">
+                              <div>
+                                <span className="kyc-tag-pill kyc-badge-front mr-2">FRONT SIDE</span>
+                                <span className="font-weight-bold text-dark small">Driving License Front Document *</span>
+                              </div>
+                              <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Photo, DL No. &amp; DOB</span>
+                            </div>
+
+                            <div className="kyc-doc-card-body">
+                              <input
+                                ref={dlFrontInputRef}
+                                type="file"
+                                className="d-none"
+                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                onChange={(e) => {
+                                  const f = e.target.files[0];
+                                  if (f) {
+                                    handleDlFrontChange(f, e.target);
+                                  }
+                                }}
+                              />
+
+                              {!dlFront ? (
+                                <div
+                                  className={`kyc-modern-dropzone ${dragActiveDlFront ? 'drag-active' : ''}`}
+                                  onClick={() => dlFrontInputRef.current?.click()}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setDragActiveDlFront(true);
+                                  }}
+                                  onDragLeave={() => setDragActiveDlFront(false)}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    setDragActiveDlFront(false);
+                                    const f = e.dataTransfer.files[0];
+                                    if (f) handleDlFrontChange(f, dlFrontInputRef.current);
+                                  }}
+                                >
+                                  <div className="kyc-upload-icon-wrapper">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                      <polyline points="17 8 12 3 7 8" />
+                                      <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                  </div>
+                                  <div className="font-weight-bold text-dark mb-1" style={{ fontSize: '0.92rem' }}>
+                                    Upload DL Front
+                                  </div>
+                                  <div className="text-muted small mb-3">
+                                    Drag &amp; drop or <span className="text-teal font-weight-bold">Browse file</span>
+                                  </div>
+                                  <div className="d-flex align-items-center gap-1">
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">JPG</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">PNG</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">PDF</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">&lt; 5MB</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="kyc-preview-container">
+                                    {dlFrontPreview === 'pdf' ? (
+                                      <div className="kyc-preview-pdf">
+                                        <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📄</div>
+                                        <strong className="text-white small text-center" style={{ wordBreak: 'break-all', maxWidth: '90%' }}>
+                                          {dlFront.name}
+                                        </strong>
+                                        <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
+                                      </div>
+                                    ) : (
+                                      <img src={dlFrontPreview} alt="DL Front Preview" className="kyc-preview-image" />
+                                    )}
+                                  </div>
+
+                                  <div className="kyc-file-meta-bar">
+                                    <div className="d-flex align-items-center overflow-hidden" style={{ minWidth: 0, flex: 1 }}>
+                                      <span className="text-teal mr-2 font-weight-bold">✓</span>
+                                      <div className="text-truncate" style={{ minWidth: 0 }}>
+                                        <span className="text-dark font-weight-bold small d-block text-truncate" title={dlFront.name}>
+                                          {dlFront.name}
+                                        </span>
+                                        <span className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                                          {formatFileSize(dlFront.size)} • Ready for OCR
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-1">
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light border py-1 px-2 text-dark small"
+                                        onClick={() => dlFrontInputRef.current?.click()}
+                                        title="Change Front Document"
+                                      >
+                                        Change
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger py-1 px-2 small"
+                                        onClick={handleRemoveDlFront}
+                                        title="Remove Front Document"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="text-muted small mt-2" style={{ fontSize: '0.78rem' }}>
+                                📌 Front side must clearly show your <strong>Photo, Name, DL Number, DOB, and Validity Dates</strong>.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* BACK SIDE CARD */}
+                        <div className="col-md-6">
+                          <div className="kyc-doc-card">
+                            <div className="kyc-doc-card-header">
+                              <div>
+                                <span className="kyc-tag-pill kyc-badge-back mr-2">BACK SIDE</span>
+                                <span className="font-weight-bold text-dark small">Driving License Back Document *</span>
+                              </div>
+                              <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Address &amp; Vehicle Classes</span>
+                            </div>
+
+                            <div className="kyc-doc-card-body">
+                              <input
+                                ref={dlBackInputRef}
+                                type="file"
+                                className="d-none"
+                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                onChange={(e) => {
+                                  const f = e.target.files[0];
+                                  if (f) {
+                                    handleDlBackChange(f, e.target);
+                                  }
+                                }}
+                              />
+
+                              {!dlBack ? (
+                                <div
+                                  className={`kyc-modern-dropzone ${dragActiveDlBack ? 'drag-active' : ''}`}
+                                  onClick={() => dlBackInputRef.current?.click()}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setDragActiveDlBack(true);
+                                  }}
+                                  onDragLeave={() => setDragActiveDlBack(false)}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    setDragActiveDlBack(false);
+                                    const f = e.dataTransfer.files[0];
+                                    if (f) handleDlBackChange(f, dlBackInputRef.current);
+                                  }}
+                                >
+                                  <div className="kyc-upload-icon-wrapper">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                      <polyline points="17 8 12 3 7 8" />
+                                      <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                  </div>
+                                  <div className="font-weight-bold text-dark mb-1" style={{ fontSize: '0.92rem' }}>
+                                    Upload DL Back
+                                  </div>
+                                  <div className="text-muted small mb-3">
+                                    Drag &amp; drop or <span className="text-teal font-weight-bold">Browse file</span>
+                                  </div>
+                                  <div className="d-flex align-items-center gap-1">
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">JPG</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">PNG</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">PDF</span>
+                                    <span className="badge badge-light border text-muted px-2 py-1 small">&lt; 5MB</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="kyc-preview-container">
+                                    {dlBackPreview === 'pdf' ? (
+                                      <div className="kyc-preview-pdf">
+                                        <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📄</div>
+                                        <strong className="text-white small text-center" style={{ wordBreak: 'break-all', maxWidth: '90%' }}>
+                                          {dlBack.name}
+                                        </strong>
+                                        <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
+                                      </div>
+                                    ) : (
+                                      <img src={dlBackPreview} alt="DL Back Preview" className="kyc-preview-image" />
+                                    )}
+                                  </div>
+
+                                  <div className="kyc-file-meta-bar">
+                                    <div className="d-flex align-items-center overflow-hidden" style={{ minWidth: 0, flex: 1 }}>
+                                      <span className="text-teal mr-2 font-weight-bold">✓</span>
+                                      <div className="text-truncate" style={{ minWidth: 0 }}>
+                                        <span className="text-dark font-weight-bold small d-block text-truncate" title={dlBack.name}>
+                                          {dlBack.name}
+                                        </span>
+                                        <span className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                                          {formatFileSize(dlBack.size)} • Ready for OCR
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-1">
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light border py-1 px-2 text-dark small"
+                                        onClick={() => dlBackInputRef.current?.click()}
+                                        title="Change Back Document"
+                                      >
+                                        Change
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger py-1 px-2 small"
+                                        onClick={handleRemoveDlBack}
+                                        title="Remove Back Document"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="text-muted small mt-2" style={{ fontSize: '0.78rem' }}>
+                                📌 Back side must clearly show your <strong>Registered Address, Authorized Vehicle Classes &amp; Issuing Authority</strong>.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Verification Readiness Summary Strip */}
+                      <div className="kyc-status-summary-bar mb-3">
+                        <div>
+                          <span className="text-muted mr-1">Front Document:</span>
+                          {dlFront ? (
+                            <span className="text-success font-weight-bold">✓ Selected ({formatFileSize(dlFront.size)})</span>
+                          ) : (
+                            <span className="text-warning font-weight-bold">⏳ Required</span>
+                          )}
+                        </div>
+                        <div style={{ color: '#cbd5e1' }}>•</div>
+                        <div>
+                          <span className="text-muted mr-1">Back Document:</span>
+                          {dlBack ? (
+                            <span className="text-success font-weight-bold">✓ Selected ({formatFileSize(dlBack.size)})</span>
+                          ) : (
+                            <span className="text-warning font-weight-bold">⏳ Required</span>
+                          )}
+                        </div>
+                        <div style={{ color: '#cbd5e1' }}>•</div>
+                        <div>
+                          <span className="text-muted mr-1">MoRTH Consent:</span>
+                          {dlConsent ? (
+                            <span className="text-success font-weight-bold">✓ Authorized</span>
+                          ) : (
+                            <span className="text-danger font-weight-bold">⏳ Required</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Modern Consent Card */}
+                      <div className={`kyc-consent-card-modern mb-4 ${dlConsent ? 'consented' : ''}`}>
                         <div className="form-check d-flex align-items-start">
                           <input
                             className="form-check-input mt-1 mr-3"
@@ -3973,23 +4620,49 @@ const KycVerificationPage = () => {
                             id="dlOcrConsent"
                             checked={dlConsent}
                             onChange={(e) => setDlConsent(e.target.checked)}
+                            style={{ cursor: 'pointer', width: '18px', height: '18px' }}
                           />
-                          <label className="form-check-label" htmlFor="dlOcrConsent">
-                            <div className="kyc-consent-title">Mandatory MoRTH / RTO DL Verification Consent:</div>
-                            <div className="kyc-consent-desc">
-                              I grant explicit consent to extract and verify details from my uploaded Driving License document through MoRTH/RTO records for EMPLOYIX credential verification.
+                          <label className="form-check-label" htmlFor="dlOcrConsent" style={{ cursor: 'pointer' }}>
+                            <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-weight-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                                Mandatory MoRTH / Sarathi Compliance &amp; OCR Verification Consent
+                              </span>
+                              <span className="badge badge-light border text-teal font-weight-bold small">Official MoRTH</span>
+                            </div>
+                            <div className="text-muted small" style={{ lineHeight: '1.45' }}>
+                              I grant explicit voluntary authorization to Employix to extract, process, and verify identity credentials and address details (Name, Driving License Number, Date of Birth, Vehicle Classes, and Registered Address) from my uploaded Driving License documents via Ministry of Road Transport &amp; Highways (MoRTH/Sarathi) records. All records are encrypted using AES-256.
                             </div>
                           </label>
                         </div>
                       </div>
 
+                      {/* Submit Action Button */}
                       <button
                         type="submit"
-                        className="btn btn-primary-teal btn-block py-3 font-weight-bold"
+                        className="btn btn-primary-teal btn-block py-3 font-weight-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
                         disabled={dlLoading || !dlConsent || !dlFront || !dlBack}
+                        style={{ fontSize: '1rem', letterSpacing: '0.02em', borderRadius: '10px' }}
                       >
-                        {dlLoading ? <ButtonSpinner text="Scanning Driving License OCR..." /> : 'Scan & Extract Driving License (OCR)'}
+                        {dlLoading ? (
+                          <ButtonSpinner text="Scanning &amp; Extracting Driving License Details (AI OCR)..." />
+                        ) : (
+                          <>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M4 7V4h3" />
+                              <path d="M20 7V4h-3" />
+                              <path d="M4 17v3h3" />
+                              <path d="M20 17v3h-3" />
+                              <line x1="4" y1="12" x2="20" y2="12" />
+                            </svg>
+                            <span>Scan &amp; Verify Driving License (OCR)</span>
+                          </>
+                        )}
                       </button>
+                      <div className="text-center mt-2">
+                        <span className="text-muted small" style={{ fontSize: '0.78rem' }}>
+                          🔒 256-Bit SSL Encrypted • MoRTH Sarathi Verified • Secure Document Storage
+                        </span>
+                      </div>
                     </form>
                   )}
                   </div>

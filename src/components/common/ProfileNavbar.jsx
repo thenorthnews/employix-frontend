@@ -5,6 +5,7 @@ import { logout, logoutUser } from '../../redux/slices/authSlice';
 import { toast } from 'react-toastify';
 import EditProfileModal from '../profile/EditProfileModal';
 import { resolveImageUrl, formatEmployixId } from '../../utils/profileUtils';
+import { deleteAccountApi } from '../../api/authApi';
 
 const ProfileNavbar = ({ onUpdate }) => {
   const dispatch = useDispatch();
@@ -17,6 +18,7 @@ const ProfileNavbar = ({ onUpdate }) => {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const btnRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -81,6 +83,28 @@ const ProfileNavbar = ({ onUpdate }) => {
     navigate('/login');
   };
 
+  const handleDeleteAccount = async () => {
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete your account? All your profile verifications and data will be removed. This cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteAccountApi();
+      dispatch(logout());
+      toast.success('Your account has been deleted successfully.');
+      navigate('/login', { replace: true });
+    } catch (err) {
+      console.error('Delete account error:', err);
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to delete account');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const userName    = user?.name || 'Candidate';
   const userAvatar  = resolveImageUrl(user?.profileImage);
   const employixId  = formatEmployixId(user?.employixId, user?._id);
@@ -142,39 +166,74 @@ const ProfileNavbar = ({ onUpdate }) => {
             {/* Score chip — desktop */}
           
 
-            {/* User button (hidden on KYC screen, replaced with Sign Out action) */}
+            {/* User button (on KYC screen: Delete Account & Sign Out actions) */}
             {isKyc ? (
-              <button
-                onClick={handleLogout}
-                style={{
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                  borderRadius: '50px',
-                  padding: '7px 18px',
-                  color: '#ef4444',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '7px',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
-                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
-                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                  <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-                Sign Out
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    borderRadius: '50px',
+                    padding: '7px 16px',
+                    color: '#f87171',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                  }}
+                  title="Permanently delete your account"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  {isDeleting ? 'Deleting...' : 'Delete Account'}
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '50px',
+                    padding: '7px 16px',
+                    color: 'rgba(255,255,255,0.85)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '7px',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
             ) : (
               <button
                 ref={btnRef}
@@ -318,17 +377,47 @@ const ProfileNavbar = ({ onUpdate }) => {
 
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '8px 0' }} />
             <button
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              style={{
+                width: '100%', textAlign: 'left',
+                background: 'rgba(239,68,68,0.06)',
+                border: '1px solid rgba(239,68,68,0.2)',
+                borderRadius: '10px',
+                padding: '11px 14px',
+                color: '#f87171', fontSize: '13px', fontWeight: 600,
+                cursor: isDeleting ? 'not-allowed' : 'pointer',
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              {isDeleting ? 'Deleting...' : 'Delete Account'}
+            </button>
+            <button
               onClick={handleLogout}
               style={{
                 width: '100%', textAlign: 'left',
-                background: 'rgba(239,68,68,0.08)',
-                border: '1px solid rgba(239,68,68,0.2)',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: '10px',
-                padding: '12px 14px',
-                color: '#ef4444', fontSize: '13px', fontWeight: 600,
+                padding: '11px 14px',
+                color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600,
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
             >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
               Sign Out
             </button>
           </div>
@@ -448,20 +537,22 @@ const ProfileNavbar = ({ onUpdate }) => {
           {/* Divider */}
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '0 8px' }} />
 
-          {/* Logout */}
-          <div style={{ padding: '8px' }}>
+          {/* Delete Account (Directly ABOVE Sign Out) */}
+          <div style={{ padding: '8px 8px 4px 8px' }}>
             <button
-              onClick={handleLogout}
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
               style={{
                 width: '100%',
                 display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '10px 12px',
+                padding: '9px 12px',
                 background: 'transparent',
                 border: 'none', borderRadius: '12px',
-                color: '#ef4444', fontSize: '13px', fontWeight: 600,
-                cursor: 'pointer', transition: 'background 0.15s ease',
+                color: '#f87171', fontSize: '13px', fontWeight: 600,
+                cursor: isDeleting ? 'not-allowed' : 'pointer', transition: 'background 0.15s ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
               <div style={{
@@ -469,14 +560,54 @@ const ProfileNavbar = ({ onUpdate }) => {
                 background: 'rgba(239,68,68,0.1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div>{isDeleting ? 'Deleting Account...' : 'Delete Account'}</div>
+                <div style={{ color: 'rgba(248,113,113,0.55)', fontSize: '11px', fontWeight: 400, marginTop: '1px' }}>
+                  Permanently remove profile
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '2px 8px' }} />
+
+          {/* Sign Out */}
+          <div style={{ padding: '4px 8px 8px 8px' }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '9px 12px',
+                background: 'transparent',
+                border: 'none', borderRadius: '12px',
+                color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600,
+                cursor: 'pointer', transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '9px',
+                background: 'rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                   <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
               </div>
-              <div>
+              <div style={{ textAlign: 'left' }}>
                 <div>Sign Out</div>
-                <div style={{ color: 'rgba(239,68,68,0.55)', fontSize: '11px', fontWeight: 400, marginTop: '1px' }}>
+                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 400, marginTop: '1px' }}>
                   End current session
                 </div>
               </div>
