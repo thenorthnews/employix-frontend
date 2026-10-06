@@ -15,7 +15,7 @@ const Navbar = () => {
 
   const { isAuthenticated, token } = useSelector((state) => state.auth);
   const activeToken = token || getStoredToken();
-  const hasValidSession = Boolean(isAuthenticated && activeToken && isTokenValid(activeToken));
+  const hasValidSession = Boolean((isAuthenticated || Boolean(activeToken)) && activeToken && isTokenValid(activeToken));
 
   // Hide Navbar completely on specific screens with dedicated headers:
   // 1. On OTP verification screen (/otp)
@@ -163,12 +163,24 @@ const Navbar = () => {
 
             {/* Right Action Items */}
             <div className="header-actions d-flex align-items-center mt-3 mt-lg-0">
-              <Link to={hasValidSession ? "/profile" : "/login"} className="btn btn-header-outline mr-2 ml-3">
-                Candidate Login
-              </Link>
-              <Link to={hasValidSession ? "/profile" : "/login"} className="btn btn-header-teal">
-                Employer Login
-              </Link>
+              {hasValidSession ? (
+                <Link to="/profile" className="btn btn-header-teal ml-3 font-weight-bold d-inline-flex align-items-center gap-2">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  My Profile
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="btn btn-header-outline mr-2 ml-3">
+                    Candidate Login
+                  </Link>
+                  <Link to="/login" className="btn btn-header-teal">
+                    Employer Login
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -487,7 +487,7 @@ const ProfessionalReferenceSection = ({
         {/* Scoring Policy Info Strip */}
         <div
           className="p-2 px-3 rounded-lg mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
-          style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+          style={{ background: '#f8f9fa', border: '1px solid #e2e8f0' }}
         >
        
           <div className="d-flex align-items-center gap-2">
@@ -523,7 +523,7 @@ const ProfessionalReferenceSection = ({
         <div className="reference-table-container">
           <div className="table-responsive rounded-lg border shadow-sm mb-4">
             <table className="table table-hover align-middle mb-0" style={{ minWidth: '700px' }}>
-              <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+              <thead style={{ background: '#f8f9fa', borderBottom: '2px solid #e2e8f0' }}>
                 <tr className="text-uppercase text-muted" style={{ fontSize: '11px', letterSpacing: '0.6px' }}>
                   <th style={{ width: '50px' }} className="py-3 px-3 text-center">#</th>
                   <th className="py-3">Reference Person</th>
@@ -552,7 +552,7 @@ const ProfessionalReferenceSection = ({
                     <tr
                       key={ref._id || idx}
                       style={{
-                        background: isCompleted ? '#f0fdf9' : '#ffffff',
+                        background: '#f8f9fa',
                         transition: 'background 0.2s',
                       }}
                     >

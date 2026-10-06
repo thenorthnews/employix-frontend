@@ -608,5 +608,346 @@ input.auth-input-group:disabled {
   box-shadow: 0 6px 16px rgba(0, 210, 148, 0.15) !important;
 }
 
+/* ==========================================================================
+   Candidate Unified 3-Tier Showcase Profile Card Styles
+   ========================================================================== */
+.profile-hero-custom-card {
+  width: 100%;
+  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #fafdff 100%);
+  border: 1.5px solid #d8ecf8;
+  border-radius: 24px;
+  box-shadow: 0 16px 40px -10px rgba(0, 80, 120, 0.08), 0 4px 12px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+}
 
+.profile-hero-tier-top {
+  background: transparent;
+}
 
+.profile-hero-tier-middle {
+  background: rgba(248, 250, 252, 0.6);
+}
+
+.profile-hero-tier-bottom {
+  background: #ffffff;
+}
+
+.profile-unified-hero-showcase {
+  width: 100%;
+}
+
+.profile-unified-inner-card {
+  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #f7fcff 100%);
+  border: 1.5px solid #d8ecf8;
+  border-radius: 24px;
+  box-shadow: 0 16px 40px -10px rgba(0, 80, 120, 0.08), 0 4px 12px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+}
+
+.candidate-ref-integrated-box {
+  width: 100%;
+}
+
+.candidate-ref-card-wrapper {
+  background: linear-gradient(145deg, #dcf4ff 0%, #edf8fd 50%, #ffffff 100%);
+  border: 1.5px solid #c9ecfa;
+  border-radius: 24px;
+  padding: 22px 18px;
+  text-align: left;
+  box-shadow: 0 16px 36px -8px rgba(0, 80, 120, 0.12), 0 4px 14px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.candidate-ref-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.candidate-ref-avatar-box {
+  position: relative;
+  width: 78px;
+  height: 78px;
+  flex-shrink: 0;
+}
+
+.candidate-ref-avatar-img {
+  width: 78px;
+  height: 78px;
+  border-radius: 20px;
+  object-fit: cover;
+  border: 2.5px solid #00D294;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  display: block;
+}
+
+.candidate-ref-edit-btn {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #00D294;
+  color: #061325;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.candidate-ref-edit-btn:hover {
+  transform: scale(1.1);
+  background: #00FFB4;
+}
+
+.candidate-ref-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.candidate-ref-name {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0c2340;
+  margin: 0;
+  letter-spacing: 0.4px;
+  line-height: 1.2;
+}
+
+.candidate-ref-subtitle {
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: #475569;
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.candidate-ref-id-pill {
+  background: linear-gradient(135deg, #053b47 0%, #03252e 100%);
+  color: #5EFCE8;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 30px;
+  letter-spacing: 0.6px;
+  margin-top: 4px;
+  border: 1px solid rgba(94, 252, 232, 0.25);
+  box-shadow: 0 2px 6px rgba(4, 56, 68, 0.2);
+}
+
+/* Glowing Middle Score Banner */
+.candidate-ref-score-banner {
+  background: linear-gradient(135deg, #032030 0%, #053b49 55%, #021924 100%);
+  border: 1.5px solid rgba(0, 229, 255, 0.35);
+  box-shadow: 0 8px 24px -4px rgba(3, 32, 48, 0.35), 0 0 14px rgba(0, 229, 255, 0.15);
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.candidate-ref-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.candidate-ref-shield-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.3) 0%, rgba(3, 32, 48, 0.9) 100%);
+  border: 2px solid #00E5FF;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.45);
+  color: #00E5FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.candidate-ref-tier-title {
+  color: #5EFCE8;
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: 0.2px;
+}
+
+.candidate-ref-tier-sub {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.7rem;
+  margin: 2px 0 0 0;
+  line-height: 1.2;
+}
+
+.candidate-ref-banner-divider {
+  width: 1.5px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.candidate-ref-banner-right {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.candidate-ref-score-val {
+  color: #FFFFFF;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+}
+
+.candidate-ref-score-max {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* 2x2 Grid Section */
+.candidate-ref-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.candidate-ref-grid-card {
+  background: linear-gradient(135deg, #072833 0%, #031c24 100%);
+  border: 1.2px solid rgba(0, 210, 148, 0.25);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  transition: all 0.22s ease;
+  cursor: pointer;
+}
+
+.candidate-ref-grid-card:hover {
+  transform: translateY(-2px);
+  border-color: #00E5FF;
+  box-shadow: 0 6px 16px rgba(0, 229, 255, 0.22);
+}
+
+.candidate-ref-grid-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.candidate-ref-grid-icon {
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.candidate-ref-grid-label {
+  color: #FFFFFF;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.candidate-ref-grid-status {
+  color: #00D294;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+.candidate-ref-grid-arrow {
+  color: #FFFFFF;
+  font-size: 1.3rem;
+  font-weight: 300;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+@media (max-width: 480px) {
+  .candidate-ref-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Candidate Static QR Code Box */
+.candidate-ref-qr-box {
+  position: relative;
+  background: #FFFFFF;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  border: 1.5px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.candidate-ref-qr-box:hover {
+  transform: translateY(-2px);
+  border-color: #00D294;
+  box-shadow: 0 6px 18px rgba(0, 210, 148, 0.2);
+}
+
+.candidate-ref-qr-svg {
+  display: block;
+  border-radius: 6px;
+}
+
+.candidate-ref-qr-corner-accent {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-bottom: 3px solid #00D294;
+  border-right: 3px solid #00D294;
+  border-bottom-right-radius: 6px;
+}
+
+/* ==========================================================================
+   Universal Uniform #f8f9fa Light Background for all KYC & Profile cards
+   (Education, Driving, References, Identity, Employment, etc.)
+   ========================================================================== */
+.bg-light,
+.setup-address-box,
+.kyc-verified-result-card,
+.kyc-doc-card-header,
+.kyc-file-meta-bar,
+.kyc-consent-card-modern,
+.kyc-status-summary-bar,
+.kyc-meta-pill,
+.kyc-record-locked-notice,
+.kyc-custom-file-upload,
+.kyc-upload-guide-banner,
+.p-4.rounded-lg.bg-light,
+.p-3.border.rounded.bg-light {
+  background-color: #f8f9fa !important;
+}

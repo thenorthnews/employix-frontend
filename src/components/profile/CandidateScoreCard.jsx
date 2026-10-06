@@ -1,209 +1,142 @@
 import React from 'react';
-import { resolveImageUrl, formatEmployixId, calculateTrustScore } from '../../utils/profileUtils';
+import { resolveImageUrl, calculateTrustScore, getKycVerificationFlags } from '../../utils/profileUtils';
 
 const CandidateScoreCard = ({ user, onEdit }) => {
   // 1. Resolve Avatar URL
   const avatarSrc = resolveImageUrl(user?.profileImage);
 
-  // 2. Candidate Name
-  const candidateName = user?.name || 'Aarav Sharma';
+  // 2. Dynamic Trust Score & Tier
+  const { displayScore } = calculateTrustScore(user);
 
-  // 3. Designation & Location
-  const designation = user?.designation || 'Professional';
-  const locationCity =
-    user?.city ||
-    (user?.address ? user.address.split(',').slice(-2, -1)[0]?.trim() : null) ||
-    'Bangalore';
-  const roleAndLocation = `${designation} · ${locationCity}`;
+  // 3. Dynamic Stats for Banner Subtitle
+  const degreesCount = Array.isArray(user?.qualifications) ? user.qualifications.length : 0;
+  
+  const manualJobsCount = Array.isArray(user?.manualEmployment) ? user.manualEmployment.length : 0;
+  const rawEpfo = user?.epfoEmployment;
+  const epfoJobsCount = Array.isArray(rawEpfo)
+    ? rawEpfo.flatMap((i) => (Array.isArray(i?.records) ? i.records : [i])).length
+    : (Array.isArray(rawEpfo?.records) ? rawEpfo.records.length : (rawEpfo?.employerName ? 1 : 0));
+  const totalRolesCount = manualJobsCount + epfoJobsCount;
 
-  // 4. Formatted Employix ID
-  const formattedId = formatEmployixId(user?.employixId, user?._id);
+  const refsCount = Array.isArray(user?.references) ? user.references.length : 0;
+  const certsCount = Array.isArray(user?.certifications) ? user.certifications.length : 0;
+  const totalConductCount = refsCount + certsCount;
 
-  // 5. Dynamic Trust Score & Tier
-  const { displayScore, tierText, totalEarnedScore, totalApplicableScore } = calculateTrustScore(user);
+  // 4. Dynamic Verification Flags
+  const { isAadhaarDone, isVoterDone, isEmpDone, isEduVerified, isDlDone } = getKycVerificationFlags(user);
+  const isIdentityDone = isAadhaarDone || isVoterDone || isDlDone;
+  const isConductDone = totalConductCount > 0;
 
-  // 7. Dynamic Skill Tags
-  const defaultSkills = [
-    'Product Strategy',
-    'Roadmapping',
-    'Analytics',
-    'Stakeholder Management',
-    'Agile',
-    'GTM',
-  ];
-
-  const derivedSkills = [];
-  if (Array.isArray(user?.skills) && user.skills.length > 0) {
-    derivedSkills.push(...user.skills);
-  }
-  if (Array.isArray(user?.certifications) && user.certifications.length > 0) {
-    user.certifications.forEach((c) => {
-      if (c.title) derivedSkills.push(c.title.split(' ')[0]);
-    });
-  }
-  if (Array.isArray(user?.qualifications) && user.qualifications.length > 0) {
-    user.qualifications.forEach((q) => {
-      if (q.degree) derivedSkills.push(q.degree);
-    });
-  }
-
-  const skillsToShow =
-    derivedSkills.length >= 3 ? Array.from(new Set(derivedSkills)).slice(0, 6) : defaultSkills;
-
-  // 8. Gauge Arc Math (260° arc from 140° to 40°, Radius = 72, center = 100, 95)
-  const ARC_LENGTH = 326.72;
-  const clampedScore = Math.max(0, Math.min(100, displayScore));
-  const strokeOffset = ARC_LENGTH - (ARC_LENGTH * clampedScore) / 100;
-
-  // Adaptive Color Tiers matching user rules:
-  // - 20 tak (<= 20): Red Gradient (#DC2626 -> #EF4444 -> #FB7185)
-  // - 20 se upar aur 60 se niche (> 20 && < 60): Amber Gradient (#EA580C -> #F59E0B -> #FDE047)
-  // - 60 ya 60 se upar (>= 60): Green Gradient (#00D294 -> #00E5A3)
-  let scoreTier = {
-    gradientId: 'candidateScoreGradRed',
-    stops: [
-      { offset: '0%', color: '#DC2626' },
-      { offset: '50%', color: '#EF4444' },
-      { offset: '100%', color: '#FB7185' },
-    ],
-    accentColor: '#EF4444',
-    tierPillBg: 'rgba(239, 68, 68, 0.2)',
-    tierPillBorder: 'rgba(239, 68, 68, 0.45)',
-    tierPillColor: '#FCA5A5',
-  };
-
-  if (clampedScore >= 60) {
-    scoreTier = {
-      gradientId: 'candidateScoreGradGreen',
-      stops: [
-        { offset: '0%', color: '#00D294' },
-        { offset: '100%', color: '#00E5A3' },
-      ],
-      accentColor: '#00D294',
-      tierPillBg: 'rgba(0, 210, 148, 0.2)',
-      tierPillBorder: 'rgba(0, 210, 148, 0.45)',
-      tierPillColor: '#6EE7B7',
-    };
-  } else if (clampedScore > 20) {
-    scoreTier = {
-      gradientId: 'candidateScoreGradAmber',
-      stops: [
-        { offset: '0%', color: '#EA580C' },
-        { offset: '50%', color: '#F59E0B' },
-        { offset: '100%', color: '#FDE047' },
-      ],
-      accentColor: '#EE740D',
-      tierPillBg: 'rgba(245, 158, 11, 0.2)',
-      tierPillBorder: 'rgba(245, 158, 11, 0.45)',
-      tierPillColor: '#FCD34D',
-    };
-  }
+  // Derive short tier label (e.g. Platinum, Gold, Silver)
+  const shortTier = displayScore >= 80 ? 'Platinum' : displayScore >= 60 ? 'Gold' : displayScore >= 40 ? 'Silver' : 'Bronze';
 
   return (
-    <div className="candidate-card-container">
-      {/* Top Candidate Avatar */}
-      <div className="candidate-avatar-wrapper position-relative">
-        <img
-          src={avatarSrc}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = '/images/identity.jpg';
-          }}
-          alt={candidateName}
-          className="candidate-card-avatar"
-        />
-        {onEdit && (
-          <button
-            type="button"
-            className="candidate-avatar-edit-icon"
-            onClick={onEdit}
-            title="Edit Profile"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+    <div className="candidate-ref-integrated-box">
+      {/* Top Banner: Glowing Gradient Tier & Trust Score */}
+      <div className="candidate-ref-score-banner mb-3">
+        <div className="candidate-ref-banner-left">
+          <div className="candidate-ref-shield-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <path d="M9 12l2 2 4-4"></path>
             </svg>
-          </button>
-        )}
-      </div>
-
-      {/* Semi-Circular SVG Progress Gauge */}
-      <div className="candidate-gauge-box">
-        <svg
-          viewBox="0 0 200 160"
-          className="candidate-gauge-svg"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <linearGradient id={scoreTier.gradientId} x1="0%" y1="100%" x2="100%" y2="0%">
-              {scoreTier.stops.map((s, idx) => (
-                <stop key={idx} offset={s.offset} stopColor={s.color} />
-              ))}
-            </linearGradient>
-          </defs>
-
-          {/* Background Arc Track */}
-          <path
-            d="M 44.8 141.3 A 72 72 0 1 1 155.2 141.3"
-            fill="none"
-            stroke="#162740"
-            strokeWidth="14"
-            strokeLinecap="round"
-          />
-
-          {/* Active Score Progress Arc */}
-          <path
-            d="M 44.8 141.3 A 72 72 0 1 1 155.2 141.3"
-            fill="none"
-            stroke={`url(#${scoreTier.gradientId})`}
-            strokeWidth="14"
-            strokeLinecap="round"
-            strokeDasharray={ARC_LENGTH}
-            strokeDashoffset={strokeOffset}
-            style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease' }}
-          />
-        </svg>
-
-        {/* Center Score Value */}
-        <div className="candidate-gauge-center-content">
-          <div className="candidate-score-number">{displayScore}%</div>
-          <div className="candidate-score-sublabel">
-            {totalEarnedScore ? `${totalEarnedScore}/${totalApplicableScore} Pts` : 'Base 100%'}
           </div>
+          <div>
+            <h3 className="candidate-ref-tier-title">{shortTier}</h3>
+            <p className="candidate-ref-tier-sub">
+              {degreesCount > 0 ? `${degreesCount} degrees` : '2 degrees'}
+              {totalRolesCount > 0 ? ` , ${totalRolesCount} verified roles` : ' , 3 verified roles'}
+              {totalConductCount > 0 ? ` , ${totalConductCount} conduct certs` : ''}
+            </p>
+          </div>
+        </div>
+
+        <div className="candidate-ref-banner-divider"></div>
+
+        <div className="candidate-ref-banner-right">
+          <span className="candidate-ref-score-val">{displayScore}</span>
+          <span className="candidate-ref-score-max">/ 100</span>
         </div>
       </div>
 
-      {/* Tier Badge Pill */}
-      <div className="mt-2 mb-3">
-        <span
-          className="candidate-tier-pill"
-          style={{
-            background: scoreTier.tierPillBg,
-            border: `1px solid ${scoreTier.tierPillBorder}`,
-            color: scoreTier.tierPillColor,
-          }}
-        >
-          {tierText}
-        </span>
+      {/* Bottom 2x2 Grid: 4 Interactive Verification Cards */}
+      <div className="candidate-ref-grid">
+        {/* Card 1: Identity */}
+        <div className={`candidate-ref-grid-card ${isIdentityDone ? 'verified' : 'pending'}`}>
+          <div className="candidate-ref-grid-left">
+            <div className="candidate-ref-grid-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                <circle cx="9" cy="10" r="2"></circle>
+                <line x1="15" y1="8" x2="19" y2="8"></line>
+                <line x1="15" y1="12" x2="19" y2="12"></line>
+                <line x1="7" y1="16" x2="17" y2="16"></line>
+              </svg>
+            </div>
+            <div>
+              <div className="candidate-ref-grid-label">Identity</div>
+              <div className="candidate-ref-grid-status">{isIdentityDone ? 'Verified' : 'Pending'}</div>
+            </div>
+          </div>
+          <span className="candidate-ref-grid-arrow">&rsaquo;</span>
+        </div>
+
+        {/* Card 2: Qualifications */}
+        <div className={`candidate-ref-grid-card ${isEduVerified ? 'verified' : 'pending'}`}>
+          <div className="candidate-ref-grid-left">
+            <div className="candidate-ref-grid-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="8" r="6"></circle>
+                <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"></path>
+              </svg>
+            </div>
+            <div>
+              <div className="candidate-ref-grid-label">Qualifications</div>
+              <div className="candidate-ref-grid-status">{isEduVerified ? 'Verified' : 'Pending'}</div>
+            </div>
+          </div>
+          <span className="candidate-ref-grid-arrow">&rsaquo;</span>
+        </div>
+
+        {/* Card 3: Employment */}
+        <div className={`candidate-ref-grid-card ${isEmpDone ? 'verified' : 'pending'}`}>
+          <div className="candidate-ref-grid-left">
+            <div className="candidate-ref-grid-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+            </div>
+            <div>
+              <div className="candidate-ref-grid-label">Employment</div>
+              <div className="candidate-ref-grid-status">{isEmpDone ? 'Verified' : 'Pending'}</div>
+            </div>
+          </div>
+          <span className="candidate-ref-grid-arrow">&rsaquo;</span>
+        </div>
+
+        {/* Card 4: Conduct */}
+        <div className={`candidate-ref-grid-card ${isConductDone ? 'verified' : 'pending'}`}>
+          <div className="candidate-ref-grid-left">
+            <div className="candidate-ref-grid-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <div>
+              <div className="candidate-ref-grid-label">Conduct</div>
+              <div className="candidate-ref-grid-status">
+                {isConductDone ? `Verified , ${totalConductCount} Certs` : 'Verified , 1 Certs'}
+              </div>
+            </div>
+          </div>
+          <span className="candidate-ref-grid-arrow">&rsaquo;</span>
+        </div>
       </div>
-
-      {/* Candidate Name */}
-      <h3 className="candidate-fullname">{candidateName}</h3>
-
-      {/* Role & City */}
-      <p className="candidate-role-text">{roleAndLocation}</p>
-
-      {/* Employix ID */}
-      <div className="candidate-id-code" style={{ color: scoreTier.accentColor }}>{formattedId}</div>
-
-      {/* Skill Pills */}
-      {/* <div className="candidate-skills-row">
-        {skillsToShow.map((skill, index) => (
-          <span key={index} className="candidate-skill-tag">
-            {skill}
-          </span>
-        ))}
-      </div> */}
     </div>
   );
 };

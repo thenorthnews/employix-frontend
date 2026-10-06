@@ -4311,17 +4311,16 @@ const KYCVerification = ({
                         {educationalDigiDocs.length > 0 ? (
                           /* State 1: Verified Documents List */
                           <div
-                            className="bg-white"
+                            className="bg-light"
                             style={{
                               borderRadius: '16px',
-                              border: '1.5px solid #BBF7D0',
-                              boxShadow: '0 4px 18px -2px rgba(5, 150, 105, 0.08)',
+                              border: '1.5px solid #00D294',
                               overflow: 'hidden',
                             }}
                           >
                             <div
                               className="p-3.5 p-md-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2"
-                              style={{ background: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)', borderColor: '#E2E8F0' }}
+                              style={{ background: '#f8f9fa', borderColor: '#E2E8F0' }}
                             >
                               <div className="d-flex align-items-center gap-2.5">
                                 <span style={{ fontSize: '20px' }}>🎓</span>
@@ -4423,11 +4422,10 @@ const KYCVerification = ({
                         ) : (
                           /* State 2: Clean, Simple Connect DigiLocker Box */
                           <div
-                            className="p-4 bg-white"
+                            className="p-4 bg-light"
                             style={{
                               borderRadius: '16px',
-                              border: '1.5px solid #BBF7D0',
-                              boxShadow: '0 4px 18px -2px rgba(5, 150, 105, 0.06)',
+                              border: '1.5px solid #00D294',
                             }}
                           >
                             <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
@@ -5190,34 +5188,56 @@ const KYCVerification = ({
                   <div className="auth-card-body p-4 p-md-5">
 
                   {dlVerified ? (
-                    <div className="setup-address-box">
-                      <div className="d-flex align-items-center justify-content-between mb-2">
-                        <span className="font-weight-bold text-success">&#10003; Official MoRTH Driving License Verified</span>
-                        <span className="badge badge-success px-2 py-1">Verified</span>
-                      </div>
-                      <div className="row g-2 mb-2">
-                        <div className="col-md-6 mb-2">
-                          <span className="small text-muted d-block">Masked DL Number:</span>
-                          <strong className="text-dark h6">{dlResult?.maskedDocumentNumber || 'DL04******2345'}</strong>
-                        </div>
-                        <div className="col-md-6 mb-2">
-                          <span className="small text-muted d-block">Licensee Name:</span>
-                          <strong className="text-dark h6">{dlResult?.name || fullName}</strong>
-                        </div>
-                        {dlResult?.vehicleTypes && (
-                          <div className="col-md-6 mb-2">
-                            <span className="small text-muted d-block">Authorized Vehicle Types:</span>
-                            <span className="badge badge-info px-2 py-1">
-                              {Array.isArray(dlResult.vehicleTypes) ? dlResult.vehicleTypes.join(', ') : dlResult.vehicleTypes}
+                    <div className="kyc-verified-result-card">
+                      <div className="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+                        <div className="d-flex align-items-center mb-2 mb-sm-0">
+                          <div className="stat-icon-light bg-teal-light mr-3" style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span className="text-white h4 mb-0 font-weight-bold">&#10003;</span>
+                          </div>
+                          <div>
+                            <h6 className="font-weight-bold text-dark mb-0">
+                              Driving License Verified Successfully
+                            </h6>
+                            <span className="text-success small font-weight-bold">
+                              Official Ministry of Road Transport &amp; Highways (MoRTH) Record Verified
                             </span>
                           </div>
-                        )}
+                        </div>
+                        <span className="badge badge-success px-3 py-2 font-weight-bold">+5 Points Secured</span>
+                      </div>
+
+                      {/* Complete Extracted DL Details */}
+                      <div className="row g-3 mt-1">
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Licensee Name</span>
+                          <strong className="text-dark">{dlResult?.name || fullName || 'Verified Licensee'}</strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Driving License Number</span>
+                          <strong className="text-dark">{dlResult?.maskedDocumentNumber || 'DL04******2345'}</strong>
+                        </div>
                         {dlResult?.dateOfExpiry && (
-                          <div className="col-md-6 mb-2">
-                            <span className="small text-muted d-block">DL Validity / Expiry:</span>
+                          <div className="col-sm-6 col-md-4 mb-2">
+                            <span className="text-muted small d-block">DL Validity / Expiry</span>
                             <strong className="text-dark">{new Date(dlResult.dateOfExpiry).toLocaleDateString()}</strong>
                           </div>
                         )}
+                        {dlResult?.vehicleTypes && (
+                          <div className="col-sm-6 col-md-4 mb-2">
+                            <span className="text-muted small d-block">Authorized Vehicle Types</span>
+                            <strong className="text-dark">
+                              {Array.isArray(dlResult.vehicleTypes) ? dlResult.vehicleTypes.join(', ') : dlResult.vehicleTypes}
+                            </strong>
+                          </div>
+                        )}
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Verification Method</span>
+                          <strong className="text-teal">MoRTH / RTO Document OCR</strong>
+                        </div>
+                        <div className="col-sm-6 col-md-4 mb-2">
+                          <span className="text-muted small d-block">Status</span>
+                          <span className="badge badge-success px-2 py-1">Verified</span>
+                        </div>
                         {(() => {
                           const displayAddr =
                             dlResult?.address?.fullAddress ||
@@ -5226,15 +5246,12 @@ const KYCVerification = ({
                           if (!displayAddr) return null;
                           return (
                             <div className="col-12 mt-2 pt-2 border-top">
-                              <span className="small text-muted d-block">Driving License Registered Address</span>
-                              <span className="small text-dark font-weight-bold">{displayAddr}</span>
+                              <span className="text-muted small d-block">Driving License Registered Address</span>
+                              <span className="text-dark font-weight-bold small">{displayAddr}</span>
                             </div>
                           );
                         })()}
                       </div>
-                      <span className="small text-muted d-block mt-2">
-                        Verified via Ministry of Road Transport and Highways (MoRTH) / State RTO OCR records.
-                      </span>
                     </div>
                   ) : (
                     <form onSubmit={handleVerifyDlOcr}>
@@ -5608,7 +5625,7 @@ const KYCVerification = ({
                       </span>
                     </div>
 
-                    {/* Circular Score Gauge at the End (Matching Image 2) */}
+                    {/* Circular Score Gauge at the End */}
                     <KycScoreGauge score={score} />
 
                     <button

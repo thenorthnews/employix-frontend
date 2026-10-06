@@ -149,18 +149,18 @@ const ProfileMainCards = ({ user: propUser }) => {
         </div>
       </div>
 
-      {/* Card 2: Verified Employment History Timeline */}
+      {/* Card 2: Employment History Timeline */}
       <div className="profile-main-card p-4 mb-4">
-        <div className="d-flex align-items-center justify-content-between mb-4">
+        <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
           <h3 className="profile-sec-heading mb-0 d-flex align-items-center">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="mr-2">
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
             </svg>
-            Verified Employment History
+            Employment History
           </h3>
-          <span className={`badge ${hasEmploymentRecords ? 'badge-success' : 'badge-danger text-white'} px-2 py-1 font-weight-bold small`}>
-            {hasEmploymentRecords ? `${manualJobs.length + epfoJobs.length} Record(s) (Verified)` : 'Not Verified'}
+          <span className={`badge ${epfoJobs.length > 0 ? 'badge-success' : 'badge-danger text-white'} px-2 py-1 font-weight-bold small`}>
+            {epfoJobs.length > 0 ? `${epfoJobs.length} Verified via EPFO${manualJobs.length > 0 ? ` · ${manualJobs.length} Self-Reported` : ''}` : 'Not Verified'}
           </span>
         </div>
 
@@ -171,19 +171,19 @@ const ProfileMainCards = ({ user: propUser }) => {
               {epfoJobs.map((rec, idx) => (
                 <div key={`epfo-${idx}`} className="timeline-verified-item position-relative mb-4 pb-3">
                   <span className="timeline-verified-node">&#10003;</span>
-                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-1">
-                    <h5 className="font-weight-bold text-dark mb-0">{user?.designation || 'Verified Role'}</h5>
-                    <span className="small text-muted font-weight-bold">
-                      {rec.joiningDate || 'Joined'} &ndash; {rec.exitDate || 'Present'}
-                    </span>
+                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-1 gap-2">
+                    <h5 className="font-weight-bold text-dark mb-0">{user?.designation || 'Software Engineer'}</h5>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="small text-muted font-weight-bold">
+                        {rec.joiningDate || 'Joined'} &ndash; {rec.exitDate || 'Present'}
+                      </span>
+                      <span className="badge badge-success px-2 py-1 font-weight-bold small">
+                        VERIFIED
+                      </span>
+                    </div>
                   </div>
                   <p className="text-teal font-weight-bold mb-2">{rec.employerName}</p>
                   <div className="small text-secondary mb-2 d-flex flex-wrap align-items-center">
-                    {(rec.name || user?.name) && (
-                      <span className="mr-3 text-dark">
-                        Employee Name: <strong>{rec.name || user?.name}</strong>
-                      </span>
-                    )}
                     {rec.memberId && (
                       <span>
                         EPFO Member ID: <code>{rec.memberId}</code> &middot; Authenticated Employee Record
@@ -197,25 +197,39 @@ const ProfileMainCards = ({ user: propUser }) => {
                 </div>
               ))}
 
-              {/* Manual Verified Records */}
+              {/* Manual Records (Not Verified) */}
               {manualJobs.map((job, idx) => (
                 <div key={`manual-${idx}`} className="timeline-verified-item position-relative mb-4 pb-3">
-                  <span className="timeline-verified-node">&#10003;</span>
-                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-1">
+                  <span
+                    className="timeline-verified-node"
+                    style={{
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      boxShadow: '0 0 10px rgba(239, 68, 68, 0.4)',
+                    }}
+                  >
+                    &#10007;
+                  </span>
+                  <div className="d-flex flex-wrap align-items-center justify-content-between mb-1 gap-2">
                     <h5 className="font-weight-bold text-dark mb-0">{job.designation || 'Specialist'}</h5>
-                    <span className="small text-muted font-weight-bold">
-                      {job.joiningDate || 'Past'} &ndash; {job.currentlyWorking ? 'Present' : (job.exitDate || 'Completed')}
-                    </span>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="small text-muted font-weight-bold">
+                        {job.joiningDate || 'Past'} &ndash; {job.currentlyWorking ? 'Present' : (job.exitDate || 'Completed')}
+                      </span>
+                      <span className="badge badge-danger text-white px-2 py-1 font-weight-bold small">
+                        NOT VERIFIED
+                      </span>
+                    </div>
                   </div>
                   <p className="text-teal font-weight-bold mb-2">{job.companyName}</p>
                   {job.workEmail && (
                     <p className="small text-secondary mb-2">
-                      Work Email: {job.workEmail} &middot; Verified Candidate Entry
+                      Work Email: {job.workEmail} &middot; Candidate Entry
                     </p>
                   )}
                   <div className="d-flex gap-2 flex-wrap">
-                    <span className="verified-source-tag tag-teal mr-2">&#10003; Manually Added &amp; Verified</span>
-                    <span className="verified-source-tag tag-teal">&#10003; Candidate Declared</span>
+                    <span className="verified-source-tag tag-danger mr-2">&#10007; Not Verified (Self-Reported)</span>
+                    <span className="verified-source-tag text-muted bg-light border">&#9888; Candidate Declared</span>
                   </div>
                 </div>
               ))}
@@ -274,7 +288,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                           rel="noopener noreferrer"
                           className="doc-view-btn"
                         >
-                          📄 View Certificate &nearr;
+                          📄 View Certificate
                         </a>
                       )}
                     </div>
@@ -301,19 +315,22 @@ const ProfileMainCards = ({ user: propUser }) => {
         )}
       </div>
 
-      {/* Card 4: Professional Certifications & Credentials */}
-      <div className="profile-main-card p-4 mb-4">
-        <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-          <h3 className="profile-sec-heading mb-0 d-flex align-items-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="mr-2">
-              <circle cx="12" cy="8" r="7"></circle>
-              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-            </svg>
-            Professional Certifications &amp; Credentials
-          </h3>
-        </div>
+      {/* Card 4: Professional Certifications & Credentials (Only show if available) */}
+      {certifications.length > 0 && (
+        <div className="profile-main-card p-4 mb-4">
+          <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+            <h3 className="profile-sec-heading mb-0 d-flex align-items-center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="mr-2">
+                <circle cx="12" cy="8" r="7"></circle>
+                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+              </svg>
+              Professional Certifications &amp; Credentials
+            </h3>
+            <span className="badge badge-success px-2 py-1 font-weight-bold small">
+              {certifications.length} Credential(s)
+            </span>
+          </div>
 
-        {certifications.length > 0 ? (
           <div>
             {certifications.map((cert, idx) => {
               const isCertVerified = Boolean(cert.isVerified && cert.verificationStatus === 'verified');
@@ -346,7 +363,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                           rel="noopener noreferrer"
                           className="doc-view-btn mr-1"
                         >
-                          🔗 Verify Link &nearr;
+                          🔗 Verify Link
                         </a>
                       )}
                       {cert.documentUrl && (
@@ -356,7 +373,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                           rel="noopener noreferrer"
                           className="doc-view-btn"
                         >
-                          📄 View Certificate &nearr;
+                          📄 View Certificate
                         </a>
                       )}
                     </div>
@@ -371,17 +388,76 @@ const ProfileMainCards = ({ user: propUser }) => {
               );
             })}
           </div>
-        ) : (
-          <div className="p-4 text-center rounded border bg-light">
-            <p className="mb-2 font-weight-bold" style={{ color: '#0f172a' }}>
-              🏆 No professional certifications added yet
-            </p>
-            <p className="small text-secondary mb-0">
-              No vendor credentials or technical certifications added yet.
-            </p>
+        </div>
+      )}
+
+      {/* Card 5: Professional Conduct & References */}
+      {Array.isArray(user?.references) && user.references.length > 0 && (
+        <div className="profile-main-card p-4 mb-4">
+          <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+            <h3 className="profile-sec-heading mb-0 d-flex align-items-center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="mr-2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+              Professional Conduct &amp; References
+            </h3>
+            <span className="badge badge-success px-2 py-1 font-weight-bold small">
+              {user.references.filter((r) => r.status === 'completed' || r.isFeedbackSubmitted).length}/{user.references.length} Verified
+            </span>
           </div>
-        )}
-      </div>
+
+          <div>
+            {user.references.map((ref, idx) => {
+              const isRefVerified = Boolean(ref.status === 'completed' || ref.isFeedbackSubmitted);
+              const feedback = ref.feedback;
+              return (
+                <div
+                  key={ref._id || `ref-${idx}`}
+                  className="p-3 border rounded bg-light mb-3 d-flex flex-wrap align-items-start justify-content-between gap-3"
+                  style={{ borderLeft: isRefVerified ? '4px solid #00D294' : '4px solid #ef4444' }}
+                >
+                  <div style={{ flex: '1 1 280px' }}>
+                    <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                      <h6 className="font-weight-bold text-dark mb-0">{ref.refereeName}</h6>
+                      {feedback?.relationship && (
+                        <span className="badge badge-light border text-muted small font-weight-bold">
+                          {feedback.relationship}
+                        </span>
+                      )}
+                    </div>
+                    <span className="small text-muted d-block mb-2">
+                      {ref.refereeRole} &middot; <span className="font-monospace">{ref.refereeEmail}</span>
+                    </span>
+
+                    {isRefVerified && (
+                      <div className="d-flex align-items-center gap-2 flex-wrap">
+                        <span className="badge badge-success px-2 py-1 font-weight-bold small">
+                          +5 Pts Earned
+                        </span>
+                      </div>
+                    )}
+
+                    {feedback?.comments && (
+                      <div className="p-2 rounded bg-white border mt-2 small text-dark" style={{ fontStyle: 'italic' }}>
+                        &ldquo;{feedback.comments}&rdquo;
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <span className={`badge ${isRefVerified ? 'badge-success' : 'badge-warning text-dark'} px-3 py-2 font-weight-bold`}>
+                      {isRefVerified ? 'VERIFIED' : 'PENDING'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Aadhaar Verified Celebration / Points Modal */}
       <AadhaarSuccessModal
