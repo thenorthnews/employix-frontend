@@ -18,6 +18,19 @@ import GlobalSuccessModal from './components/common/GlobalSuccessModal';
 import './utils/toastSetup';
 import './App.css';
 
+// Normalize .nip.io or localtest.me domains back to raw IP / localhost to preserve localStorage & login session
+if (typeof window !== 'undefined') {
+  const currentHost = window.location.hostname;
+  if (currentHost.endsWith('.nip.io')) {
+    const rawIp = currentHost.replace('.nip.io', '').replace(/-/g, '.');
+    const targetUrl = window.location.href.replace(currentHost, rawIp);
+    window.location.replace(targetUrl);
+  } else if (currentHost === 'localtest.me') {
+    const targetUrl = window.location.href.replace('localtest.me', 'localhost');
+    window.location.replace(targetUrl);
+  }
+}
+
 // Automatically scroll to top on route change unless hash is present
 const ScrollToTop = () => {
   const { pathname, hash } = useLocation();
