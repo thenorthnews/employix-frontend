@@ -176,9 +176,15 @@ const KYCVerification = ({
       setTimeout(() => {
         const el = document.getElementById(target);
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const headerOffset = 90;
+          const elementPosition = el.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth',
+          });
         }
-      }, 120);
+      }, 150);
     }
   };
 
@@ -972,7 +978,7 @@ const KYCVerification = ({
         title: 'Aadhaar Card Successfully Verified!',
         pointsEarned: scoreConfig.aadhaarScore ?? 20,
         description: `Your UIDAI identity verification is completed and ${scoreConfig.aadhaarScore ?? 20} points have been credited to your profile.`,
-        targetStepId: 'step-employment',
+        targetStepId: 'step-voter',
       });
     } catch (err) {
       const msg =
@@ -1045,7 +1051,7 @@ const KYCVerification = ({
         title: 'Voter ID Successfully Verified!',
         pointsEarned: scoreConfig.voterScore ?? 20,
         description: `Your ECI residential address proof is verified and ${scoreConfig.voterScore ?? 20} points have been credited to your profile.`,
-        targetStepId: 'step-dl',
+        targetStepId: 'step-employment',
       });
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Voter ID verification failed.');
@@ -1193,7 +1199,7 @@ const KYCVerification = ({
         title: 'Voter ID Successfully Verified!',
         pointsEarned: scoreConfig.voterScore ?? 20,
         description: `Your ECI residential address proof is verified and ${scoreConfig.voterScore ?? 20} points have been credited to your profile.`,
-        targetStepId: 'step-dl',
+        targetStepId: 'step-employment',
       });
     } catch (err) {
       let msg = err.response?.data?.message || err.message || 'Voter ID OCR processing failed.';
@@ -1359,7 +1365,8 @@ const KYCVerification = ({
         pointsEarned: 0,
         badgeText: 'Verified & Authenticated',
         description: 'Your government driving license has been authenticated with MoRTH / State RTO records.',
-        targetStepId: 'step-education',
+        buttonText: 'Proceed to Complete Setup →',
+        targetStepId: 'step-finish',
       });
     } catch (err) {
       console.error('DL OCR Error:', err);
@@ -1446,7 +1453,7 @@ const KYCVerification = ({
         title: 'Employment Records Successfully Verified!',
         pointsEarned: scoreConfig.employmentScore ?? 30,
         description: `Your EPFO employment records have been authenticated and ${scoreConfig.employmentScore ?? 30} points have been credited to your profile.`,
-        targetStepId: 'step-voter',
+        targetStepId: 'step-references',
       });
     } catch (err) {
       let msg = err.response?.data?.message || err.message || 'Invalid UAN number. Please enter a valid 12-digit UAN number.';
@@ -1495,7 +1502,7 @@ const KYCVerification = ({
         title: 'Employment Records Successfully Verified!',
         pointsEarned: scoreConfig.employmentScore ?? 30,
         description: `Your EPFO employment records have been authenticated and ${scoreConfig.employmentScore ?? 30} points have been credited to your profile.`,
-        targetStepId: 'step-voter',
+        targetStepId: 'step-references',
       });
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'EPFO fetch failed. Try adding manually.');
@@ -1881,6 +1888,15 @@ const KYCVerification = ({
 
       // Re-fetch entire user profile so all states (quals, certs, KYC status, score) are 100% in sync with database
       await fetchInitialData();
+
+      showVerificationSuccessModal({
+        title: 'Education Documents Successfully Verified!',
+        pointsEarned: scoreConfig.educationScore ?? 20,
+        badgeText: 'DigiLocker Verified',
+        description: `Your academic credentials from DigiLocker / NAD have been verified and ${scoreConfig.educationScore ?? 20} points have been credited to your profile.`,
+        buttonText: 'Proceed to Driving License Verification →',
+        targetStepId: 'step-dl',
+      });
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to sync DigiLocker documents');
     } finally {
