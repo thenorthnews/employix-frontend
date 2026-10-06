@@ -193,6 +193,9 @@ const authSlice = createSlice({
         }
         localStorage.setItem('employix_user', JSON.stringify(action.payload));
         localStorage.removeItem('employix_pending_email');
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem('employix_account_verified_msg', 'Account verified successfully');
+        }
       })
       .addCase(verifyOtp.rejected, (state, action) => {
         state.loading = false;

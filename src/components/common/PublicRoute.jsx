@@ -17,7 +17,7 @@ const PublicRoute = ({ children }) => {
   const hasValidSession = Boolean(currentToken && isTokenValid(currentToken));
 
   if (hasValidSession) {
-    const destination = location.state?.from?.pathname || '/profile';
+    const destination = location.state?.from?.pathname || '/kyc-verification';
     return <Navigate to={destination} replace />;
   }
 

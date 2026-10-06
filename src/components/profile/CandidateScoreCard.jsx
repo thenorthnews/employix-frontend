@@ -55,10 +55,10 @@ const CandidateScoreCard = ({ user, onEdit }) => {
   const clampedScore = Math.max(0, Math.min(100, displayScore));
   const strokeOffset = ARC_LENGTH - (ARC_LENGTH * clampedScore) / 100;
 
-  // Adaptive Color Tiers matching KYC Verification:
-  // - <= 20: Red Gradient (#DC2626 -> #EF4444 -> #FB7185)
-  // - 21 - 70: Amber Gradient (#EA580C -> #F59E0B -> #FDE047)
-  // - > 70: Green Gradient (#00D294 -> #00E5A3)
+  // Adaptive Color Tiers matching user rules:
+  // - 20 tak (<= 20): Red Gradient (#DC2626 -> #EF4444 -> #FB7185)
+  // - 20 se upar aur 60 se niche (> 20 && < 60): Amber Gradient (#EA580C -> #F59E0B -> #FDE047)
+  // - 60 ya 60 se upar (>= 60): Green Gradient (#00D294 -> #00E5A3)
   let scoreTier = {
     gradientId: 'candidateScoreGradRed',
     stops: [
@@ -72,7 +72,7 @@ const CandidateScoreCard = ({ user, onEdit }) => {
     tierPillColor: '#FCA5A5',
   };
 
-  if (clampedScore > 70) {
+  if (clampedScore >= 60) {
     scoreTier = {
       gradientId: 'candidateScoreGradGreen',
       stops: [

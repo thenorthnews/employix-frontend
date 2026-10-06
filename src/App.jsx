@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -14,6 +14,8 @@ import ProfilePage from './pages/ProfilePage';
 import ReferenceVerificationPage from './pages/ReferenceVerificationPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PublicRoute from './components/common/PublicRoute';
+import GlobalSuccessModal from './components/common/GlobalSuccessModal';
+import './utils/toastSetup';
 import './App.css';
 
 // Automatically scroll to top on route change unless hash is present
@@ -81,14 +83,18 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/kyc/digilocker/callback" element={<Navigate to="/kyc-verification?step=education" replace />} />
           <Route path="/reference-verification" element={<ReferenceVerificationPage />} />
           {/* Fallback route */}
           <Route path="*" element={<HomePage />} />
         </Routes>
-        {/* Global Toastify Notifications Container */}
+        {/* Middle Screen Modal for All Success Messages */}
+        <GlobalSuccessModal />
+
+        {/* Right Side Toastify Container for All Error & Warning Messages */}
         <ToastContainer
           position="top-right"
-          autoClose={3000}
+          autoClose={3500}
           hideProgressBar={false}
           newestOnTop
           closeOnClick
@@ -96,7 +102,7 @@ function App() {
           pauseOnFocusLoss={false}
           draggable
           pauseOnHover
-          limit={3}
+          limit={4}
         />
       </Router>
     </Provider>

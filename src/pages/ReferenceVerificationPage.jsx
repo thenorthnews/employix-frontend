@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ButtonSpinner from '../components/common/Loader';
 import Footer from '../components/common/Footer';
@@ -44,6 +44,7 @@ const parseToMonthFormat = (dateStr) => {
 };
 
 const ReferenceVerificationPage = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawToken = searchParams.get('token');
   const token = rawToken ? rawToken.trim().replace(/^["']|["']$/g, '') : '';
@@ -53,6 +54,23 @@ const ReferenceVerificationPage = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [sessionData, setSessionData] = useState(null);
+  const [redirectCountdown, setRedirectCountdown] = useState(4);
+
+  // Auto-redirect to KYC Verification screen after reference feedback completed
+  useEffect(() => {
+    if (pageState !== 'completed') return;
+    const timer = setInterval(() => {
+      setRedirectCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          navigate('/kyc-verification#step-references');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [pageState, navigate]);
 
   // OTP State
   const [otpCode, setOtpCode] = useState('');
@@ -107,10 +125,8 @@ const ReferenceVerificationPage = () => {
 
           if (data.isFeedbackSubmitted || data.status === 'completed') {
             setPageState('completed');
-          } else if (data.isOtpVerified || data.status === 'otp_verified') {
-            setPageState('otp_verified');
           } else {
-            setPageState('ready');
+            setPageState('otp_verified');
           }
         } else {
           setErrorMessage(res?.message || 'Verification link is invalid or has expired.');
@@ -591,178 +607,54 @@ const ReferenceVerificationPage = () => {
                   </span>
                 </div>
               </div>
-              <div>
+              <div className="mb-4">
+                <div
+                  className="d-inline-flex align-items-center px-3 py-2 rounded-pill font-weight-bold"
+                  style={{
+                    background: 'rgba(0, 210, 148, 0.1)',
+                    border: '1px solid rgba(0, 210, 148, 0.3)',
+                    color: '#059669',
+                    fontSize: '13px',
+                  }}
+                >
+                  <span
+                    className="spinner-grow spinner-grow-sm mr-2"
+                    style={{ width: '9px', height: '9px', color: '#00D294' }}
+                    role="status"
+                  />
+                  Redirecting to KYC Verification screen in{' '}
+                  <span className="mx-1 font-weight-bold" style={{ color: '#00a875', fontSize: '14px' }}>
+                    {redirectCountdown}s
+                  </span>
+                  ...
+                </div>
+              </div>
+
+              <div className="d-flex flex-wrap align-items-center justify-content-center gap-3">
+                <Link
+                  to="/kyc-verification#step-references"
+                  className="btn font-weight-bold px-4 py-2.5 text-white shadow-sm"
+                  style={{
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #00D294 0%, #00b37e 100%)',
+                    border: 'none',
+                    fontSize: '14px',
+                    boxShadow: '0 4px 14px rgba(0, 210, 148, 0.35)',
+                  }}
+                >
+                  Go to KYC Verification Screen &rarr;
+                </Link>
                 <Link
                   to="/"
-                  className="btn btn-outline-secondary font-weight-bold px-4 py-2"
-                  style={{ borderRadius: '10px' }}
+                  className="btn btn-outline-secondary font-weight-bold px-3 py-2"
+                  style={{ borderRadius: '10px', fontSize: '13.5px' }}
                 >
-                  Return to EMPLOYIX Home &rarr;
+                  Return to Home
                 </Link>
               </div>
             </div>
-          ) : pageState === 'ready' || pageState === 'otp_sent' ? (
-            /* STEP 1: IDENTITY VERIFICATION (EMAIL OTP) */
-            <div className="card ref-verification-card">
-              {/* Header */}
-              <div
-                className="p-4 p-md-5 text-white"
-                style={{
-                  background:
-                    'radial-gradient(circle at 15% 50%, rgba(0, 210, 148, 0.18) 0%, transparent 55%), radial-gradient(circle at 85% 50%, rgba(0, 102, 255, 0.16) 0%, transparent 55%), #07152B',
-                  borderTop: '3px solid #00D294',
-                }}
-              >
-                <div className="d-inline-flex align-items-center badge px-3 py-1 font-weight-bold mb-3" style={{ background: 'rgba(255,255,255,0.15)', color: '#ffffff', borderRadius: '20px', fontSize: '11.5px' }}>
-                  STEP 1 OF 2 &bull; CONFIDENTIAL IDENTITY VERIFICATION
-                </div>
-                <h3 className="font-weight-bold text-white mb-2">
-                  Professional Reference for {candidateName}
-                </h3>
-                <div className="d-flex align-items-center flex-wrap gap-2 text-white-50 small">
-                  <span className="badge badge-light text-dark font-weight-bold px-2 py-1">
-                    🏢 {companyName}
-                  </span>
-                  <span>&bull;</span>
-                  <span>Candidate Role: <strong className="text-white">{candidateRole}</strong></span>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-4 p-md-5 bg-white">
-                <div className="mb-4">
-                  <h5 className="font-weight-bold text-dark mb-2">Hello {refereeName},</h5>
-                  <p className="text-muted small line-height-lg mb-0" style={{ fontSize: '13.5px' }}>
-                    To protect candidate trust and ensure authentic reviews, please verify your registered email address before submitting the confidential feedback.
-                  </p>
-                </div>
-
-                <div
-                  className="p-3 rounded-xl mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
-                  style={{
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                  }}
-                >
-                  <div>
-                    <span className="small text-muted d-block" style={{ fontSize: '12px' }}>
-                      Verification Code Target Email:
-                    </span>
-                    <strong className="text-dark font-monospace" style={{ fontSize: '14px' }}>
-                      ✉ {refereeEmail}
-                    </strong>
-                  </div>
-                  <span className="badge badge-secondary px-2 py-1 small">Official Reference</span>
-                </div>
-
-                {pageState === 'ready' ? (
-                  <div>
-                    <button
-                      type="button"
-                      onClick={handleSendOtp}
-                      disabled={sendingOtp || otpSentOnce || countdown > 0}
-                      className="btn btn-block font-weight-bold py-3 text-white shadow-sm"
-                      style={{
-                        background: (sendingOtp || otpSentOnce || countdown > 0)
-                          ? '#94a3b8'
-                          : 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
-                        borderRadius: '12px',
-                        fontSize: '15px',
-                        cursor: (sendingOtp || otpSentOnce || countdown > 0) ? 'not-allowed' : 'pointer',
-                        opacity: (sendingOtp || otpSentOnce || countdown > 0) ? 0.75 : 1,
-                      }}
-                    >
-                      {sendingOtp ? (
-                        <>
-                          <ButtonSpinner color="#ffffff" size="sm" /> Sending Verification Code...
-                        </>
-                      ) : otpSentOnce ? (
-                        '✓ Verification Code Sent'
-                      ) : (
-                        'Send 6-Digit Verification Code to My Email →'
-                      )}
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleVerifyOtp}>
-                    <div className="form-group mb-4">
-                      <label className="font-weight-bold text-dark small d-block text-center mb-2">
-                        Enter 6-Digit Email Code *
-                      </label>
-                      <input
-                        type="text"
-                        maxLength="6"
-                        className="form-control form-control-lg text-center font-weight-bold font-monospace mx-auto"
-                        placeholder="••••••"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                        onKeyDown={(e) => {
-                          if (e.repeat) {
-                            e.preventDefault();
-                            return;
-                          }
-                          if (e.key === 'Enter') {
-                            if (verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6) {
-                              e.preventDefault();
-                            }
-                          }
-                        }}
-                        style={{
-                          letterSpacing: '8px',
-                          fontSize: '26px',
-                          maxWidth: '280px',
-                          borderRadius: '12px',
-                          border: '2px solid #cbd5e1',
-                        }}
-                        autoFocus
-                        required
-                        disabled={verifyingOtp}
-                      />
-                      <small className="form-text text-muted text-center mt-2">
-                        Code is valid for 10 minutes. Please check your inbox or spam folder.
-                      </small>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6}
-                      className="btn btn-block font-weight-bold py-3 mb-3 text-white shadow-sm"
-                      style={{
-                        background: (verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6)
-                          ? '#94a3b8'
-                          : 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
-                        borderRadius: '12px',
-                        fontSize: '15px',
-                        cursor: (verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6) ? 'not-allowed' : 'pointer',
-                        opacity: (verifyingOtp || isVerifyingOtpRef.current || otpCode.length !== 6) ? 0.75 : 1,
-                      }}
-                    >
-                      {verifyingOtp ? (
-                        <>
-                          <ButtonSpinner color="#ffffff" size="sm" /> Verifying Code...
-                        </>
-                      ) : (
-                        'Verify Code & Open Feedback Form →'
-                      )}
-                    </button>
-
-                    <div className="text-center">
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={countdown > 0 || sendingOtp || isSendingOtpRef.current}
-                        className="btn btn-link text-muted small p-0 font-weight-bold"
-                      >
-                        {countdown > 0 ? `Resend Code in ${countdown}s` : 'Resend Verification Code'}
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            </div>
-          ) : pageState === 'otp_verified' ? (
-            /* STEP 2: POST-OTP FEEDBACK & VERIFICATION SCREEN */
+          ) : (
+            /* CONFIDENTIAL FEEDBACK & VERIFICATION SCREEN */
             <div className="card ref-verification-card">
               {/* Premium Hero Header */}
               <div
@@ -776,15 +668,15 @@ const ReferenceVerificationPage = () => {
                 <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
                   <span
                     className="badge px-3 py-1 font-weight-bold"
-                    style={{ background: 'rgba(255,255,255,0.15)', color: '#ffffff', borderRadius: '20px', fontSize: '11px' }}
+                    style={{ background: 'rgba(0, 210, 148, 0.2)', color: '#00D294', border: '1px solid rgba(0, 210, 148, 0.4)', borderRadius: '20px', fontSize: '11px' }}
                   >
-                    STEP 2 OF 2 &bull; CONFIDENTIAL REVIEW
+                    CONFIDENTIAL PROFESSIONAL REFERENCE &bull; EMPLOYIX
                   </span>
                   <span
                     className="badge px-2 py-1 font-weight-bold"
                     style={{ background: '#dcfce7', color: '#15803d', borderRadius: '14px', fontSize: '11px' }}
                   >
-                    ✓ Identity Verified
+                    ✓ Direct Verification Session
                   </span>
                 </div>
 
@@ -1402,30 +1294,6 @@ const ReferenceVerificationPage = () => {
                   🔒 Confidential &amp; Encrypted &bull; Official Employix KYC Verification Standard
                 </p>
               </form>
-            </div>
-          ) : (
-            <div
-              className="card border-0 rounded-2xl p-5 text-center"
-              style={{
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
-                background: '#ffffff',
-              }}
-            >
-              <div className="mb-3" style={{ fontSize: '48px', color: '#ef4444' }}>⚠️</div>
-              <h4 className="font-weight-bold text-dark mb-2">Unable to Load Verification</h4>
-              <p className="text-muted mb-4">{errorMessage || 'The verification link may be invalid or expired.'}</p>
-              <div>
-                <Link
-                  to="/"
-                  className="btn font-weight-bold px-4 py-2 text-white shadow-sm"
-                  style={{
-                    background: 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
-                    borderRadius: '10px',
-                  }}
-                >
-                  Go to EMPLOYIX Home &rarr;
-                </Link>
-              </div>
             </div>
           )}
         </div>

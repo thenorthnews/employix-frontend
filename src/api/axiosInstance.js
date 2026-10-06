@@ -68,7 +68,7 @@ axiosInstance.interceptors.response.use(
         message = error.response.data;
       }
     } else if (error.request) {
-      message = 'Cannot connect to server. Please check backend on port 5000.';
+      message = 'Unable to connect to server. Please try again.';
     } else if (error.message) {
       message = error.message;
     }

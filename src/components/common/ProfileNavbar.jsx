@@ -114,7 +114,7 @@ const ProfileNavbar = ({ onUpdate }) => {
   const isProfile = location.pathname === '/profile';
   const isKyc     = location.pathname === '/kyc-verification';
 
-  const scoreColor = score >= 80 ? '#00D294' : score >= 60 ? '#f59e0b' : score >= 20 ? '#3b82f6' : '#6b7280';
+  const scoreColor = score >= 60 ? '#00D294' : score > 20 ? '#F59E0B' : '#EF4444';
 
   return (
     <>

@@ -154,9 +154,8 @@ const OtpPage = () => {
     const emailToUse = targetEmail || searchParams.get('email') || pendingEmail || 'nehabharti430@gmail.com';
 
     try {
-      const user = await dispatch(verifyOtp({ email: emailToUse, otp })).unwrap();
-      toast.success('Account verified successfully!');
-      navigate('/kyc-verification', { replace: true });
+      await dispatch(verifyOtp({ email: emailToUse, otp })).unwrap();
+      navigate('/kyc-verification?verified=true', { replace: true, state: { accountVerified: true } });
     } catch (errMessage) {
       toast.error(errMessage || 'Invalid OTP / Password. Please check the code and try again.');
       setDigits(['', '', '', '', '', '']);

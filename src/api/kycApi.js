@@ -183,5 +183,29 @@ export const getScoreConfigApi = async () => {
   return await axiosInstance.get('/user-portal/score-config');
 };
 
+/**
+ * Surepass DigiLocker Flow - Step 1: Initialize Session (Get verification URL & clientId)
+ * @param {Object} data - { redirect_url?, config? }
+ */
+export const initializeDigilockerApi = async (data = {}) => {
+  return await axiosInstance.post('/user-portal/kyc/digilocker/initialize', data);
+};
+
+/**
+ * Surepass DigiLocker Flow - Step 2: Fetch Verified Documents & Profile Data
+ * @param {string} clientId
+ */
+export const getDigilockerDocumentsApi = async (clientId) => {
+  return await axiosInstance.get(`/user-portal/kyc/digilocker/get-documents/${clientId}`);
+};
+
+/**
+ * Check DigiLocker Session Status
+ * @param {string} clientId
+ */
+export const getDigilockerSessionStatusApi = async (clientId) => {
+  return await axiosInstance.get(`/user-portal/kyc/digilocker/session/${clientId}`);
+};
+
 
 

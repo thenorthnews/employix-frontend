@@ -3,10 +3,10 @@ import React from 'react';
 const KycScoreGauge = ({ score = 0 }) => {
   const numericScore = Math.min(100, Math.max(0, Number(score) || 0));
 
-  // User Color Rules with Rich Gradients:
-  // - 20 se below (<= 20): Red color gradient effect (#FB7185 -> #EF4444 -> #DC2626)
-  // - 20 se upper aur 70 se niche (> 20 && <= 70): Amber gradient effect (#FDE047 -> #F59E0B -> #EA580C)
-  // - 70 se upper (> 70): Green color gradient effect (#00F5A0 -> #00D294 -> #059669)
+  // User Color Rules:
+  // - 20 tak (<= 20): Red color (#EF4444 / #DC2626)
+  // - 20 se upar aur 60 se niche (> 20 && < 60): Amber color (#EA580C / #F59E0B)
+  // - 60 ya 60 se upar (>= 60): Green color (#00D294 / #00E5A3)
   let tier = {
     gradientId: 'scoreGradRed',
     gradientCss: 'linear-gradient(135deg, #FB7185 0%, #EF4444 50%, #DC2626 100%)',
@@ -20,7 +20,7 @@ const KycScoreGauge = ({ score = 0 }) => {
     knobColor: '#DC2626',
   };
 
-  if (numericScore > 70) {
+  if (numericScore >= 60) {
     tier = {
       gradientId: 'scoreGradGreen',
       gradientCss: 'linear-gradient(135deg, #00D294 0%, #00E5A3 100%)',

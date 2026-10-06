@@ -55,13 +55,11 @@ const ProtectedRoute = ({ children, requireAadhaar = false }) => {
               );
             } else {
               setIsAadhaarVerified(false);
-              toast.error('Aadhaar Card verification is required to access your Profile!');
             }
           }
         } catch (err) {
           if (isMounted) {
             setIsAadhaarVerified(false);
-            toast.error('Aadhaar Card verification is required to access your Profile!');
           }
         } finally {
           if (isMounted) {

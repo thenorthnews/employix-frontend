@@ -180,7 +180,7 @@ export const getKycVerificationFlags = (user) => {
   const hasEpfo = Array.isArray(rawEpfo)
     ? rawEpfo.length > 0
     : Boolean(rawEpfo?.records?.length || rawEpfo?.employerName);
-  const isEmpDone = user.employmentStatus === 1 || hasEpfo || manualJobs.length > 0;
+  const isEmpDone = user.employmentStatus === 1 || hasEpfo;
 
   // Step 4: Voter ID Address
   const isVoterDone = user.voterStatus === 1 || Boolean(user.address) || Boolean(user.voterData);

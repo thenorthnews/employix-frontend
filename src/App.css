@@ -10,18 +10,23 @@
   padding: 8px !important;
 }
 
+.Toastify__toast-container--top-right {
+  top: 24px !important;
+  right: 24px !important;
+}
+
 /* Base Toast Card */
 .Toastify__toast {
   border-radius: 12px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 6px 12px -3px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.28), 0 8px 16px -4px rgba(0, 0, 0, 0.14) !important;
   font-family: inherit !important;
-  font-size: 0.92rem !important;
+  font-size: 0.94rem !important;
   font-weight: 500 !important;
   line-height: 1.45 !important;
-  padding: 14px 18px !important;
+  padding: 14px 20px !important;
   margin-bottom: 12px !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  backdrop-filter: none !important; /* Eliminate blurry filters */
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   opacity: 1 !important;
 }
@@ -50,38 +55,42 @@
 }
 
 /* ==========================================================================
-   SUCCESS TOAST: Vibrant, Crisp Emerald / Employix Green (No Blurry Yellow)
+   SUCCESS TOAST: Vibrant, Crisp Emerald / Employix Green
    ========================================================================== */
 .Toastify__toast--success {
   background: #00B880 !important; /* Crisp, vibrant Employix emerald green */
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
 }
 
 .Toastify__toast--success .Toastify__toast-icon svg {
   fill: #ffffff !important;
+  width: 22px !important;
+  height: 22px !important;
 }
 
 .Toastify__progress-bar--success {
-  background: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
   height: 4px !important;
 }
 
 /* ==========================================================================
-   ERROR TOAST: Crisp, High-Contrast Ruby Red (No Blurry Yellow)
+   ERROR TOAST: Crisp, High-Contrast Ruby Red
    ========================================================================== */
 .Toastify__toast--error {
   background: #E53935 !important; /* Crisp, solid, high-contrast Red */
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
 }
 
 .Toastify__toast--error .Toastify__toast-icon svg {
   fill: #ffffff !important;
+  width: 22px !important;
+  height: 22px !important;
 }
 
 .Toastify__progress-bar--error {
-  background: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
   height: 4px !important;
 }
 
@@ -419,190 +428,6 @@ input.auth-input-group:disabled {
   cursor: not-allowed !important;
   opacity: 0.88 !important;
 }
-
-/* ==========================================================================
-   Modern KYC Document Upload System (Step 2 Aadhaar Redesign)
-   ========================================================================== */
-.kyc-upload-guide-banner {
-  background: linear-gradient(135deg, rgba(0, 210, 148, 0.08) 0%, rgba(2, 12, 31, 0.02) 100%);
-  border: 1.5px solid rgba(0, 210, 148, 0.25);
-  border-radius: 14px;
-  padding: 16px 20px;
-}
-
-.kyc-doc-card {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  overflow: hidden;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.kyc-doc-card:hover {
-  border-color: rgba(0, 210, 148, 0.6);
-  box-shadow: 0 10px 25px -5px rgba(0, 210, 148, 0.12), 0 6px 12px -3px rgba(0, 0, 0, 0.04);
-}
-
-.kyc-doc-card-header {
-  padding: 14px 18px;
-  background: #f8fafc;
-  border-bottom: 1px solid #edf2f7;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.kyc-doc-card-body {
-  padding: 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.kyc-modern-dropzone {
-  border: 2px dashed #cbd5e1;
-  background: #fbfcfe;
-  border-radius: 12px;
-  padding: 24px 16px;
-  text-align: center;
-  transition: all 0.25s ease;
-  cursor: pointer;
-  position: relative;
-  min-height: 200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.kyc-modern-dropzone:hover {
-  border-color: #00D294;
-  background: rgba(0, 210, 148, 0.04);
-  transform: translateY(-2px);
-}
-
-.kyc-modern-dropzone.drag-active {
-  border-color: #00D294;
-  background: rgba(0, 210, 148, 0.09);
-  border-style: solid;
-  box-shadow: 0 0 0 4px rgba(0, 210, 148, 0.2);
-}
-
-.kyc-upload-icon-wrapper {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(0, 210, 148, 0.12);
-  color: #00B880;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-  transition: transform 0.2s ease, background-color 0.2s ease;
-}
-
-.kyc-modern-dropzone:hover .kyc-upload-icon-wrapper {
-  transform: scale(1.08);
-  background: rgba(0, 210, 148, 0.22);
-}
-
-.kyc-preview-container {
-  border-radius: 10px;
-  background: #0f172a;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 180px;
-  max-height: 210px;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.kyc-preview-image {
-  max-width: 100%;
-  max-height: 210px;
-  object-fit: contain;
-  border-radius: 8px;
-  display: block;
-}
-
-.kyc-preview-pdf {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 30px 20px;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  width: 100%;
-  height: 100%;
-  color: #ffffff;
-}
-
-.kyc-file-meta-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  margin-top: 12px;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.kyc-consent-card-modern {
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 18px 22px;
-  transition: all 0.2s ease;
-}
-
-.kyc-consent-card-modern.consented {
-  background: rgba(0, 210, 148, 0.05);
-  border-color: rgba(0, 210, 148, 0.55);
-  box-shadow: 0 4px 14px rgba(0, 210, 148, 0.08);
-}
-
-.kyc-tag-pill {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 4px 9px;
-  border-radius: 6px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.kyc-badge-front {
-  background: rgba(0, 210, 148, 0.15);
-  color: #009366;
-  border: 1px solid rgba(0, 210, 148, 0.35);
-}
-
-.kyc-badge-back {
-  background: rgba(59, 130, 246, 0.12);
-  color: #2563eb;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.kyc-status-summary-bar {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 10px;
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 0.85rem;
-}
-
 /* ==========================================================================
    Modern Auth Card System & Highlighted Header Design
    ========================================================================== */
