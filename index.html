@@ -8,6 +8,20 @@
     <title>Employix - India's Verified Professional Identity Platform</title>
     <!-- Bootstrap 4 CSS CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous" />
+    <script>
+      (function() {
+        try {
+          var host = window.location.hostname;
+          if (host && host.indexOf('.nip.io') !== -1) {
+            var rawIp = host.replace('.nip.io', '').replace(/-/g, '.');
+            var targetUrl = window.location.href.replace(host, rawIp);
+            window.location.replace(targetUrl);
+          } else if (host === 'localtest.me') {
+            window.location.replace(window.location.href.replace('localtest.me', 'localhost'));
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -11,7 +11,6 @@ const AccountVerifiedModal = ({
 }) => {
   const [timeLeft, setTimeLeft] = useState(countdownSeconds);
 
-  // Keyboard navigation (Enter / Escape)
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {

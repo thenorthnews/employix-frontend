@@ -49,6 +49,15 @@ const ScrollToTop = () => {
   return null;
 };
 
+// Seamless callback forwarder that keeps client_id and step query params
+const DigiLockerCallbackRoute = () => {
+  const location = useLocation();
+  const search = location.search || '';
+  const hasStep = search.includes('step=');
+  const target = `/kyc-verification${search ? (hasStep ? search : `${search}&step=education`) : '?step=education'}`;
+  return <Navigate to={target} replace />;
+};
+
 function App() {
   return (
     <Provider store={store}>
@@ -96,7 +105,10 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/kyc/digilocker/callback" element={<Navigate to="/kyc-verification?step=education" replace />} />
+          <Route
+            path="/kyc/digilocker/callback"
+            element={<DigiLockerCallbackRoute />}
+          />
           <Route path="/reference-verification" element={<ReferenceVerificationPage />} />
           {/* Fallback route */}
           <Route path="*" element={<HomePage />} />
