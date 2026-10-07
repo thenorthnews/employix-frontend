@@ -6,19 +6,22 @@ import { toast } from 'react-toastify';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import ButtonSpinner from '../components/common/Loader';
+import { getKycVerificationFlags, isCandidateSetupCompleted } from '../utils/profileUtils';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, isAuthenticated } = useSelector((state) => state.auth);
+  const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // If already logged in, redirect to profile
+  // If already logged in, redirect to profile or kyc-verification
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/profile');
+      const flags = getKycVerificationFlags(user);
+      const isCompleted = isCandidateSetupCompleted(user) || flags.isSetupCompleted || flags.isAllStepsDone;
+      navigate(isCompleted ? '/profile' : '/kyc-verification', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
     dispatch(clearError());
@@ -39,14 +42,14 @@ const LoginPage = () => {
       return;
     }
 
-    console.log('📤 Submitting login to Backend API:', cleanEmail);
+    console.log('[Login] Submitting to Backend API:', cleanEmail);
 
     try {
       await dispatch(loginUser({ email: cleanEmail })).unwrap();
       toast.success('Security OTP sent to your email!');
       navigate(`/otp?email=${encodeURIComponent(cleanEmail)}`);
     } catch (errMessage) {
-      console.error('❌ Login API Error:', errMessage);
+      console.error('[Login] API Error:', errMessage);
       toast.error(errMessage || 'Login failed. Please check your credentials.');
     }
   };

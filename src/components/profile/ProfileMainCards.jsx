@@ -85,16 +85,11 @@ const ProfileMainCards = ({ user: propUser }) => {
                   {isAadhaarDone ? 'VERIFIED' : 'NOT VERIFIED'}
                 </span>
               </div>
-              <div className="mt-2 pt-2 border-top small text-muted d-flex justify-content-between align-items-center">
-                <div>
-                  <span>Doc: </span>
-                  <strong className="text-dark">
-                    {user?.aadhaarData?.maskedDocumentNumber || (isAadhaarDone ? 'XXXX-XXXX-8921' : 'Not Verified')}
-                  </strong>
-                </div>
-                {isAadhaarDone && (
-                  <span className="badge badge-success px-2 py-1 font-weight-bold small">+20 Pts</span>
-                )}
+              <div className="mt-2 pt-2 border-top small text-muted">
+                <span>Doc: </span>
+                <strong className="text-dark">
+                  {user?.aadhaarData?.maskedDocumentNumber || (isAadhaarDone ? 'XXXX-XXXX-8921' : 'Not Verified')}
+                </strong>
               </div>
             </div>
           </div>
@@ -288,7 +283,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                           rel="noopener noreferrer"
                           className="doc-view-btn"
                         >
-                          📄 View Certificate
+                          View Certificate
                         </a>
                       )}
                     </div>
@@ -306,7 +301,7 @@ const ProfileMainCards = ({ user: propUser }) => {
         ) : (
           <div className="p-4 text-center rounded border bg-light">
             <p className="mb-2 font-weight-bold" style={{ color: '#0f172a' }}>
-              🎓 No educational qualifications added yet
+              No educational qualifications added yet
             </p>
             <p className="small text-secondary mb-0">
               No academic degrees or diploma records added yet.
@@ -363,7 +358,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                           rel="noopener noreferrer"
                           className="doc-view-btn mr-1"
                         >
-                          🔗 Verify Link
+                          Verify Link
                         </a>
                       )}
                       {cert.documentUrl && (
@@ -373,7 +368,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                           rel="noopener noreferrer"
                           className="doc-view-btn"
                         >
-                          📄 View Certificate
+                          View Certificate
                         </a>
                       )}
                     </div>

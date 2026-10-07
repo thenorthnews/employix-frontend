@@ -5,13 +5,14 @@ import { verifyOtp, resendOtp, clearError } from '../redux/slices/authSlice';
 import { toast } from 'react-toastify';
 import Footer from '../components/common/Footer';
 import ButtonSpinner from '../components/common/Loader';
+import { getKycVerificationFlags, isCandidateSetupCompleted } from '../utils/profileUtils';
 
 const OtpPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { loading, resendLoading, pendingEmail, isAuthenticated } = useSelector((state) => state.auth);
+  const { loading, resendLoading, pendingEmail, isAuthenticated, user } = useSelector((state) => state.auth);
   const targetEmail = searchParams.get('email') || pendingEmail || '';
 
   // 6 individual digit input states
@@ -25,9 +26,11 @@ const OtpPage = () => {
   // Redirect if user is already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/kyc-verification', { replace: true });
+      const flags = getKycVerificationFlags(user);
+      const isCompleted = isCandidateSetupCompleted(user) || flags.isSetupCompleted || flags.isAllStepsDone;
+      navigate(isCompleted ? '/profile' : '/kyc-verification', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   // If email is missing, redirect back to login
   useEffect(() => {
@@ -154,8 +157,16 @@ const OtpPage = () => {
     const emailToUse = targetEmail || searchParams.get('email') || pendingEmail || 'nehabharti430@gmail.com';
 
     try {
-      await dispatch(verifyOtp({ email: emailToUse, otp })).unwrap();
-      navigate('/kyc-verification?verified=true', { replace: true, state: { accountVerified: true } });
+      const result = await dispatch(verifyOtp({ email: emailToUse, otp })).unwrap();
+      const verifiedUser = result?.user || result?.data?.user || result?.data || result || user;
+      const flags = getKycVerificationFlags(verifiedUser);
+      const isCompleted = isCandidateSetupCompleted(verifiedUser) || flags.isSetupCompleted || flags.isAllStepsDone;
+
+      if (isCompleted) {
+        navigate('/profile', { replace: true });
+      } else {
+        navigate('/kyc-verification?verified=true', { replace: true, state: { accountVerified: true } });
+      }
     } catch (errMessage) {
       toast.error(errMessage || 'Invalid OTP / Password. Please check the code and try again.');
       setDigits(['', '', '', '', '', '']);
@@ -203,7 +214,6 @@ const OtpPage = () => {
                     <div className="otp-target-pill mb-4 p-2 rounded d-inline-flex align-items-center justify-content-center">
                       <span className="small text-muted mr-1">Sent to:</span>
                       <span className="font-weight-bold text-dark mx-1">{targetEmail}</span>
-                      <Link to="/login" className="auth-teal-link ml-2 small font-weight-bold">Change</Link>
                     </div>
 
                     {/* OTP Form */}
@@ -211,14 +221,18 @@ const OtpPage = () => {
                     {/* Expiration Notice Alert */}
                     {timer <= 0 && (
                       <div
-                        className="py-2 px-3 small rounded mb-3 font-weight-bold d-flex align-items-center justify-content-center"
+                        className="py-2 px-3 small rounded mb-3 font-weight-bold d-flex align-items-center justify-content-center gap-1.5"
                         style={{
                           background: 'rgba(229, 57, 53, 0.12)',
                           color: '#E53935',
                           border: '1px solid rgba(229, 57, 53, 0.3)',
                         }}
                       >
-                        <span className="mr-2">⏱️</span> OTP has expired! Click &quot;Resend OTP&quot; below for a new code.
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>OTP has expired! Click &quot;Resend OTP&quot; below for a new code.</span>
                       </div>
                     )}
 

@@ -1908,7 +1908,11 @@ const KYCVerification = ({
   const isAadhaarDone = Boolean(aadhaarVerified);
   const isVoterDone = Boolean(voterVerified);
   const isEmpDone = Boolean(employmentVerified);
-  const isRefDone = Boolean(userReferences && userReferences.length > 0);
+  const isRefDone = Boolean(
+    userReferences &&
+    userReferences.length > 0 &&
+    userReferences.some((r) => r.isFeedbackSubmitted || r.status === 'completed' || r.isVerified)
+  );
   const isEduDone = Boolean(qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0);
   const isDlDone = Boolean(dlVerified);
 
@@ -1952,7 +1956,7 @@ const KYCVerification = ({
       } else if (!isEmpDone) {
         toast.error('Step 4 incomplete: Verified EPFO Employment history is required.');
       } else if (!isRefDone) {
-        toast.error('Step 5 incomplete: At least 1 Professional Reference is required.');
+        toast.error('Step 5 incomplete: At least 1 Professional Reference must be verified (feedback submitted by referee).');
       } else if (!isEduDone) {
         toast.error('Step 6 incomplete: Educational Degree / Certification verification is required.');
       } else if (!isDlDone) {
@@ -2088,7 +2092,7 @@ const KYCVerification = ({
           </div>
 
           <div className="d-flex align-items-center justify-content-center small" style={{ color: '#00D294', fontSize: '12.5px' }}>
-            <span className="mr-2">🔒</span> 256-bit Encrypted Government NAD Sync
+            256-bit Encrypted Government NAD Sync
           </div>
         </div>
       </div>
@@ -2199,7 +2203,7 @@ const KYCVerification = ({
                         </span>
                         {profileErrors.photo && !profileSaved && (
                           <small className="text-danger font-weight-bold mt-1 d-block" style={{ fontSize: '0.82rem' }}>
-                            ⚠ {profileErrors.photo}
+                            {profileErrors.photo}
                           </small>
                         )}
                       </div>
@@ -2209,10 +2213,7 @@ const KYCVerification = ({
                         <div className="row g-3">
                           {/* Full Name (Registered - Non-editable) */}
                           <div className="col-12 mb-3">
-                            <label className="auth-label d-flex justify-content-between align-items-center">
-                              <span>Full Name (Registered)</span>
-                              <span className="text-muted small" style={{ fontSize: '0.8rem' }}>🔒 Non-editable</span>
-                            </label>
+                            <label className="auth-label">Full Name (Registered)</label>
                             <input
                               type="text"
                               className="form-control auth-input-group px-3 py-2 bg-light text-muted"
@@ -2269,23 +2270,16 @@ const KYCVerification = ({
                             </div>
                             {profileErrors.phone && !profileSaved && (
                               <small className="text-danger font-weight-bold mt-1 d-flex align-items-center" style={{ fontSize: '0.84rem' }}>
-                                <span className="mr-1">⚠</span> {profileErrors.phone}
+                                {profileErrors.phone}
                               </small>
                             )}
                           </div>
 
                           {/* Designation */}
                           <div className="col-12 mb-3">
-                            <div className="d-flex align-items-center justify-content-between mb-1">
-                              <label className="auth-label mb-0">
-                                Professional Designation / Role <span className="text-danger">*</span>
-                              </label>
-                              {profileSaved && (
-                                <span className="badge badge-success px-2 py-1 small">
-                                  ✓ Saved &amp; Locked
-                                </span>
-                              )}
-                            </div>
+                            <label className="auth-label mb-1">
+                              Professional Designation / Role <span className="text-danger">*</span>
+                            </label>
                             <input
                               type="text"
                               className={`form-control auth-input-group px-3 py-2 ${profileSaved ? 'bg-light text-muted' : ''} ${profileErrors.designation ? 'is-invalid border-danger' : ''}`}
@@ -2302,12 +2296,7 @@ const KYCVerification = ({
                             />
                             {profileErrors.designation && !profileSaved && (
                               <small className="text-danger font-weight-bold mt-1 d-flex align-items-center" style={{ fontSize: '0.84rem' }}>
-                                <span className="mr-1">⚠</span> {profileErrors.designation}
-                              </small>
-                            )}
-                            {profileSaved && (
-                              <small className="text-success font-weight-bold mt-1 d-block">
-                                ✓ Designation details saved and locked.
+                                {profileErrors.designation}
                               </small>
                             )}
                           </div>
@@ -2348,7 +2337,7 @@ const KYCVerification = ({
                       <span className="setup-step-badge mr-2">Step 2</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Aadhaar Identity Verification</h3>
-                        <p className="auth-card-sub small mb-0">Official UIDAI Identity Verification (+{scoreConfig.aadhaarScore ?? 20} Points Boost)</p>
+                        <p className="auth-card-sub small mb-0">Official UIDAI Identity Verification</p>
                       </div>
                     </div>
 
@@ -2358,7 +2347,7 @@ const KYCVerification = ({
                       </span>
                     ) : (
                       <span className="badge badge-light text-muted px-3 py-2 font-weight-bold border">
-                        📷 Aadhaar Document OCR Upload
+                        Aadhaar Document OCR Upload
                       </span>
                     )}
                   </div>
@@ -2380,7 +2369,6 @@ const KYCVerification = ({
                             </span>
                           </div>
                         </div>
-                        <span className="badge badge-success px-3 py-2 font-weight-bold">+{scoreConfig.aadhaarScore ?? 20} Points Secured</span>
                       </div>
 
                       {/* Complete Extracted Aadhaar Details */}
@@ -2536,7 +2524,14 @@ const KYCVerification = ({
                                   <div className="kyc-preview-container">
                                     {aadhaarFrontPreview === 'pdf' ? (
                                       <div className="kyc-preview-pdf">
-                                        <div className="kyc-pdf-icon">📄</div>
+                                        <div className="kyc-pdf-icon">
+                                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                          </svg>
+                                        </div>
                                         <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
                                           {aadhaarFront.name}
                                         </strong>
@@ -2652,7 +2647,14 @@ const KYCVerification = ({
                                   <div className="kyc-preview-container">
                                     {aadhaarBackPreview === 'pdf' ? (
                                       <div className="kyc-preview-pdf">
-                                        <div className="kyc-pdf-icon">📄</div>
+                                        <div className="kyc-pdf-icon">
+                                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                          </svg>
+                                        </div>
                                         <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
                                           {aadhaarBack.name}
                                         </strong>
@@ -2746,7 +2748,7 @@ const KYCVerification = ({
                               <path d="M20 17v3h-3" />
                               <line x1="4" y1="12" x2="20" y2="12" />
                             </svg>
-                            <span>Scan &amp; Verify Aadhaar (+{scoreConfig.aadhaarScore ?? 20} Points)</span>
+                            <span>Scan &amp; Verify Aadhaar</span>
                           </>
                         )}
                       </button>
@@ -2766,7 +2768,7 @@ const KYCVerification = ({
                       <span className="setup-step-badge mr-2">Step 3</span>
                       <div>
                         <h3 className="auth-card-heading mb-0">Address Verification via Voter ID Card</h3>
-                        <p className="auth-card-sub small mb-0">Election Commission of India (ECI) Residential Address Proof (+{scoreConfig.voterScore ?? 20} Points)</p>
+                        <p className="auth-card-sub small mb-0">Election Commission of India (ECI) Residential Address Proof</p>
                       </div>
                     </div>
 
@@ -2785,7 +2787,7 @@ const KYCVerification = ({
                             setVoterOcrConsent(false);
                           }}
                         >
-                          🔢 Voter ID Number
+                          Voter ID Number
                         </button>
                         <button
                           type="button"
@@ -2796,7 +2798,7 @@ const KYCVerification = ({
                             setVoterOcrConsent(false);
                           }}
                         >
-                          📷 Voter Card OCR Upload
+                          Voter Card OCR Upload
                         </button>
                       </div>
                     )}
@@ -2820,7 +2822,6 @@ const KYCVerification = ({
                             </span>
                           </div>
                         </div>
-                        <span className="badge badge-success px-3 py-2 font-weight-bold">+{scoreConfig.voterScore ?? 20} Points Secured</span>
                       </div>
 
                       {/* Complete Extracted Voter ID Details */}
@@ -2916,7 +2917,7 @@ const KYCVerification = ({
                             className="btn btn-primary-teal btn-block py-3 font-weight-bold"
                             disabled={voterLoading || !voterNumConsent || !voterNumber.trim()}
                           >
-                            {voterLoading ? <ButtonSpinner text="Verifying Voter ID & Address..." /> : `Verify Voter ID Address (+${scoreConfig.voterScore ?? 20} Points)`}
+                            {voterLoading ? <ButtonSpinner text="Verifying Voter ID & Address..." /> : 'Verify Voter ID Address'}
                           </button>
                         </form>
                       )}
@@ -3017,7 +3018,12 @@ const KYCVerification = ({
                                       <div className="kyc-preview-container">
                                         {voterFrontPreview === 'pdf' ? (
                                           <div className="kyc-preview-pdf">
-                                            <div className="kyc-pdf-icon">📄</div>
+                                            <div className="kyc-pdf-icon">
+                                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
+                                              </svg>
+                                            </div>
                                             <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
                                               {voterFront.name}
                                             </strong>
@@ -3134,7 +3140,12 @@ const KYCVerification = ({
                                       <div className="kyc-preview-container">
                                         {voterBackPreview === 'pdf' ? (
                                           <div className="kyc-preview-pdf">
-                                            <div className="kyc-pdf-icon">📄</div>
+                                            <div className="kyc-pdf-icon">
+                                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
+                                              </svg>
+                                            </div>
                                             <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
                                               {voterBack.name}
                                             </strong>
@@ -3228,7 +3239,7 @@ const KYCVerification = ({
                                   <path d="M20 17v3h-3" />
                                   <line x1="4" y1="12" x2="20" y2="12" />
                                 </svg>
-                                <span>Scan &amp; Verify Voter Card (OCR) (+{scoreConfig.voterScore ?? 20} Points)</span>
+                                <span>Scan &amp; Verify Voter Card (OCR)</span>
                               </>
                             )}
                           </button>
@@ -3258,17 +3269,11 @@ const KYCVerification = ({
                         <span className="badge badge-success px-3 py-2 font-weight-bold">
                           &#10003; EPFO VERIFIED
                         </span>
-                        <span className="badge badge-success px-2 py-1 ml-2 font-weight-bold">
-                          +{scoreConfig.employmentScore ?? 30} Points Secured
-                        </span>
                       </div>
                     ) : manualJobs.length > 0 ? (
                       <div className="d-flex align-items-center gap-2">
                         <span className="badge px-3 py-2 font-weight-bold" style={{ background: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D' }}>
-                          ⚠️ SELF-REPORTED (NOT VERIFIED)
-                        </span>
-                        <span className="badge px-2 py-1 ml-2 font-weight-bold" style={{ background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' }}>
-                          0 Points Secured
+                          SELF-REPORTED (NOT VERIFIED)
                         </span>
                       </div>
                     ) : (
@@ -3289,15 +3294,15 @@ const KYCVerification = ({
                           </span>
                           {empMethod === 'uan' ? (
                             epfoRecords.length > 0 ? (
-                              <span className="kyc-badge-verified">✓ EPFO Authenticated (+30 Pts)</span>
+                              <span className="kyc-badge-verified">✓ EPFO Authenticated</span>
                             ) : (
                               <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '3px 9px', borderRadius: '20px' }}>
-                                UAN / EPFO (+30 Pts)
+                                UAN / EPFO
                               </span>
                             )
                           ) : (
-                            <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', padding: '3px 9px', borderRadius: '20px' }}>
-                              Manual (Self-Reported · 0 Pts)
+                            <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0', padding: '3px 9px', borderRadius: '20px' }}>
+                              Manual Entry
                             </span>
                           )}
                         </div>
@@ -3321,20 +3326,22 @@ const KYCVerification = ({
                             setEmpConsent(false);
                           }}
                         >
-                          <span>🆔 UAN / EPFO Lookup</span>
-                          <span
-                            style={{
-                              background: empMethod === 'uan' ? '#ECFDF5' : '#E2E8F0',
-                              color: empMethod === 'uan' ? '#047857' : '#64748B',
-                              fontSize: '10px',
-                              padding: '2px 6px',
-                              borderRadius: '6px',
-                              fontWeight: 700,
-                              marginLeft: '6px',
-                            }}
-                          >
-                            {epfoRecords.length > 0 ? '✓ Verified' : '+30 Pts'}
-                          </span>
+                          <span>UAN / EPFO Lookup</span>
+                          {epfoRecords.length > 0 && (
+                            <span
+                              style={{
+                                background: '#ECFDF5',
+                                color: '#047857',
+                                fontSize: '10px',
+                                padding: '2px 6px',
+                                borderRadius: '6px',
+                                fontWeight: 700,
+                                marginLeft: '6px',
+                              }}
+                            >
+                              ✓ Verified
+                            </span>
+                          )}
                         </button>
 
                         <button
@@ -3346,26 +3353,13 @@ const KYCVerification = ({
                             setEmpConsent(false);
                           }}
                         >
-                          <span>✏️ Manual Entry</span>
-                          <span
-                            style={{
-                              background: empMethod === 'manual' ? '#FEF3C7' : '#E2E8F0',
-                              color: empMethod === 'manual' ? '#92400E' : '#64748B',
-                              fontSize: '10px',
-                              padding: '2px 6px',
-                              borderRadius: '6px',
-                              fontWeight: 700,
-                              marginLeft: '6px',
-                            }}
-                          >
-                            Self-Reported
-                          </span>
+                          <span>Manual Entry</span>
                         </button>
                       </div>
                     </div>
 
                     {/* ═══════════════════════════════════════════════════════════
-                        OPTION 1: UAN / EPFO AUTHENTICATION (Official +30 Points)
+                        OPTION 1: UAN / EPFO AUTHENTICATION
                         ═══════════════════════════════════════════════════════════ */}
                     {empMethod === 'uan' && (
                       <div className="mb-4">
@@ -3374,11 +3368,8 @@ const KYCVerification = ({
                           <div className="mb-4">
                             <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                               <h6 className="font-weight-bold text-dark mb-0 d-flex align-items-center">
-                                <span className="mr-2" style={{ fontSize: '18px' }}>💼</span> Verified Employment History (EPFO Authenticated)
+                                Verified Employment History (EPFO Authenticated)
                               </h6>
-                              <span className="badge badge-success px-3 py-1 font-weight-bold" style={{ fontSize: '12px' }}>
-                                ✓ +30 Points Secured
-                              </span>
                             </div>
 
                             <div style={{ borderLeft: '3px solid #00D294', paddingLeft: '1rem' }}>
@@ -3510,21 +3501,8 @@ const KYCVerification = ({
                               <div className="mt-4 pt-3 border-top">
                                 <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                                   <h6 className="font-weight-bold text-dark mb-0 d-flex align-items-center">
-                                    <span className="mr-2">📝</span> Additional Self-Reported Experience ({manualJobs.length})
+                                    Additional Manual Experience ({manualJobs.length})
                                   </h6>
-                                  <span
-                                    className="badge font-weight-bold"
-                                    style={{
-                                      fontSize: '10.5px',
-                                      background: '#FEF3C7',
-                                      color: '#B45309',
-                                      border: '1px solid #FCD34D',
-                                      padding: '3px 9px',
-                                      borderRadius: '12px',
-                                    }}
-                                  >
-                                    ⚠️ Self-Reported &bull; Not Verified (0 Pts)
-                                  </span>
                                 </div>
                                 <div className="d-flex flex-column gap-2 mb-3">
                                   {manualJobs.map((job) => (
@@ -3550,24 +3528,14 @@ const KYCVerification = ({
                                               fontSize: '14px',
                                             }}
                                           >
-                                            📝
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
                                           </div>
                                           <div>
                                             <div className="d-flex align-items-center flex-wrap gap-2 mb-1">
                                               <h6 className="font-weight-bold text-dark mb-0">{job.designation}</h6>
-                                              <span
-                                                className="badge font-weight-bold"
-                                                style={{
-                                                  fontSize: '10px',
-                                                  background: '#FEF3C7',
-                                                  color: '#B45309',
-                                                  border: '1px solid #FCD34D',
-                                                  padding: '2px 7px',
-                                                  borderRadius: '10px',
-                                                }}
-                                              >
-                                                ⚠️ Self-Reported (0 Pts)
-                                              </span>
                                               {job.isCurrent && (
                                                 <span className="badge badge-success px-2 py-0.5" style={{ fontSize: '10px' }}>Active</span>
                                               )}
@@ -3597,16 +3565,26 @@ const KYCVerification = ({
                               </div>
                             )}
 
-                            {/* Option to also add manual self-reported experience alongside UAN */}
-                            <div className="mt-3 d-flex align-items-center justify-content-between p-3 rounded bg-light border">
+                            {/* Option to also add manual experience alongside UAN */}
+                            <div
+                              className="mt-3 d-flex align-items-center justify-content-between p-3 rounded-3 flex-wrap gap-2"
+                              style={{
+                                background: '#F0FDF4',
+                                border: '1.5px solid #BBF7D0',
+                              }}
+                            >
                               <div>
-                                <strong className="text-dark small d-block">Add additional past or current experience?</strong>
-                                <span className="text-muted small">You can add non-EPFO companies or freelance work manually as Self-Reported experience.</span>
+                                <strong className="small d-block font-weight-bold" style={{ color: '#166534' }}>
+                                  Add additional past or current experience?
+                                </strong>
+                                <span className="small" style={{ color: '#15803D' }}>
+                                  You can add non-EPFO companies or freelance work manually to your profile.
+                                </span>
                               </div>
                               <button
                                 type="button"
-                                className="btn btn-sm btn-outline-secondary font-weight-bold flex-shrink-0 ml-2"
-                                style={{ borderRadius: '8px' }}
+                                className="btn btn-sm btn-primary-teal font-weight-bold flex-shrink-0 shadow-sm"
+                                style={{ borderRadius: '8px', padding: '6px 14px' }}
                                 onClick={() => {
                                   setEmpMethod('manual');
                                   setShowJobForm(true);
@@ -3623,21 +3601,8 @@ const KYCVerification = ({
                               <div className="mb-4">
                                 <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                                   <h6 className="font-weight-bold text-dark mb-0 d-flex align-items-center">
-                                    <span className="mr-2">📝</span> Self-Reported Experience ({manualJobs.length})
+                                    Manual Experience Records ({manualJobs.length})
                                   </h6>
-                                  <span
-                                    className="badge font-weight-bold"
-                                    style={{
-                                      fontSize: '11px',
-                                      background: '#FEF3C7',
-                                      color: '#B45309',
-                                      border: '1px solid #FCD34D',
-                                      padding: '3px 9px',
-                                      borderRadius: '12px',
-                                    }}
-                                  >
-                                    ⚠️ Self-Reported &bull; Not Verified (0 Pts)
-                                  </span>
                                 </div>
                                 <div className="d-flex flex-column gap-2 mb-3">
                                   {manualJobs.map((job) => (
@@ -3663,24 +3628,14 @@ const KYCVerification = ({
                                               fontSize: '14px',
                                             }}
                                           >
-                                            📝
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
                                           </div>
                                           <div>
                                             <div className="d-flex align-items-center flex-wrap gap-2 mb-1">
                                               <h6 className="font-weight-bold text-dark mb-0">{job.designation}</h6>
-                                              <span
-                                                className="badge font-weight-bold"
-                                                style={{
-                                                  fontSize: '10px',
-                                                  background: '#FEF3C7',
-                                                  color: '#B45309',
-                                                  border: '1px solid #FCD34D',
-                                                  padding: '2px 7px',
-                                                  borderRadius: '10px',
-                                                }}
-                                              >
-                                                ⚠️ Self-Reported (0 Pts)
-                                              </span>
                                               {job.isCurrent && (
                                                 <span className="badge badge-success px-2 py-0.5" style={{ fontSize: '10px' }}>Active</span>
                                               )}
@@ -3746,7 +3701,7 @@ const KYCVerification = ({
                         </div>
                       </div>
                       <button type="submit" className="btn btn-primary-teal btn-block py-3 font-weight-bold" disabled={empLoading || !empConsent || uanNumber.length < 12}>
-                        {empLoading ? <ButtonSpinner text="Fetching UAN Records..." /> : `📊 Fetch Employment History via UAN (+${scoreConfig.employmentScore ?? 30} Points)`}
+                        {empLoading ? <ButtonSpinner text="Fetching UAN Records..." /> : 'Fetch Employment History via UAN'}
                       </button>
                     </form>
                   )}
@@ -3783,7 +3738,7 @@ const KYCVerification = ({
                         </div>
                       </div>
                       <button type="submit" className="btn btn-primary-teal btn-block py-3 font-weight-bold" disabled={empLoading || !empConsent || empMobile.length < 10}>
-                        {empLoading ? <ButtonSpinner text="Fetching EPFO Records..." /> : `📊 Fetch EPFO Employment History (+${scoreConfig.employmentScore ?? 30} Points)`}
+                        {empLoading ? <ButtonSpinner text="Fetching EPFO Records..." /> : 'Fetch EPFO Employment History'}
                       </button>
                     </form>
                   )}
@@ -3793,27 +3748,23 @@ const KYCVerification = ({
                     <div>
                       {/* Self-Reported Disclaimer Alert */}
                       <div
-                        className="p-3 mb-4 rounded-3 d-flex align-items-start gap-2.5"
+                        className="p-3 mb-4 rounded-3"
                         style={{
-                          background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
-                          border: '1.5px solid #FDE68A',
+                          background: '#FFFBEB',
+                          border: '1px solid #FDE68A',
                           color: '#92400E',
+                          fontSize: '13px',
+                          lineHeight: 1.5,
                         }}
                       >
-                        <span style={{ fontSize: '20px', lineHeight: 1 }}>⚠️</span>
-                        <div style={{ fontSize: '13px', lineHeight: 1.5 }}>
-                          <strong style={{ color: '#78350F' }}>Self-Reported Employment (Not Verified &bull; 0 Trust Points):</strong>
-                          <div className="mt-0.5">
-                            Experiences added manually are saved to your profile as self-reported and do <strong>not</strong> count towards your verified Employix Trust Score (+0 Points). For official verified status (+30 Points), please verify using <strong>UAN / EPFO Lookup</strong>.
-                          </div>
-                        </div>
+                        <strong>Self-Reported (0 Points):</strong> Manual entries do not add to your verified Trust Score. For official +30 verified points, please verify using <strong>UAN / EPFO Lookup</strong>.
                       </div>
 
                       {/* Existing Manual Jobs List */}
                       {manualJobs.length > 0 && (
                         <div className="mb-4">
                           <h6 className="font-weight-bold text-dark mb-3 d-flex align-items-center">
-                            <span className="mr-2">📝</span> Self-Reported Experience ({manualJobs.length})
+                            Manual Experience Records ({manualJobs.length})
                           </h6>
                           <div className="d-flex flex-column gap-3">
                             {manualJobs.map((job) => (
@@ -3824,40 +3775,14 @@ const KYCVerification = ({
                                   background: '#FFFFFF',
                                   border: '1.5px solid #E2E8F0',
                                   boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                                  borderLeft: '4px solid #F59E0B',
+                                  borderLeft: '4px solid #00D294',
                                 }}
                               >
                                 <div className="d-flex align-items-start justify-content-between">
                                   <div className="d-flex align-items-start">
-                                    <div
-                                      className="mr-3 mt-1 d-flex align-items-center justify-content-center flex-shrink-0"
-                                      style={{
-                                        width: '36px',
-                                        height: '36px',
-                                        borderRadius: '10px',
-                                        background: '#FEF3C7',
-                                        color: '#B45309',
-                                        fontSize: '16px',
-                                      }}
-                                    >
-                                      📝
-                                    </div>
                                     <div>
                                       <div className="d-flex align-items-center flex-wrap gap-2 mb-1">
                                         <h6 className="font-weight-bold text-dark mb-0">{job.designation}</h6>
-                                        <span
-                                          className="badge font-weight-bold"
-                                          style={{
-                                            fontSize: '10.5px',
-                                            background: '#FEF3C7',
-                                            color: '#B45309',
-                                            border: '1px solid #FCD34D',
-                                            padding: '2px 8px',
-                                            borderRadius: '12px',
-                                          }}
-                                        >
-                                          ⚠️ Self-Reported (Not Verified) &bull; 0 Pts
-                                        </span>
                                         {job.isCurrent && (
                                           <span className="badge badge-success px-2 py-1" style={{ fontSize: '10px' }}>Active</span>
                                         )}
@@ -3891,7 +3816,7 @@ const KYCVerification = ({
                         <div className="text-center py-4 px-3 bg-light rounded-3 border">
                           <p className="text-muted mb-3 font-weight-500">
                             {manualJobs.length > 0
-                              ? `You have added ${manualJobs.length} self-reported employment record(s).`
+                              ? `You have added ${manualJobs.length} manual employment record(s).`
                               : 'No manual employment records added yet. Add your current or previous job details manually.'}
                           </p>
                           <button
@@ -3900,7 +3825,7 @@ const KYCVerification = ({
                             style={{ borderRadius: '10px' }}
                             onClick={() => setShowJobForm(true)}
                           >
-                            + Add Employment Record (Self-Reported)
+                            + Add Employment Record
                           </button>
                         </div>
                       ) : (
@@ -3923,14 +3848,17 @@ const KYCVerification = ({
                                   fontSize: '18px',
                                 }}
                               >
-                                📝
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
                               </div>
                               <div>
                                 <h6 className="mb-0 font-weight-bold text-dark" style={{ fontSize: '15px' }}>
-                                  Add Employment Record (Self-Reported)
+                                  Add Employment Record
                                 </h6>
                                 <small className="text-muted" style={{ fontSize: '12px' }}>
-                                  Self-reported record (0 points) &bull; For +30 points, verify via UAN lookup
+                                  Manual entry (0 points) &bull; For +30 points, verify via UAN lookup
                                 </small>
                               </div>
                             </div>
@@ -3944,7 +3872,7 @@ const KYCVerification = ({
                               {/* Company Name */}
                               <div className="col-md-6 mb-3">
                                 <label className="auth-label font-weight-bold small mb-1 d-flex align-items-center gap-1">
-                                  <span>🏢 Company / Organization Name</span>
+                                  <span>Company / Organization Name</span>
                                   <span className="text-danger">*</span>
                                 </label>
                                 <input
@@ -3963,7 +3891,7 @@ const KYCVerification = ({
                               {/* Designation */}
                               <div className="col-md-6 mb-3">
                                 <label className="auth-label font-weight-bold small mb-1 d-flex align-items-center gap-1">
-                                  <span>💼 Designation / Role</span>
+                                  <span>Designation / Role</span>
                                   <span className="text-danger">*</span>
                                 </label>
                                 <input
@@ -3984,7 +3912,7 @@ const KYCVerification = ({
                               {/* Start Date */}
                               <div className="col-md-6 mb-3">
                                 <label className="auth-label font-weight-bold small mb-1 d-flex align-items-center gap-1">
-                                  <span>📅 Start Date</span>
+                                  <span>Start Date</span>
                                   <span className="text-danger">*</span>
                                 </label>
                                 <div className="row g-2">
@@ -4027,7 +3955,7 @@ const KYCVerification = ({
                               <div className="col-md-6 mb-3">
                                 <div className="d-flex justify-content-between align-items-center mb-1">
                                   <label className="auth-label font-weight-bold small mb-0 d-flex align-items-center gap-1">
-                                    <span>📅 End Date</span>
+                                    <span>End Date</span>
                                   </label>
                                   <div className="form-check form-switch m-0 d-flex align-items-center gap-1">
                                     <input
@@ -4126,7 +4054,7 @@ const KYCVerification = ({
                               {/* Description */}
                               <div className="col-12 mb-3">
                                 <label className="auth-label font-weight-bold small mb-1 d-flex align-items-center gap-1">
-                                  <span>📝 Job Description</span>
+                                  <span>Job Description</span>
                                   <span className="text-muted fw-normal small">(optional)</span>
                                 </label>
                                 <textarea
@@ -4162,18 +4090,6 @@ const KYCVerification = ({
                               </button>
                             </div>
                           </form>
-                        </div>
-                      )}
-                      {manualJobs.length > 0 && !showJobForm && !isSetupCompleted && kycStatus !== 8 && (
-                        <div className="text-center mt-3">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-dark-custom px-3 py-1 font-weight-500"
-                            style={{ borderRadius: '8px' }}
-                            onClick={() => setShowJobForm(true)}
-                          >
-                            + Add Another Job
-                          </button>
                         </div>
                       )}
                     </div>
@@ -4220,15 +4136,6 @@ const KYCVerification = ({
                             ? `${educationalDigiDocs.length} Verified Document(s) via DigiLocker`
                             : `${qualifications.length} Degree(s) · ${certifications.length} Certificate Added`}
                         </span>
-                        {hasDigilockerVerified ? (
-                          <span className="badge badge-success px-2 py-1 ml-2 font-weight-bold">
-                            +{scoreConfig.educationScore ?? 20} Points Secured
-                          </span>
-                        ) : (
-                          <span className="badge badge-warning px-2 py-1 ml-2 text-dark font-weight-bold" style={{ background: '#FEF3C7', border: '1px solid #FCD34D' }}>
-                            Verification Pending (+{scoreConfig.educationScore ?? 20} Pts)
-                          </span>
-                        )}
                       </div>
                     ) : (
                       <span className="badge badge-warning px-3 py-2 font-weight-bold">
@@ -4248,15 +4155,15 @@ const KYCVerification = ({
                           </span>
                           {educationMode === 'digilocker' ? (
                             hasDigilockerVerified ? (
-                              <span className="kyc-badge-verified">✓ DigiLocker (+20 Pts)</span>
+                              <span className="kyc-badge-verified">✓ DigiLocker Verified</span>
                             ) : (
                               <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '3px 9px', borderRadius: '20px' }}>
-                                DigiLocker (+20 Pts)
+                                DigiLocker
                               </span>
                             )
                           ) : (
                             <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0', padding: '3px 9px', borderRadius: '20px' }}>
-                              Manual (Self-Reported)
+                              Manual Upload
                             </span>
                           )}
                         </div>
@@ -4277,7 +4184,7 @@ const KYCVerification = ({
                           style={{ padding: '6px 14px', fontSize: '12.5px' }}
                           onClick={() => setEducationMode('manual')}
                         >
-                          <span>📝 Manual Upload</span>
+                          <span>Manual Upload</span>
                         </button>
 
                         <button
@@ -4286,19 +4193,22 @@ const KYCVerification = ({
                           style={{ padding: '6px 14px', fontSize: '12.5px' }}
                           onClick={() => setEducationMode('digilocker')}
                         >
-                          <span>🏛️ DigiLocker</span>
-                          <span
-                            style={{
-                              background: educationMode === 'digilocker' ? '#ECFDF5' : '#E2E8F0',
-                              color: educationMode === 'digilocker' ? '#047857' : '#64748B',
-                              fontSize: '10px',
-                              padding: '2px 6px',
-                              borderRadius: '6px',
-                              fontWeight: 700,
-                            }}
-                          >
-                            {hasDigilockerVerified ? '✓ Verified' : '+20 Pts'}
-                          </span>
+                          <span>DigiLocker</span>
+                          {hasDigilockerVerified && (
+                            <span
+                              style={{
+                                background: '#ECFDF5',
+                                color: '#047857',
+                                fontSize: '10px',
+                                padding: '2px 6px',
+                                borderRadius: '6px',
+                                fontWeight: 700,
+                                marginLeft: '6px',
+                              }}
+                            >
+                              ✓ Verified
+                            </span>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -4323,7 +4233,10 @@ const KYCVerification = ({
                               style={{ background: '#f8f9fa', borderColor: '#E2E8F0' }}
                             >
                               <div className="d-flex align-items-center gap-2.5">
-                                <span style={{ fontSize: '20px' }}>🎓</span>
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00D294" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                                  <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                                </svg>
                                 <div>
                                   <div className="d-flex align-items-center gap-2 flex-wrap">
                                     <h6 className="font-weight-bold mb-0 text-dark" style={{ fontSize: '1rem' }}>
@@ -4348,7 +4261,7 @@ const KYCVerification = ({
                                   background: '#FFFFFF',
                                 }}
                               >
-                                {digilockerSyncLoading ? <ButtonSpinner text="Syncing..." /> : '🔄 Sync Documents'}
+                                {digilockerSyncLoading ? <ButtonSpinner text="Syncing..." /> : 'Sync Documents'}
                               </button>
                             </div>
 
@@ -4376,7 +4289,10 @@ const KYCVerification = ({
                                           border: '1px solid #A7F3D0',
                                         }}
                                       >
-                                        📄
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                          <polyline points="14 2 14 8 20 8"></polyline>
+                                        </svg>
                                       </div>
                                       <div style={{ minWidth: 0 }}>
                                         <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -4437,11 +4353,20 @@ const KYCVerification = ({
                                     height: '46px',
                                     borderRadius: '12px',
                                     background: '#ECFDF5',
-                                    fontSize: '22px',
+                                    color: '#059669',
                                     border: '1px solid #A7F3D0',
                                   }}
                                 >
-                                  🏛️
+                                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 21h18"></path>
+                                    <path d="M3 10h18"></path>
+                                    <path d="M5 6l7-3 7 3"></path>
+                                    <path d="M4 10v11"></path>
+                                    <path d="M20 10v11"></path>
+                                    <path d="M8 14v4"></path>
+                                    <path d="M12 14v4"></path>
+                                    <path d="M16 14v4"></path>
+                                  </svg>
                                 </div>
                                 <div>
                                   <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -4453,6 +4378,27 @@ const KYCVerification = ({
                                   <p className="text-muted small mb-2" style={{ fontSize: '13px' }}>
                                     Directly fetch official 10th/12th marksheets, graduation degrees, and diplomas from CBSE, State Boards, and Universities.
                                   </p>
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'flex-start',
+                                      gap: '8px',
+                                      background: '#FFFBEB',
+                                      border: '1px solid #FDE68A',
+                                      borderRadius: '8px',
+                                      padding: '8px 12px',
+                                      marginBottom: '10px',
+                                    }}
+                                  >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
+                                      <circle cx="12" cy="12" r="10"></circle>
+                                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                    </svg>
+                                    <div style={{ color: '#92400E', fontSize: '12px', lineHeight: '1.45' }}>
+                                      <strong style={{ color: '#B45309', fontWeight: 700 }}>Important:</strong> Please ensure all your educational certificates (10th/12th marksheets, degree, diploma) are already issued &amp; available in your DigiLocker account before proceeding with verification.
+                                    </div>
+                                  </div>
                                   <div className="d-flex align-items-center gap-2">
                                     <input
                                       type="checkbox"
@@ -4488,7 +4434,7 @@ const KYCVerification = ({
                                   {digilockerEduLoading ? (
                                     <ButtonSpinner text="Connecting..." />
                                   ) : (
-                                    '⚡ Verify with DigiLocker'
+                                    'Verify with DigiLocker'
                                   )}
                                 </button>
                                 <button
@@ -4498,7 +4444,7 @@ const KYCVerification = ({
                                   disabled={digilockerSyncLoading || isSetupCompleted}
                                   style={{ fontSize: '11.5px' }}
                                 >
-                                  {digilockerSyncLoading ? <ButtonSpinner text="Checking..." /> : '🔄 Sync Existing Documents'}
+                                  {digilockerSyncLoading ? <ButtonSpinner text="Checking..." /> : 'Sync Existing Documents'}
                                 </button>
                               </div>
                             </div>
@@ -4517,7 +4463,6 @@ const KYCVerification = ({
                           <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                             <div>
                               <h6 className="font-weight-bold text-dark mb-0 d-flex align-items-center" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
-                                <span className="mr-2" style={{ fontSize: '1.25rem' }}>🎓</span>
                                 Academic Qualifications (Degrees / Diplomas)
                               </h6>
                               <p className="text-muted small mb-0" style={{ fontSize: '12.5px' }}>Universities, colleges, graduation degrees &amp; diploma certificates</p>
@@ -4567,7 +4512,10 @@ const KYCVerification = ({
                                           fontSize: '20px',
                                         }}
                                       >
-                                        🎓
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                                          <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                                        </svg>
                                       </div>
                                       <div className="flex-grow-1">
                                         <div className="d-flex align-items-center flex-wrap mb-1.5 gap-2">
@@ -4592,9 +4540,9 @@ const KYCVerification = ({
                                         </div>
 
                                         <div className="d-flex align-items-center flex-wrap gap-2 text-muted small mb-2" style={{ fontSize: '12.5px' }}>
-                                          <span className="kyc-meta-pill">🏛️ {qual.institution}</span>
-                                          {qual.fieldOfStudy && <span className="kyc-meta-pill">📚 {qual.fieldOfStudy}</span>}
-                                          {qual.year && <span className="kyc-meta-pill">📅 Class of {qual.year}</span>}
+                                          <span className="kyc-meta-pill">{qual.institution}</span>
+                                          {qual.fieldOfStudy && <span className="kyc-meta-pill">{qual.fieldOfStudy}</span>}
+                                          {qual.year && <span className="kyc-meta-pill">Class of {qual.year}</span>}
                                         </div>
 
                                         {qual.documentUrl && (
@@ -4614,7 +4562,7 @@ const KYCVerification = ({
                                                 textDecoration: 'none',
                                               }}
                                             >
-                                              <span>📄 View Document Proof</span>
+                                              <span>View Document Proof</span>
                                               <span>↗</span>
                                             </a>
                                           </div>
@@ -4629,7 +4577,7 @@ const KYCVerification = ({
                                       ) : (
                                         <span className="kyc-badge-unverified">Self-Reported</span>
                                       )}
-                                      <span className="kyc-badge-locked">🔒 Locked</span>
+                                      <span className="kyc-badge-locked">Locked</span>
                                     </div>
                                   </div>
                                 </div>
@@ -4642,7 +4590,10 @@ const KYCVerification = ({
                             <form onSubmit={handleAddQualification} className="kyc-form-card mt-3">
                               <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                                 <div className="d-flex align-items-center gap-2">
-                                  <span style={{ fontSize: '18px' }}>🎓</span>
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00D294" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                                  </svg>
                                   <h6 className="font-weight-bold text-dark mb-0" style={{ fontSize: '15px' }}>
                                     Add Educational Qualification
                                   </h6>
@@ -4828,7 +4779,7 @@ const KYCVerification = ({
                           <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                             <div>
                               <h6 className="font-weight-bold text-dark mb-0 d-flex align-items-center" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
-                                <span className="mr-2" style={{ fontSize: '1.25rem' }}>🏆</span>
+                                <span className="mr-2" style={{ fontSize: '1.25rem' }}></span>
                                 Professional Certifications &amp; Credentials
                               </h6>
                               <p className="text-muted small mb-0" style={{ fontSize: '12.5px' }}>Cloud, security, coding, vendor credentials (AWS, Google, Microsoft, Scrum, etc.)</p>
@@ -4878,7 +4829,7 @@ const KYCVerification = ({
                                           fontSize: '20px',
                                         }}
                                       >
-                                        🏆
+                                        
                                       </div>
                                       <div className="flex-grow-1">
                                         <div className="d-flex align-items-center flex-wrap mb-1.5 gap-2">
@@ -4903,8 +4854,8 @@ const KYCVerification = ({
                                         </div>
 
                                         <div className="d-flex align-items-center flex-wrap gap-2 text-muted small mb-2" style={{ fontSize: '12.5px' }}>
-                                          <span className="kyc-meta-pill">🏢 {cert.issuer}</span>
-                                          {cert.year && <span className="kyc-meta-pill">📅 Issued {cert.year}</span>}
+                                          <span className="kyc-meta-pill">{cert.issuer}</span>
+                                          {cert.year && <span className="kyc-meta-pill">Issued {cert.year}</span>}
                                         </div>
 
                                         {(cert.credentialUrl || cert.documentUrl) && (
@@ -4961,7 +4912,7 @@ const KYCVerification = ({
                                       ) : (
                                         <span className="kyc-badge-unverified">Self-Reported</span>
                                       )}
-                                      <span className="kyc-badge-locked">🔒 Locked</span>
+                                      <span className="kyc-badge-locked">Locked</span>
                                     </div>
                                   </div>
                                 </div>
@@ -4974,7 +4925,7 @@ const KYCVerification = ({
                             <form onSubmit={handleAddCertification} className="kyc-form-card mt-3">
                               <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                                 <div className="d-flex align-items-center gap-2">
-                                  <span style={{ fontSize: '18px' }}>🏆</span>
+                                  <span style={{ fontSize: '18px' }}></span>
                                   <h6 className="font-weight-bold text-dark mb-0" style={{ fontSize: '15px' }}>
                                     Add Professional Certification
                                   </h6>
@@ -5203,7 +5154,6 @@ const KYCVerification = ({
                             </span>
                           </div>
                         </div>
-                        <span className="badge badge-success px-3 py-2 font-weight-bold">+5 Points Secured</span>
                       </div>
 
                       {/* Complete Extracted DL Details */}
@@ -5348,7 +5298,12 @@ const KYCVerification = ({
                                   <div className="kyc-preview-container">
                                     {dlFrontPreview === 'pdf' ? (
                                       <div className="kyc-preview-pdf">
-                                        <div className="kyc-pdf-icon">📄</div>
+                                        <div className="kyc-pdf-icon">
+                                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                          </svg>
+                                        </div>
                                         <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
                                           {dlFront.name}
                                         </strong>
@@ -5465,7 +5420,12 @@ const KYCVerification = ({
                                   <div className="kyc-preview-container">
                                     {dlBackPreview === 'pdf' ? (
                                       <div className="kyc-preview-pdf">
-                                        <div className="kyc-pdf-icon">📄</div>
+                                        <div className="kyc-pdf-icon">
+                                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                          </svg>
+                                        </div>
                                         <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
                                           {dlBack.name}
                                         </strong>
@@ -5576,21 +5536,23 @@ const KYCVerification = ({
                 <div className="kyc-summary-footer p-4 rounded-lg d-flex flex-column flex-md-row align-items-center justify-content-between text-center text-md-left gap-3">
                   <div>
                     <h5 className="font-weight-bold text-white mb-0">
-                      {kycStatus === 7
-                        ? (isSetupCompleted ? 'Setup Complete & Locked — Access Your Dashboard' : 'All Verification Steps Complete! Status: 7 / 7 — Click to Access Dashboard')
+                      {allStepsDone || isSetupCompleted
+                        ? 'All Verification Steps Completed! Click to Access Your Dashboard'
                         : !profileSaved
-                        ? 'Step 1 Pending: Click "Save Profile Details" to save your profile'
+                        ? 'Pending: Save Profile Details to continue'
                         : !aadhaarVerified
-                        ? 'Step 2 Pending: Complete Aadhaar verification'
+                        ? 'Pending: Complete Aadhaar Verification'
                         : !employmentVerified
-                        ? 'Step 3 Pending: Complete Employment verification (UAN or Manual)'
+                        ? 'Pending: Complete Employment Verification'
                         : !voterVerified
-                        ? 'Step 4 Pending: Complete Voter ID verification'
+                        ? 'Pending: Complete Voter ID Verification'
+                        : !isRefDone
+                        ? 'Pending: Professional Reference verification (Referee feedback required)'
+                        : !isEduDone
+                        ? 'Pending: Add & verify Degree or Certification'
                         : !dlVerified
-                        ? 'Step 5 Pending: Complete Driving License OCR verification'
-                        : !(qualifications.length > 0 || certifications.length > 0)
-                        ? 'Step 6 Pending: Add at least one Degree or Certification'
-                        : 'Complete all steps to reach Status 7 / 7'}
+                        ? 'Pending: Complete Driving License OCR Verification'
+                        : 'Please complete all verification steps to unlock your Dashboard'}
                     </h5>
                   </div>
                   <div className="d-flex flex-column flex-xl-row align-items-center gap-3">
@@ -5601,19 +5563,25 @@ const KYCVerification = ({
                       type="button"
                       onClick={handleFinish}
                       className={`btn px-4 py-3 font-weight-bold ${
-                        allStepsDone || isSetupCompleted ? 'btn-primary-teal' : 'btn-secondary text-white-50'
+                        allStepsDone || isSetupCompleted ? 'btn-primary-teal' : 'btn-secondary'
                       }`}
                       style={{
                         cursor: (allStepsDone || isSetupCompleted) ? 'pointer' : 'not-allowed',
-                        opacity: (allStepsDone || isSetupCompleted) ? 1 : 0.55,
+                        opacity: (allStepsDone || isSetupCompleted) ? 1 : 0.45,
+                        background: (allStepsDone || isSetupCompleted)
+                          ? 'linear-gradient(135deg, #00D294 0%, #059669 100%)'
+                          : '#475569',
+                        border: 'none',
+                        color: (allStepsDone || isSetupCompleted) ? '#FFFFFF' : '#CBD5E1',
+                        boxShadow: (allStepsDone || isSetupCompleted)
+                          ? '0 4px 14px rgba(0, 210, 148, 0.4)'
+                          : 'none',
                         transition: 'all 0.3s ease',
                       }}
                       disabled={!allStepsDone && !isSetupCompleted}
                       title={!allStepsDone && !isSetupCompleted ? `Complete all 7 KYC verification steps to proceed (Completed: ${completedStepsCount}/7)` : 'Setup complete — click to access profile dashboard'}
                     >
-                      {isSetupCompleted || (allStepsDone && kycStatus === 8)
-                        ? 'Continue to Profile Dashboard →'
-                        : 'Continue to Profile Dashboard →'}
+                      Continue to Profile Dashboard →
                     </button>
                   </div>
                 </div>

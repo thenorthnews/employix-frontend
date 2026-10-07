@@ -29,11 +29,11 @@ axiosInstance.interceptors.request.use(
       delete config.headers['Content-Type'];
       delete config.headers['content-type'];
     }
-    console.log(`🚀 [API Request] ${config.method?.toUpperCase()} -> ${config.baseURL}${config.url}`, config.data);
+    console.log(`[API Request] ${config.method?.toUpperCase()} -> ${config.baseURL}${config.url}`, config.data);
     return config;
   },
   (error) => {
-    console.error('❌ [API Request Error]', error);
+    console.error('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
@@ -41,11 +41,11 @@ axiosInstance.interceptors.request.use(
 // Response interceptor: Extract response data or format clean error message
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log(`✅ [API Response Success] <-`, response.data);
+    console.log(`[API Response Success] <-`, response.data);
     return response.data;
   },
   (error) => {
-    console.error(`❌ [API Response Error] <-`, error.response?.data || error.message);
+    console.error(`[API Response Error] <-`, error.response?.data || error.message);
     let message = 'An unexpected error occurred. Please try again.';
 
     if (error.response) {

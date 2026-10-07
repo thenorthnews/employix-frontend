@@ -36,7 +36,7 @@ export const isTokenValid = (token) => {
 
     return true;
   } catch (err) {
-    console.warn('⚠️ Token validation failed:', err);
+    console.warn('Token validation failed:', err);
     return false;
   }
 };

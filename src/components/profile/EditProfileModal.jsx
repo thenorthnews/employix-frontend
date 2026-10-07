@@ -580,7 +580,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                 />
                 {designationError && (
                   <small style={{ color: '#EF4444', fontWeight: 600, fontSize: '0.84rem', marginTop: '6px', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ marginRight: '4px' }}>⚠</span> {designationError}
+                    {designationError}
                   </small>
                 )}
               </div>

@@ -509,7 +509,10 @@ const ReferenceVerificationPage = () => {
                 fontSize: '12px',
               }}
             >
-              <span className="mr-1">🛡️</span> Secure Verification Portal
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="mr-1">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              Secure Verification Portal
             </span>
           </div>
         </div>
@@ -540,7 +543,13 @@ const ReferenceVerificationPage = () => {
                 background: '#ffffff',
               }}
             >
-              <div className="mb-3" style={{ fontSize: '50px' }}>⚠️</div>
+              <div className="mb-3 text-warning">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
               <h4 className="font-weight-bold text-dark mb-2">Invalid or Expired Link</h4>
               <p className="text-muted mb-4">{errorMessage}</p>
               <div>
@@ -765,11 +774,12 @@ const ReferenceVerificationPage = () => {
                             height: '42px',
                             background: 'rgba(0, 210, 148, 0.12)',
                             color: '#00a876',
-                            fontSize: '20px',
                             border: '1px solid rgba(0, 210, 148, 0.25)',
                           }}
                         >
-                          🏢
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3M9 9h1M9 13h1M9 17h1M15 13h1M15 17h1"></path>
+                          </svg>
                         </div>
                         <div>
                           <span
@@ -821,7 +831,7 @@ const ReferenceVerificationPage = () => {
                             border: '1px solid #cbd5e1',
                           }}
                         >
-                          🏢 {selectedCompany || companyName}
+                          {selectedCompany || companyName}
                         </span>
                         ?
                       </p>
@@ -937,7 +947,6 @@ const ReferenceVerificationPage = () => {
                               borderRadius: '8px',
                             }}
                           >
-                            <span className="mr-2" style={{ fontSize: '15px' }}>⚡</span>
                             <span>
                               <strong>Auto-detected from EPFO records:</strong> Dates have been pre-filled from official verified records. You may adjust them if needed.
                             </span>
@@ -948,7 +957,7 @@ const ReferenceVerificationPage = () => {
                           {/* Start Date */}
                           <div className="col-12 col-md-6 mb-3 mb-md-0">
                             <label className="font-weight-bold text-dark small d-flex align-items-center mb-1">
-                              <span className="mr-1">📅</span> Start Date (Month/Year) <span className="text-danger ml-1">*</span>
+                              Start Date (Month/Year) <span className="text-danger ml-1">*</span>
                             </label>
                             <input
                               type="month"
@@ -974,7 +983,7 @@ const ReferenceVerificationPage = () => {
                           <div className="col-12 col-md-6">
                             <div className="d-flex align-items-center justify-content-between mb-1">
                               <label className="font-weight-bold text-dark small mb-0 d-flex align-items-center">
-                                <span className="mr-1">📅</span> End Date (Month/Year)
+                                End Date (Month/Year)
                               </label>
                               {isCurrentlyWorking && (
                                 <span
@@ -1107,7 +1116,7 @@ const ReferenceVerificationPage = () => {
                     setDiligence,
                     '1. Diligence & Quality',
                     'Attention to detail, reliability, quality of output & task ownership',
-                    '🎯'
+                    '1'
                   )}
 
                   {/* 2. Enthusiasm (1 - 10) */}
@@ -1116,7 +1125,7 @@ const ReferenceVerificationPage = () => {
                     setEnthusiasm,
                     '2. Enthusiasm & Initiative',
                     'Energy, proactive attitude, eager to learn & problem-solving drive',
-                    '🚀'
+                    '2'
                   )}
 
                   {/* 3. Respectfulness (1 - 10) */}
@@ -1125,7 +1134,7 @@ const ReferenceVerificationPage = () => {
                     setRespectfulness,
                     '3. Respectfulness & Teamwork',
                     'Professional behavior, empathy, active listening & team collaboration',
-                    '🤝'
+                    '3'
                   )}
                 </div>
 
@@ -1265,7 +1274,6 @@ const ReferenceVerificationPage = () => {
                     borderRadius: '12px',
                   }}
                 >
-                  <span className="mr-2" style={{ fontSize: '20px' }}>🎁</span>
                   <span className="small text-dark">
                     Submitting this verified review will award{' '}
                     <strong className="text-success font-weight-bold">+5 Trust &amp; Reward Points</strong> to{' '}
@@ -1295,7 +1303,7 @@ const ReferenceVerificationPage = () => {
                 </button>
 
                 <p className="text-center text-muted small mt-3 mb-0" style={{ fontSize: '11.5px' }}>
-                  🔒 Confidential &amp; Encrypted &bull; Official Employix KYC Verification Standard
+                  Confidential &amp; Encrypted &bull; Official Employix KYC Verification Standard
                 </p>
               </form>
             </div>

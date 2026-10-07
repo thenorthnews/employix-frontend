@@ -43,6 +43,7 @@ const ProfessionalReferenceSection = ({
   const [refereeEmail, setRefereeEmail] = useState('');
   const [refereeRole, setRefereeRole] = useState('');
   const [fieldErrors, setFieldErrors] = useState({ name: '', email: '', role: '' });
+  const [modalError, setModalError] = useState('');
   const [recentlySentReferee, setRecentlySentReferee] = useState(null);
   const [addModalCopied, setAddModalCopied] = useState(false);
 
@@ -96,13 +97,13 @@ const ProfessionalReferenceSection = ({
     }
 
     const handleReferenceVerified = (data) => {
-      console.log('⚡ [Real-time Reference Verified Event Received]:', data);
+      console.log('[Real-time Reference Verified Event Received]:', data);
       if (data?.targetUserId && currentUserId && String(data.targetUserId) !== String(currentUserId)) {
         return;
       }
 
       toast.success(
-        `🎉 ${data?.refereeName ? `Reference verified by ${data.refereeName}!` : 'Professional Reference Verified!'} (+5 Points Awarded)`
+        `${data?.refereeName ? `Reference verified by ${data.refereeName}!` : 'Professional Reference Verified!'} (+5 Points Awarded)`
       );
 
       // Instantly refresh references list and reward points without page refresh
@@ -183,12 +184,14 @@ const ProfessionalReferenceSection = ({
     setRefereeEmail('');
     setRefereeRole('');
     setFieldErrors({ name: '', email: '', role: '' });
+    setModalError('');
     setModalStep('form');
     setShowAddModal(true);
   };
 
   const handleAddReference = async (e) => {
     e.preventDefault();
+    setModalError('');
 
     const nameErr = validateName(refereeName);
     const emailErr = validateEmail(refereeEmail);
@@ -197,7 +200,8 @@ const ProfessionalReferenceSection = ({
     setFieldErrors({ name: nameErr, email: emailErr, role: roleErr });
 
     if (nameErr || emailErr || roleErr) {
-      toast.error(nameErr || emailErr || roleErr);
+      const msg = nameErr || emailErr || roleErr;
+      setModalError(msg);
       return;
     }
 
@@ -215,7 +219,6 @@ const ProfessionalReferenceSection = ({
       const isSuccess = Boolean(res?.success || res?.data?.success);
       const payload = res?.data || res;
       if (isSuccess) {
-        toast.success(`Invitation email dispatched to ${refereeEmail.trim()} successfully!`);
         const newId = payload?._id || payload?.data?._id;
         const generatedLink = payload?.shareableLink || payload?.data?.shareableLink || '';
 
@@ -236,7 +239,7 @@ const ProfessionalReferenceSection = ({
       }
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Failed to add reference.';
-      toast.error(msg);
+      setModalError(msg);
     } finally {
       setSubmitting(false);
       isSubmittingRef.current = false;
@@ -411,7 +414,6 @@ const ProfessionalReferenceSection = ({
   const scores = calculateReferenceScores(references);
   const displayEarned = scores.totalEarnedPoints || rewardPoints;
 
-      console.log("🚀 ~ ProfessionalReferenceSection ~ feedbackModal.reference:", feedbackModal.reference)
   return (
     <div className="auth-card" id="step-references">
       {/* Modern Highlighted Header matching Step 6 & Image 2 */}
@@ -433,11 +435,11 @@ const ProfessionalReferenceSection = ({
             </span>
             {scores.completedReferencesCount > 0 ? (
               <span className="badge badge-success px-3 py-2 font-weight-bold">
-                +{displayEarned} Points Secured ({scores.completedReferencesCount}/2 Verified)
+                &#10003; {scores.completedReferencesCount}/2 Verified
               </span>
             ) : (
               <span className="badge badge-warning px-3 py-2 font-weight-bold">
-                VERIFICATION PENDING (+10 PTS)
+                VERIFICATION PENDING
               </span>
             )}
           </div>
@@ -453,7 +455,12 @@ const ProfessionalReferenceSection = ({
         <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
           <div>
             <h5 className="font-weight-bold text-dark mb-0 d-flex align-items-center">
-              <span className="mr-2" style={{ fontSize: '1.25rem' }}>🤝</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-teal">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
               Professional References (Managers / Peers)
             </h5>
             <small className="text-muted">
@@ -617,7 +624,10 @@ const ProfessionalReferenceSection = ({
                       {/* Email */}
                       <td className="align-middle py-3">
                         <span className="text-dark small d-flex align-items-center font-monospace">
-                          <span className="mr-1 text-muted">✉</span>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 text-muted">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                          </svg>
                           {ref.refereeEmail}
                         </span>
                       </td>
@@ -641,7 +651,7 @@ const ProfessionalReferenceSection = ({
                         ) : (
                           <span
                             className="badge px-2 py-1 font-weight-bold text-white d-inline-flex align-items-center"
-                            style={{ background: '#3b82f6', fontSize: '11px' }}
+                            style={{ background: '#059669', fontSize: '11px' }}
                           >
                             <span className="pulsing-dot-white mr-1"></span> Email Delivered · Pending
                           </span>
@@ -686,7 +696,7 @@ const ProfessionalReferenceSection = ({
                                   <ButtonSpinner color="#0b2545" size="sm" /> Sending...
                                 </>
                               ) : (
-                                '✉ Resend Email'
+                                'Resend Email'
                               )}
                             </button>
                           )}
@@ -721,7 +731,7 @@ const ProfessionalReferenceSection = ({
                               }}
                               title={isSetupCompleted ? 'Setup completed & locked' : 'Copy or share secure verification link'}
                             >
-                              🔗 Share Link
+                              Share Link
                             </button>
                           )}
                         </div>
@@ -807,7 +817,10 @@ const ProfessionalReferenceSection = ({
                         flexShrink: 0,
                       }}
                     >
-                      ✉
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
                     </div>
                     <div>
                       <h5 className="modal-title font-weight-bold text-white mb-0" style={{ fontSize: '17px' }}>
@@ -844,13 +857,33 @@ const ProfessionalReferenceSection = ({
 
                 <form onSubmit={handleAddReference} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
                   <div className="modal-body p-4" style={{ overflowY: 'auto' }}>
+                    {/* Inline Red Error Alert Banner */}
+                    {modalError && (
+                      <div
+                        className="alert alert-danger d-flex align-items-center mb-3 py-2 px-3 small font-weight-bold"
+                        style={{
+                          borderRadius: '10px',
+                          background: '#FEF2F2',
+                          border: '1.5px solid #FCA5A5',
+                          color: '#DC2626',
+                          gap: '8px',
+                          boxShadow: '0 2px 8px rgba(239, 68, 68, 0.1)',
+                          animation: 'fadeIn 0.2s ease',
+                        }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="12"></line>
+                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <div style={{ flex: 1, lineHeight: 1.4 }}>{modalError}</div>
+                      </div>
+                    )}
+
                     {/* 1. Name with Regex Validation */}
                     <div className="form-group mb-3">
-                      <label className="font-weight-bold text-dark small d-flex justify-content-between">
-                        <span>Reference Full Name *</span>
-                        {refereeName && !fieldErrors.name && (
-                          <span className="text-success small font-weight-bold">✓ Valid Name</span>
-                        )}
+                      <label className="font-weight-bold text-dark small">
+                        Reference Full Name <span className="text-danger font-weight-bold">*</span>
                       </label>
                       <input
                         type="text"
@@ -861,6 +894,7 @@ const ProfessionalReferenceSection = ({
                         value={refereeName}
                         onChange={(e) => {
                           setRefereeName(e.target.value);
+                          setModalError('');
                           setFieldErrors((prev) => ({ ...prev, name: validateName(e.target.value) }));
                         }}
                         required
@@ -880,11 +914,8 @@ const ProfessionalReferenceSection = ({
 
                     {/* 2. Email with Regex Validation */}
                     <div className="form-group mb-3">
-                      <label className="font-weight-bold text-dark small d-flex justify-content-between">
-                        <span>Professional Email Address *</span>
-                        {refereeEmail && !fieldErrors.email && (
-                          <span className="text-success small font-weight-bold">✓ Valid Email</span>
-                        )}
+                      <label className="font-weight-bold text-dark small">
+                        Professional Email Address <span className="text-danger font-weight-bold">*</span>
                       </label>
                       <input
                         type="email"
@@ -895,6 +926,7 @@ const ProfessionalReferenceSection = ({
                         value={refereeEmail}
                         onChange={(e) => {
                           setRefereeEmail(e.target.value);
+                          setModalError('');
                           setFieldErrors((prev) => ({ ...prev, email: validateEmail(e.target.value) }));
                         }}
                         required
@@ -914,11 +946,8 @@ const ProfessionalReferenceSection = ({
 
                     {/* 3. Role with Regex Validation */}
                     <div className="form-group mb-3">
-                      <label className="font-weight-bold text-dark small d-flex justify-content-between">
-                        <span>Role / Designation *</span>
-                        {refereeRole && !fieldErrors.role && (
-                          <span className="text-success small font-weight-bold">✓ Valid Role</span>
-                        )}
+                      <label className="font-weight-bold text-dark small">
+                        Role / Designation <span className="text-danger font-weight-bold">*</span>
                       </label>
                       <input
                         type="text"
@@ -929,6 +958,7 @@ const ProfessionalReferenceSection = ({
                         value={refereeRole}
                         onChange={(e) => {
                           setRefereeRole(e.target.value);
+                          setModalError('');
                           setFieldErrors((prev) => ({ ...prev, role: validateRole(e.target.value) }));
                         }}
                         required
@@ -1082,7 +1112,7 @@ const ProfessionalReferenceSection = ({
                   {recentlySentReferee?.shareableLink && (
                     <div className="p-3 rounded-lg mb-4 text-left border" style={{ background: '#f0fdf9' }}>
                       <span className="small font-weight-bold text-dark d-block mb-1">
-                        🔗 Direct Verification Link:
+                        Direct Verification Link:
                       </span>
                       <div className="input-group input-group-sm">
                         <input
@@ -1109,7 +1139,7 @@ const ProfessionalReferenceSection = ({
                         </div>
                       </div>
                       <small className="text-muted d-block mt-1 mb-2" style={{ fontSize: '11px' }}>
-                        💡 You can copy this link or send it directly via WhatsApp:
+                        You can copy this link or send it directly via WhatsApp:
                       </small>
                       <a
                         href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
@@ -1125,7 +1155,7 @@ const ProfessionalReferenceSection = ({
                           fontSize: '13px',
                         }}
                       >
-                        <span className="mr-1" style={{ fontSize: '15px' }}>💬</span> Share directly via WhatsApp &rarr;
+                        Share directly via WhatsApp &rarr;
                       </a>
                     </div>
                   )}
@@ -1215,7 +1245,10 @@ const ProfessionalReferenceSection = ({
                     flexShrink: 0,
                   }}
                 >
-                  🔗
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
                 </div>
                 <div>
                   <h5 className="modal-title font-weight-bold text-white mb-0" style={{ fontSize: '17px' }}>
@@ -1509,7 +1542,7 @@ const ProfessionalReferenceSection = ({
                       </span>
                     </div>
                     <span className="text-muted small d-block" style={{ fontSize: '12px' }}>
-                      ✉ {feedbackModal.reference.refereeEmail}
+                      {feedbackModal.reference.refereeEmail}
                     </span>
                   </div>
                 </div>
@@ -1525,7 +1558,7 @@ const ProfessionalReferenceSection = ({
                       border: '1px solid #bae6fd',
                     }}
                   >
-                    💼 {feedbackModal.reference.refereeRole}
+                    {feedbackModal.reference.refereeRole}
                   </span>
                   {feedbackModal.reference.feedback?.companyName && (
                     <span
@@ -1538,7 +1571,7 @@ const ProfessionalReferenceSection = ({
                         border: '1.5px solid #cbd5e1',
                       }}
                     >
-                      🏢 {feedbackModal.reference.feedback.companyName}
+                      {feedbackModal.reference.feedback.companyName}
                     </span>
                   )}
                 </div>
@@ -1554,7 +1587,7 @@ const ProfessionalReferenceSection = ({
                 }}
               >
                 <span className="small text-muted font-weight-bold d-block mb-2">
-                  📋 Employment Confirmation &amp; Tenure:
+                  Employment Confirmation &amp; Tenure:
                 </span>
                 <div className="d-flex align-items-center justify-content-between mb-1 small">
                   <span className="text-muted">Worked Together:</span>
@@ -1574,7 +1607,7 @@ const ProfessionalReferenceSection = ({
                   <div className="d-flex align-items-center justify-content-between mb-1 small">
                     <span className="text-muted">Verified Period:</span>
                     <strong className="text-dark font-monospace">
-                      📅 {feedbackModal.reference.feedback.startDate} &rarr;{' '}
+                      {feedbackModal.reference.feedback.startDate} &rarr;{' '}
                       {feedbackModal.reference.feedback.isCurrentlyWorking
                         ? 'Present (Active)'
                         : feedbackModal.reference.feedback.endDate || 'Present'}
@@ -1585,7 +1618,7 @@ const ProfessionalReferenceSection = ({
                   <div className="d-flex align-items-center justify-content-between mb-1 small">
                     <span className="text-muted">Company / Org:</span>
                     <strong className="text-dark font-weight-bold">
-                      🏢 {feedbackModal.reference.feedback.companyName}
+                      {feedbackModal.reference.feedback.companyName}
                     </strong>
                   </div>
                 )}
@@ -1608,7 +1641,7 @@ const ProfessionalReferenceSection = ({
               >
                 <div className="d-flex align-items-center justify-content-between mb-2">
                   <span className="small text-muted font-weight-bold">
-                    ⭐ Conduct &amp; Soft Skills (1 - 10):
+                    Conduct &amp; Soft Skills (1 - 10):
                   </span>
                   <strong className="text-warning font-weight-bold" style={{ fontSize: '13px' }}>
                     {'★'.repeat(typeof feedbackModal.reference.feedback?.rating === 'number' ? feedbackModal.reference.feedback.rating : 5)}
@@ -1623,7 +1656,7 @@ const ProfessionalReferenceSection = ({
                   <div className="col-4">
                     <div className="p-2 rounded bg-white border">
                       <span className="text-muted d-block" style={{ fontSize: '11px' }}>
-                        🎯 Diligence
+                        Diligence
                       </span>
                       <strong className="text-dark font-weight-bold" style={{ fontSize: '14px' }}>
                         {feedbackModal.reference.feedback?.diligence ?? 8} / 10
@@ -1633,7 +1666,7 @@ const ProfessionalReferenceSection = ({
                   <div className="col-4">
                     <div className="p-2 rounded bg-white border">
                       <span className="text-muted d-block" style={{ fontSize: '11px' }}>
-                        🚀 Enthusiasm
+                        Enthusiasm
                       </span>
                       <strong className="text-dark font-weight-bold" style={{ fontSize: '14px' }}>
                         {feedbackModal.reference.feedback?.enthusiasm ?? 8} / 10
@@ -1643,7 +1676,7 @@ const ProfessionalReferenceSection = ({
                   <div className="col-4">
                     <div className="p-2 rounded bg-white border">
                       <span className="text-muted d-block" style={{ fontSize: '11px' }}>
-                        🤝 Respect
+                        Respect
                       </span>
                       <strong className="text-dark font-weight-bold" style={{ fontSize: '14px' }}>
                         {feedbackModal.reference.feedback?.respectfulness ?? 8} / 10
@@ -1726,7 +1759,7 @@ const ProfessionalReferenceSection = ({
                   setFeedbackModal({ isOpen: false, reference: null });
                 }}
               >
-                <span className="mr-1">🚩</span> Report
+                Report
               </button>
             </div>
           </div>

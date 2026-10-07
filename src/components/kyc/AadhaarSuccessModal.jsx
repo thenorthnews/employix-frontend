@@ -217,9 +217,7 @@ const AadhaarSuccessModal = ({
             marginBottom: '14px',
           }}
         >
-          <span>✨</span>
           <span>{finalBadgeText}</span>
-          <span>🎉</span>
         </div>
 
         {/* Short Subtitle */}

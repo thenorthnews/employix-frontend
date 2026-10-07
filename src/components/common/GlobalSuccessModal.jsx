@@ -32,7 +32,7 @@ const GlobalSuccessModal = () => {
 
       // Format & shorten clean valid message
       const cleanMessage = String(message)
-        .replace(/^🎉\s*/, '')
+        .replace(/^[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}]\s*/u, '')
         .trim();
 
       setModalState({

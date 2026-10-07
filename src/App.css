@@ -750,7 +750,7 @@ input.auth-input-group:disabled {
 
 /* Glowing Middle Score Banner */
 .candidate-ref-score-banner {
-  background: linear-gradient(135deg, #032030 0%, #053b49 55%, #021924 100%);
+  background: #051d3d;
   border: 1.5px solid rgba(0, 229, 255, 0.35);
   box-shadow: 0 8px 24px -4px rgba(3, 32, 48, 0.35), 0 0 14px rgba(0, 229, 255, 0.15);
   border-radius: 18px;

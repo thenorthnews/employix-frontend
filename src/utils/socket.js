@@ -16,15 +16,15 @@ export const getSocket = () => {
     });
 
     socket.on('connect', () => {
-      console.log('🔌 [Socket.io Connected] ID:', socket.id);
+      console.log('[Socket.io Connected] ID:', socket.id);
     });
 
     socket.on('connect_error', (err) => {
-      console.warn('⚠️ [Socket.io Connect Error]:', err.message);
+      console.warn('[Socket.io Connect Error]:', err.message);
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('🔌 [Socket.io Disconnected]:', reason);
+      console.log('[Socket.io Disconnected]:', reason);
     });
   }
 
@@ -38,7 +38,7 @@ export const joinUserRoom = (userId) => {
   const s = getSocket();
   if (s && userId) {
     s.emit('join_user_room', userId);
-    console.log(`👤 [Socket.io] Joined room for user ${userId}`);
+    console.log(`[Socket.io] Joined room for user ${userId}`);
   }
 };
 

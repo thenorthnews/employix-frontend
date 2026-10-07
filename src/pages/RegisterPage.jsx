@@ -41,7 +41,7 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    console.log('🔥 [Register] handleSubmit triggered! formData:', formData);
+    console.log('[Register] handleSubmit triggered! formData:', formData);
 
     const name = formData.name.trim();
     const email = formData.email.trim().toLowerCase();
@@ -86,14 +86,14 @@ const RegisterPage = () => {
       role: 'user',
     };
 
-    console.log('📤 Submitting registration to Backend API:', payload);
+    console.log('[Register] Submitting to Backend API:', payload);
 
     try {
       await dispatch(registerUser(payload)).unwrap();
       toast.success('Registration successful! OTP sent to your email.');
       navigate(`/otp?email=${encodeURIComponent(payload.email)}`);
     } catch (errMessage) {
-      console.error('❌ Registration API Error:', errMessage);
+      console.error('[Register] API Error:', errMessage);
       toast.error(errMessage || 'Registration failed. Please try again.');
     }
   };

@@ -21,11 +21,19 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
   const userPhone = user?.countryCode
     ? `${user.countryCode} ${user?.phoneNumber || ''}`
     : user?.phoneNumber || user?.phone;
-  const userProfession = user?.designation || 'Software Engineer';
+  const userProfession = user?.designation || user?.role || 'Software Engineer';
   const locationCity =
     user?.city ||
-    (user?.currentAddress ? user.currentAddress.split(',').slice(-2, -1)[0]?.trim() : null) ||
-    (user?.address ? user.address.split(',').slice(-2, -1)[0]?.trim() : null) ||
+    (typeof user?.currentAddress === 'string'
+      ? user.currentAddress.split(',').slice(-2, -1)[0]?.trim()
+      : typeof user?.currentAddress === 'object' && user?.currentAddress?.city
+      ? user.currentAddress.city
+      : null) ||
+    (typeof user?.address === 'string'
+      ? user.address.split(',').slice(-2, -1)[0]?.trim()
+      : typeof user?.address === 'object' && user?.address?.city
+      ? user.address.city
+      : null) ||
     'Hoshiarpur';
   const userAddress = formatCandidateAddress(
     user?.currentAddress || user?.address || user?.voterData?.address || user?.aadhaarData?.address
@@ -102,19 +110,19 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
           <div
             className="d-flex align-items-center"
             style={{
-              background: 'linear-gradient(135deg, #032030 0%, #053b49 55%, #021924 100%)',
+              background: '#051d3d',
               border: '1.5px solid rgba(0, 229, 255, 0.35)',
-              borderRadius: '18px',
-              padding: '8px 28px 8px 14px',
-              minWidth: '290px',
-              gap: '18px',
-              boxShadow: '0 6px 20px rgba(3, 32, 48, 0.35), 0 0 14px rgba(0, 229, 255, 0.15)',
-              height: '78px',
+              borderRadius: '20px',
+              padding: '12px 28px 12px 18px',
+              minWidth: '320px',
+              gap: '20px',
+              boxShadow: '0 8px 24px rgba(3, 32, 48, 0.4), 0 0 16px rgba(0, 229, 255, 0.18)',
+              height: '113px',
             }}
           >
             {/* Circular Gauge Ring */}
-            <div style={{ position: 'relative', width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="64" height="64" viewBox="0 0 64 64" style={{ transform: 'rotate(-90deg)' }}>
+            <div style={{ position: 'relative', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="90" height="90" viewBox="0 0 90 90" style={{ transform: 'rotate(-90deg)' }}>
                 <defs>
                   <linearGradient id="headerScoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#00D294" />
@@ -122,23 +130,23 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
                   </linearGradient>
                 </defs>
                 <circle
-                  cx="32"
-                  cy="32"
-                  r="27"
+                  cx="45"
+                  cy="45"
+                  r="38"
                   fill="transparent"
                   stroke="rgba(255, 255, 255, 0.12)"
-                  strokeWidth="5"
+                  strokeWidth="7"
                 />
                 <circle
-                  cx="32"
-                  cy="32"
-                  r="27"
+                  cx="45"
+                  cy="45"
+                  r="38"
                   fill="transparent"
                   stroke="url(#headerScoreGrad)"
-                  strokeWidth="5"
+                  strokeWidth="7"
                   strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 27}
-                  strokeDashoffset={2 * Math.PI * 27 * (1 - Math.min(100, Math.max(0, displayScore)) / 100)}
+                  strokeDasharray={2 * Math.PI * 38}
+                  strokeDashoffset={2 * Math.PI * 38 * (1 - Math.min(100, Math.max(0, displayScore)) / 100)}
                   style={{ transition: 'stroke-dashoffset 0.8s ease' }}
                 />
               </svg>
@@ -152,10 +160,10 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
                   justifyContent: 'center',
                 }}
               >
-                <span style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, lineHeight: 1 }}>
+                <span style={{ color: '#FFFFFF', fontSize: '1.7rem', fontWeight: 900, lineHeight: 1 }}>
                   {displayScore}
                 </span>
-                <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.58rem', fontWeight: 700, lineHeight: 1, marginTop: '2px' }}>
+                <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1, marginTop: '3px' }}>
                   /100
                 </span>
               </div>
@@ -163,10 +171,10 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
 
             {/* Tier details */}
             <div className="d-flex flex-column justify-content-center">
-              <span style={{ color: '#5EFCE8', fontSize: '1.12rem', fontWeight: 800, letterSpacing: '0.4px', lineHeight: 1.2 }}>
+              <span style={{ color: '#5EFCE8', fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.4px', lineHeight: 1.2 }}>
                 {shortTier} Tier
               </span>
-              <span style={{ color: '#00D294', fontSize: '0.82rem', fontWeight: 700, marginTop: '2px', letterSpacing: '0.2px' }}>
+              <span style={{ color: '#00D294', fontSize: '0.88rem', fontWeight: 700, marginTop: '4px', letterSpacing: '0.2px' }}>
                 • High Trust
               </span>
             </div>
@@ -207,30 +215,161 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
       </div>
 
       {/* Tier 2: Address & Contact Row */}
-      <div className="profile-hero-tier-middle px-4 py-3 border-top" style={{ borderColor: '#e6f0fa' }}>
+      <div className="profile-hero-tier-middle px-4 py-3 border-top" style={{ borderColor: '#e6f0fa', backgroundColor: '#FAFCFF' }}>
         {userAddress && (
-          <div className="d-flex align-items-center gap-2 text-dark font-weight-600 mb-2" style={{ fontSize: '0.9rem' }}>
-            <span>📍</span>
-            <span style={{ color: '#1e293b' }}>{userAddress}</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              marginBottom: '12px',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+            }}
+          >
+            <div
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '8px',
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                color: '#2563EB',
+                marginTop: '1px',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ color: '#64748B', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '2px' }}>
+                Address
+              </span>
+              <span style={{ color: '#1E293B', fontSize: '0.88rem', fontWeight: 600, lineHeight: 1.45 }}>
+                {userAddress}
+              </span>
+            </div>
           </div>
         )}
-        <div className="d-flex align-items-center flex-wrap gap-3 text-secondary font-weight-600" style={{ fontSize: '0.88rem' }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           {userEmail && (
-            <span className="d-inline-flex align-items-center gap-1" style={{ color: '#0f172a' }}>
-              <span style={{ color: '#00D294' }}>✉️</span> {userEmail}
-            </span>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderRadius: '10px',
+                padding: '6px 12px',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+              }}
+            >
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '6px',
+                  background: 'rgba(0, 210, 148, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#059669',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+              </div>
+              <span style={{ color: '#0F172A', fontSize: '0.84rem', fontWeight: 600 }}>
+                {userEmail}
+              </span>
+            </div>
           )}
-          <span className="text-muted opacity-50">│</span>
+
           {userPhone && (
-            <span className="d-inline-flex align-items-center gap-1" style={{ color: '#0f172a' }}>
-              <span>📞</span> {userPhone}
-            </span>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderRadius: '10px',
+                padding: '6px 12px',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+              }}
+            >
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '6px',
+                  background: '#EFF6FF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563EB',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+              </div>
+              <span style={{ color: '#0F172A', fontSize: '0.84rem', fontWeight: 600 }}>
+                {userPhone}
+              </span>
+            </div>
           )}
-          <span className="text-muted opacity-50">│</span>
+
           {userGender && (
-            <span className="d-inline-flex align-items-center gap-1" style={{ color: '#0f172a' }}>
-              <span>👤</span> {userGender}
-            </span>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderRadius: '10px',
+                padding: '6px 12px',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+              }}
+            >
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '6px',
+                  background: '#F5F3FF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#7C3AED',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <span style={{ color: '#0F172A', fontSize: '0.84rem', fontWeight: 600, textTransform: 'capitalize' }}>
+                {userGender}
+              </span>
+            </div>
           )}
         </div>
       </div>

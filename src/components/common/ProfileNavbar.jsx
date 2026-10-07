@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout, logoutUser } from '../../redux/slices/authSlice';
@@ -18,7 +19,10 @@ const ProfileNavbar = ({ onUpdate }) => {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const btnRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -75,25 +79,41 @@ const ProfileNavbar = ({ onUpdate }) => {
     return () => window.removeEventListener('scroll', onScroll);
   }, [dropdownOpen]);
 
-  const handleLogout = async () => {
-    setDropdownOpen(false);
-    try { await dispatch(logoutUser()); } catch (_) {}
-    dispatch(logout());
-    toast.success('Logged out successfully!');
-    navigate('/login');
-  };
-
-  const handleDeleteAccount = async () => {
+  const handleLogoutClick = () => {
     setDropdownOpen(false);
     setMobileMenuOpen(false);
-    const confirmed = window.confirm(
-      'Are you sure you want to permanently delete your account? All your profile verifications and data will be removed. This cannot be undone.'
-    );
-    if (!confirmed) return;
+    setShowLogoutModal(true);
+  };
 
+  const handleConfirmLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      setShowLogoutModal(false);
+      try { await dispatch(logoutUser()); } catch (_) {}
+      dispatch(logout());
+      toast.success('Logged out successfully!');
+      navigate('/login', { replace: true });
+    } catch (err) {
+      console.error('Logout error:', err);
+      dispatch(logout());
+      navigate('/login', { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDeleteAccount = async () => {
     try {
       setIsDeleting(true);
       await deleteAccountApi();
+      setShowDeleteModal(false);
+      try { await dispatch(logoutUser()); } catch (_) {}
       dispatch(logout());
       toast.success('Your account has been deleted successfully.');
       navigate('/login', { replace: true });
@@ -123,8 +143,8 @@ const ProfileNavbar = ({ onUpdate }) => {
       ════════════════════════════════════════════ */}
       <header style={{
         background: scrolled
-          ? 'rgba(5, 11, 24, 0.97)'
-          : 'linear-gradient(90deg, #050b18 0%, #070e1e 60%, #0a1628 100%)',
+          ? '#051d3d'
+          : '#051d3d',
         borderBottom: scrolled
           ? '1px solid rgba(0,210,148,0.15)'
           : '1px solid rgba(255,255,255,0.06)',
@@ -140,8 +160,7 @@ const ProfileNavbar = ({ onUpdate }) => {
         <div style={{
           maxWidth: '1280px',
           margin: '0 auto',
-          padding: '0 24px',
-          height: '70px',
+          padding: '10px 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -152,7 +171,7 @@ const ProfileNavbar = ({ onUpdate }) => {
             <img
               src="/images/employix-logo.png"
               alt="Employix"
-              style={{ height: '42px', width: 'auto', objectFit: 'contain', display: 'block' }}
+              style={{ height: '87px', width: 'auto', objectFit: 'contain', display: 'block' }}
               onError={(e) => { e.target.onerror = null; e.target.src = '/images/identity.jpg'; }}
             />
           </Link>
@@ -205,7 +224,7 @@ const ProfileNavbar = ({ onUpdate }) => {
                 </button>
 
                 <button
-                  onClick={handleLogout}
+                  onClick={handleLogoutClick}
                   style={{
                     background: 'rgba(255, 255, 255, 0.06)',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -347,7 +366,6 @@ const ProfileNavbar = ({ onUpdate }) => {
             </div>
 
             <MobileLink to="/profile"          label="My Profile"       active={isProfile} onClick={() => setMobileMenuOpen(false)} />
-            <MobileLink to="/kyc-verification" label="KYC Verification" active={isKyc}     onClick={() => setMobileMenuOpen(false)} />
 
             {!isKyc && (
               <button
@@ -400,7 +418,7 @@ const ProfileNavbar = ({ onUpdate }) => {
               {isDeleting ? 'Deleting...' : 'Delete Account'}
             </button>
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               style={{
                 width: '100%', textAlign: 'left',
                 background: 'rgba(255,255,255,0.06)',
@@ -469,23 +487,6 @@ const ProfileNavbar = ({ onUpdate }) => {
                 <div style={{ color: '#00D294', fontSize: '11px', fontWeight: 600, letterSpacing: '0.4px', marginTop: '2px' }}>
                   {employixId}
                 </div>
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '6px',
-                  background: `${scoreColor}15`,
-                  border: `1px solid ${scoreColor}30`,
-                  borderRadius: '50px',
-                  padding: '2px 9px',
-                  marginTop: '5px',
-                }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: scoreColor, boxShadow: `0 0 5px ${scoreColor}` }} />
-                  <span style={{ color: scoreColor, fontSize: '10px', fontWeight: 700 }}>
-                    {score}/100 pts
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>•</span>
-                  <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600 }}>
-                    KYC {kycStatus}/7
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -501,18 +502,6 @@ const ProfileNavbar = ({ onUpdate }) => {
               icon={
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-              }
-            />
-            <DdItem
-              to="/kyc-verification"
-              label="KYC Verification"
-              sub="Manage identity & documents"
-              badge={isKyc ? 'Active' : null}
-              onClick={() => setDropdownOpen(false)}
-              icon={
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
               }
             />
@@ -582,7 +571,7 @@ const ProfileNavbar = ({ onUpdate }) => {
           {/* Sign Out */}
           <div style={{ padding: '4px 8px 8px 8px' }}>
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               style={{
                 width: '100%',
                 display: 'flex', alignItems: 'center', gap: '10px',
@@ -624,10 +613,311 @@ const ProfileNavbar = ({ onUpdate }) => {
         onUpdate={onUpdate}
       />
 
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              zIndex: 9999999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              boxSizing: 'border-box',
+            }}
+            onClick={() => !isDeleting && setShowDeleteModal(false)}
+          >
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '24px',
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.35)',
+                width: '100%',
+                maxWidth: '430px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                padding: '36px 28px 28px',
+                position: 'relative',
+                animation: 'deleteModalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+            >
+              <button
+                type="button"
+                onClick={() => !isDeleting && setShowDeleteModal(false)}
+                disabled={isDeleting}
+                aria-label="Close"
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: '#F1F5F9',
+                  border: 'none',
+                  color: '#64748B',
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  lineHeight: 1,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                &times;
+              </button>
+
+              <div
+                style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
+                  border: '2px solid #FCA5A5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#DC2626',
+                  marginBottom: '18px',
+                  boxShadow: '0 8px 20px rgba(239, 68, 68, 0.18)',
+                }}
+              >
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </div>
+
+              <h3 style={{ margin: '0 0 10px', fontSize: '1.3rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+                Delete Account?
+              </h3>
+
+              <p style={{ margin: '0 0 24px', fontSize: '0.92rem', color: '#64748B', lineHeight: 1.55, fontWeight: 500 }}>
+                Are you sure you want to permanently delete your account? All your profile verifications and data will be removed. This cannot be undone.
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  style={{
+                    flex: 1,
+                    padding: '12px 18px',
+                    borderRadius: '12px',
+                    border: '1.5px solid #CBD5E1',
+                    background: '#FFFFFF',
+                    color: '#334155',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  No, Keep It
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteAccount}
+                  disabled={isDeleting}
+                  style={{
+                    flex: 1.2,
+                    padding: '12px 18px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 16px rgba(239, 68, 68, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Sign Out Confirmation Modal */}
+      {showLogoutModal &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              zIndex: 9999999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              boxSizing: 'border-box',
+            }}
+            onClick={() => !isLoggingOut && setShowLogoutModal(false)}
+          >
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '24px',
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.35)',
+                width: '100%',
+                maxWidth: '420px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                padding: '36px 28px 28px',
+                position: 'relative',
+                animation: 'deleteModalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+            >
+              <button
+                type="button"
+                onClick={() => !isLoggingOut && setShowLogoutModal(false)}
+                disabled={isLoggingOut}
+                aria-label="Close"
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: '#F1F5F9',
+                  border: 'none',
+                  color: '#64748B',
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: isLoggingOut ? 'not-allowed' : 'pointer',
+                  lineHeight: 1,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                &times;
+              </button>
+
+              <div
+                style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #E6FBF5 0%, #D1FAE5 100%)',
+                  border: '2px solid #A7F3D0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#059669',
+                  marginBottom: '18px',
+                  boxShadow: '0 8px 20px rgba(0, 210, 148, 0.22)',
+                }}
+              >
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+              </div>
+
+              <h3 style={{ margin: '0 0 10px', fontSize: '1.3rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+                Sign Out?
+              </h3>
+
+              <p style={{ margin: '0 0 24px', fontSize: '0.92rem', color: '#64748B', lineHeight: 1.55, fontWeight: 500 }}>
+                Are you sure you want to sign out of your account? You will need to log in again to access your dashboard.
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowLogoutModal(false)}
+                  disabled={isLoggingOut}
+                  style={{
+                    flex: 1,
+                    padding: '12px 18px',
+                    borderRadius: '12px',
+                    border: '1.5px solid #CBD5E1',
+                    background: '#FFFFFF',
+                    color: '#334155',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    cursor: isLoggingOut ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  No, Stay
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmLogout}
+                  disabled={isLoggingOut}
+                  style={{
+                    flex: 1.2,
+                    padding: '12px 18px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    cursor: isLoggingOut ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 16px rgba(0, 210, 148, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {isLoggingOut ? 'Signing out...' : 'Yes, Sign Out'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
       <style>{`
         @keyframes navDropIn {
           from { opacity: 0; transform: translateY(-10px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
+        @keyframes deleteModalPop {
+          0% { opacity: 0; transform: scale(0.92) translateY(10px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
     </>
