@@ -47,7 +47,7 @@ const LoginPage = () => {
     try {
       await dispatch(loginUser({ email: cleanEmail })).unwrap();
       toast.success('Security OTP sent to your email!');
-      navigate(`/otp?email=${encodeURIComponent(cleanEmail)}`);
+      navigate('/otp', { state: { email: cleanEmail } });
     } catch (errMessage) {
       console.error('[Login] API Error:', errMessage);
       toast.error(errMessage || 'Login failed. Please check your credentials.');

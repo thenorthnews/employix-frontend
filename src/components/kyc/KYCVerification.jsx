@@ -4244,23 +4244,6 @@ const KYCVerification = ({
                                   </div>
                                 </div>
                               </div>
-
-                              <button
-                                type="button"
-                                className="btn btn-sm font-weight-bold d-inline-flex align-items-center gap-1.5"
-                                onClick={() => handleSyncDigilockerEducation()}
-                                disabled={digilockerSyncLoading || isSetupCompleted}
-                                style={{
-                                  borderRadius: '8px',
-                                  fontSize: '12px',
-                                  padding: '5px 12px',
-                                  border: '1px solid #CBD5E1',
-                                  color: '#334155',
-                                  background: '#FFFFFF',
-                                }}
-                              >
-                                {digilockerSyncLoading ? <ButtonSpinner text="Syncing..." /> : 'Sync Documents'}
-                              </button>
                             </div>
 
                             <div className="p-3 p-md-4" style={{ background: '#FAFDFB' }}>
@@ -4562,7 +4545,6 @@ const KYCVerification = ({
                                         <div className="d-flex align-items-center flex-wrap gap-2 text-muted small mb-2" style={{ fontSize: '12.5px' }}>
                                           <span className="kyc-meta-pill">{qual.institution}</span>
                                           {qual.fieldOfStudy && <span className="kyc-meta-pill">{qual.fieldOfStudy}</span>}
-                                          {qual.year && <span className="kyc-meta-pill">Class of {qual.year}</span>}
                                         </div>
 
                                         {qual.documentUrl && (
@@ -4597,7 +4579,6 @@ const KYCVerification = ({
                                       ) : (
                                         <span className="kyc-badge-unverified">Self-Reported</span>
                                       )}
-                                      <span className="kyc-badge-locked">Locked</span>
                                     </div>
                                   </div>
                                 </div>
@@ -4968,7 +4949,6 @@ const KYCVerification = ({
                                       ) : (
                                         <span className="kyc-badge-unverified">Self-Reported</span>
                                       )}
-                                      <span className="kyc-badge-locked">Locked</span>
                                     </div>
                                   </div>
                                 </div>

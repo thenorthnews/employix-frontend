@@ -91,7 +91,7 @@ const RegisterPage = () => {
     try {
       await dispatch(registerUser(payload)).unwrap();
       toast.success('Registration successful! OTP sent to your email.');
-      navigate(`/otp?email=${encodeURIComponent(payload.email)}`);
+      navigate('/otp', { state: { email: payload.email } });
     } catch (errMessage) {
       console.error('[Register] API Error:', errMessage);
       toast.error(errMessage || 'Registration failed. Please try again.');

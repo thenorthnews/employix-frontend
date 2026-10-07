@@ -270,7 +270,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                       )}
                     </div>
                     <span className="small text-muted d-block mb-2">
-                      {qual.institution} {qual.fieldOfStudy ? `· ${qual.fieldOfStudy}` : ''} {qual.year ? `· Class of ${qual.year}` : ''}
+                      {qual.institution} {qual.fieldOfStudy ? `· ${qual.fieldOfStudy}` : ''}
                     </span>
                     <div className="d-flex align-items-center gap-2 flex-wrap">
                       <span className={`verified-source-tag ${isItemVerified ? 'tag-teal' : 'tag-danger'} mr-2`}>

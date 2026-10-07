@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { verifyOtp, resendOtp, clearError } from '../redux/slices/authSlice';
 import { toast } from 'react-toastify';
@@ -8,12 +8,24 @@ import ButtonSpinner from '../components/common/Loader';
 import { getKycVerificationFlags, isCandidateSetupCompleted } from '../utils/profileUtils';
 
 const OtpPage = () => {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const { loading, resendLoading, pendingEmail, isAuthenticated, user } = useSelector((state) => state.auth);
-  const targetEmail = searchParams.get('email') || pendingEmail || '';
+  
+  // Read target email from location state, Redux store, or localStorage
+  const targetEmail =
+    location.state?.email ||
+    pendingEmail ||
+    (typeof window !== 'undefined' ? localStorage.getItem('employix_pending_email') || '' : '');
+
+  // Strip query parameters from browser address bar if present
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, '', '/otp');
+    }
+  }, []);
 
   // 6 individual digit input states
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
