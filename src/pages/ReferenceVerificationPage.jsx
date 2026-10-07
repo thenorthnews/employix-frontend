@@ -338,6 +338,11 @@ const ReferenceVerificationPage = () => {
       return;
     }
 
+    if (!feedbackNotes || !feedbackNotes.trim()) {
+      toast.error('Feedback is mandatory. Please provide your performance remarks.');
+      return;
+    }
+
     try {
       setSubmittingFeedback(true);
       const computedRating = Math.min(5, Math.max(1, Math.round(((diligence + enthusiasm + respectfulness) / 30) * 5)));
@@ -354,9 +359,7 @@ const ReferenceVerificationPage = () => {
         respectfulness: Number(respectfulness),
         relationship,
         rating: computedRating,
-        feedback:
-          feedbackNotes.trim() ||
-          `Verified evaluation: Diligence ${diligence}/10, Enthusiasm ${enthusiasm}/10, Respectfulness ${respectfulness}/10. Worked together: ${workedTogether}.`,
+        feedback: feedbackNotes.trim(),
         recommendation: workedTogether === 'Yes' ? recommendation : 'No',
       });
 
@@ -1233,14 +1236,15 @@ const ReferenceVerificationPage = () => {
                     {/* Qualitative Remarks */}
                     <div className="form-group mb-0">
                       <label className="font-weight-bold text-dark small mb-1">
-                        Additional Performance Remarks or Feedback (Optional)
+                        Performance Remarks &amp; Feedback <span className="text-danger">*</span>
                       </label>
                       <textarea
                         rows="3"
                         className="form-control"
-                        placeholder="Briefly describe key strengths, work ethic, dependability, or any specific achievements..."
+                        placeholder="Please write your feedback, key strengths, work ethic, dependability, or any specific achievements (Mandatory)..."
                         value={feedbackNotes}
                         onChange={(e) => setFeedbackNotes(e.target.value)}
+                        required
                         disabled={submittingFeedback}
                         style={{
                           borderRadius: '10px',
