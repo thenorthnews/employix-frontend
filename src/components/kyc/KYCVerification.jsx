@@ -5575,10 +5575,7 @@ const KYCVerification = ({
               <div className="col-lg-10">
                 <div className="kyc-summary-footer p-4 rounded-lg d-flex flex-column flex-md-row align-items-center justify-content-between text-center text-md-left gap-3">
                   <div>
-                    <span className="small text-uppercase font-weight-bold letter-spacing-1 text-teal">
-                      EMPLOYIX TRUST PROFILE SETUP STATUS
-                    </span>
-                    <h5 className="font-weight-bold text-white mb-0 mt-1">
+                    <h5 className="font-weight-bold text-white mb-0">
                       {kycStatus === 7
                         ? (isSetupCompleted ? 'Setup Complete & Locked — Access Your Dashboard' : 'All Verification Steps Complete! Status: 7 / 7 — Click to Access Dashboard')
                         : !profileSaved
@@ -5597,34 +5594,6 @@ const KYCVerification = ({
                     </h5>
                   </div>
                   <div className="d-flex flex-column flex-xl-row align-items-center gap-3">
-                    {/* Step completion checklist pills */}
-                    <div className="d-flex gap-2 align-items-center flex-wrap justify-content-center">
-                      <span className={`badge px-2 py-1 ${isProfileDone ? 'badge-success' : 'badge-secondary'}`}>
-                        {isProfileDone ? '✓' : '1'} Profile
-                      </span>
-                      <span className={`badge px-2 py-1 ${isAadhaarDone ? 'badge-success' : 'badge-secondary'}`}>
-                        {isAadhaarDone ? '✓' : '2'} Aadhaar
-                      </span>
-                      <span className={`badge px-2 py-1 ${isVoterDone ? 'badge-success' : 'badge-secondary'}`}>
-                        {isVoterDone ? '✓' : '3'} Voter ID
-                      </span>
-                      <span className={`badge px-2 py-1 ${isEmpDone ? 'badge-success' : 'badge-secondary'}`}>
-                        {isEmpDone ? '✓' : '4'} Employment
-                      </span>
-                      <span className={`badge px-2 py-1 ${isRefDone ? 'badge-success' : 'badge-secondary'}`}>
-                        {isRefDone ? '✓' : '5'} References
-                      </span>
-                      <span className={`badge px-2 py-1 ${isEduDone ? 'badge-success' : 'badge-secondary'}`}>
-                        {isEduDone ? '✓' : '6'} Education &amp; Certs
-                      </span>
-                      <span className={`badge px-2 py-1 ${isDlDone ? 'badge-success' : 'badge-secondary'}`}>
-                        {isDlDone ? '✓' : '7'} Driving License
-                      </span>
-                      <span className={`badge px-2 py-1 ${allStepsDone || isSetupCompleted ? 'badge-success' : 'badge-info'}`}>
-                        {isSetupCompleted || (allStepsDone && kycStatus === 8) ? 'Status: 7/7 (Complete)' : `Status: ${completedStepsCount}/7`}
-                      </span>
-                    </div>
-
                     {/* Circular Score Gauge at the End */}
                     <KycScoreGauge score={score} />
 
@@ -5643,8 +5612,8 @@ const KYCVerification = ({
                       title={!allStepsDone && !isSetupCompleted ? `Complete all 7 KYC verification steps to proceed (Completed: ${completedStepsCount}/7)` : 'Setup complete — click to access profile dashboard'}
                     >
                       {isSetupCompleted || (allStepsDone && kycStatus === 8)
-                        ? 'Setup Completed (Status 8) · Access Profile Dashboard →'
-                        : 'Complete Setup & Access Profile Dashboard →'}
+                        ? 'Continue to Profile Dashboard →'
+                        : 'Continue to Profile Dashboard →'}
                     </button>
                   </div>
                 </div>

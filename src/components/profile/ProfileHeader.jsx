@@ -96,26 +96,79 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
           </div>
         </div>
 
-        {/* Right: Score Banner + Static QR Code */}
+        {/* Right: Circular Score Gauge + Static QR Code */}
         <div className="d-flex align-items-center gap-3 flex-wrap">
-          <div className="candidate-ref-score-banner" style={{ minWidth: '220px', margin: 0 }}>
-            <div className="candidate-ref-banner-left">
-              <div className="candidate-ref-shield-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                  <path d="M9 12l2 2 4-4"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 className="candidate-ref-tier-title mb-0">{shortTier} Tier</h3>
+          {/* Circular Trust Score Gauge */}
+          <div
+            className="d-flex align-items-center"
+            style={{
+              background: 'linear-gradient(135deg, #032030 0%, #053b49 55%, #021924 100%)',
+              border: '1.5px solid rgba(0, 229, 255, 0.35)',
+              borderRadius: '18px',
+              padding: '8px 28px 8px 14px',
+              minWidth: '290px',
+              gap: '18px',
+              boxShadow: '0 6px 20px rgba(3, 32, 48, 0.35), 0 0 14px rgba(0, 229, 255, 0.15)',
+              height: '78px',
+            }}
+          >
+            {/* Circular Gauge Ring */}
+            <div style={{ position: 'relative', width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="64" height="64" viewBox="0 0 64 64" style={{ transform: 'rotate(-90deg)' }}>
+                <defs>
+                  <linearGradient id="headerScoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#00D294" />
+                    <stop offset="100%" stopColor="#00E5FF" />
+                  </linearGradient>
+                </defs>
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="27"
+                  fill="transparent"
+                  stroke="rgba(255, 255, 255, 0.12)"
+                  strokeWidth="5"
+                />
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="27"
+                  fill="transparent"
+                  stroke="url(#headerScoreGrad)"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 27}
+                  strokeDashoffset={2 * Math.PI * 27 * (1 - Math.min(100, Math.max(0, displayScore)) / 100)}
+                  style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+                />
+              </svg>
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, lineHeight: 1 }}>
+                  {displayScore}
+                </span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.58rem', fontWeight: 700, lineHeight: 1, marginTop: '2px' }}>
+                  /100
+                </span>
               </div>
             </div>
 
-            <div className="candidate-ref-banner-divider"></div>
-
-            <div className="candidate-ref-banner-right">
-              <span className="candidate-ref-score-val">{displayScore}</span>
-              <span className="candidate-ref-score-max">/ 100</span>
+            {/* Tier details */}
+            <div className="d-flex flex-column justify-content-center">
+              <span style={{ color: '#5EFCE8', fontSize: '1.12rem', fontWeight: 800, letterSpacing: '0.4px', lineHeight: 1.2 }}>
+                {shortTier} Tier
+              </span>
+              <span style={{ color: '#00D294', fontSize: '0.82rem', fontWeight: 700, marginTop: '2px', letterSpacing: '0.2px' }}>
+                • High Trust
+              </span>
             </div>
           </div>
 
