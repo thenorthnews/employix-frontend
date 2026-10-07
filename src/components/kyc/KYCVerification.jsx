@@ -1884,8 +1884,6 @@ const KYCVerification = ({
       sessionStorage.removeItem('digilocker_edu_client_id');
       sessionStorage.removeItem('digilocker_pending_step');
 
-      toast.success('DigiLocker documents verified successfully!');
-
       // Re-fetch entire user profile so all states (quals, certs, KYC status, score) are 100% in sync with database
       await fetchInitialData();
 
@@ -4457,35 +4455,57 @@ const KYCVerification = ({
                         MANUAL UPLOAD MODE (Ultra-Clean, Premium Design)
                         ═══════════════════════════════════════════════════════════ */}
                     {educationMode === 'manual' && (
-                      <div className="mb-4">
+                      <div className="d-flex flex-column gap-4 mb-4">
                         {/* SECTION 6A: Academic Qualifications */}
-                        <div className="mb-4 pb-4 border-bottom">
+                        <div
+                          className="p-4 rounded-xl"
+                          style={{
+                            background: '#FFFFFF',
+                            border: '1.5px solid #E2E8F0',
+                            borderRadius: '16px',
+                            boxShadow: '0 4px 18px rgba(15, 23, 42, 0.03)',
+                          }}
+                        >
                           <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                             <div>
-                              <h6 className="font-weight-bold text-dark mb-0 d-flex align-items-center" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
-                                Academic Qualifications (Degrees / Diplomas)
-                              </h6>
-                              <p className="text-muted small mb-0" style={{ fontSize: '12.5px' }}>Universities, colleges, graduation degrees &amp; diploma certificates</p>
+                              <div className="d-flex align-items-center gap-2">
+                                <h6 className="font-weight-bold text-dark mb-0" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
+                                  Academic Qualifications (Degrees / Diplomas)
+                                </h6>
+                                {qualifications.length > 0 && (
+                                  <span
+                                    className="badge badge-pill font-weight-bold"
+                                    style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', fontSize: '11px', padding: '3px 8px' }}
+                                  >
+                                    {qualifications.length} Added
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-muted small mb-0" style={{ fontSize: '12.5px' }}>
+                                Universities, colleges, graduation degrees &amp; diploma certificates
+                              </p>
                             </div>
                             {!showQualForm && (
                               <button
                                 type="button"
-                                className="btn btn-sm d-inline-flex align-items-center gap-1 font-weight-bold"
+                                className="btn btn-sm d-inline-flex align-items-center gap-1.5 font-weight-bold"
                                 onClick={() => !isSetupCompleted && setShowQualForm(true)}
                                 disabled={isSetupCompleted}
                                 style={{
                                   borderRadius: '10px',
                                   fontSize: '12.5px',
-                                  padding: '7px 16px',
-                                  background: isSetupCompleted ? '#94A3B8' : 'linear-gradient(135deg, #00D294 0%, #00B880 100%)',
+                                  padding: '8px 18px',
+                                  background: isSetupCompleted ? '#94A3B8' : 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
                                   color: '#FFFFFF',
                                   border: 'none',
-                                  boxShadow: isSetupCompleted ? 'none' : '0 2px 8px rgba(0, 210, 148, 0.25)',
+                                  boxShadow: isSetupCompleted ? 'none' : '0 3px 12px rgba(0, 210, 148, 0.3)',
                                   opacity: isSetupCompleted ? 0.65 : 1,
                                   cursor: isSetupCompleted ? 'not-allowed' : 'pointer',
+                                  transition: 'all 0.2s ease',
                                 }}
                               >
-                                <span>+ Add Qualification</span>
+                                <span style={{ fontSize: '15px', lineHeight: 1 }}>+</span>
+                                <span>Add Qualification</span>
                               </button>
                             )}
                           </div>
@@ -4768,41 +4788,74 @@ const KYCVerification = ({
                           )}
 
                           {qualifications.length === 0 && !showQualForm && (
-                            <p className="text-muted small mb-0" style={{ fontSize: '13px' }}>
-                              No academic degrees added yet. Click "+ Add Qualification" above.
-                            </p>
+                            <div
+                              className="text-center py-4 px-3 rounded-lg"
+                              style={{
+                                background: '#F8FAFC',
+                                border: '1.5px dashed #CBD5E1',
+                                borderRadius: '14px',
+                              }}
+                            >
+                              <h6 className="font-weight-bold text-dark mb-1" style={{ fontSize: '14px' }}>
+                                No Academic Qualifications Added Yet
+                              </h6>
+                              <p className="text-muted small mb-0" style={{ fontSize: '12.5px', maxWidth: '460px', margin: '0 auto' }}>
+                                Add your graduation, master's degree, or diploma credentials to strengthen your verified profile.
+                              </p>
+                            </div>
                           )}
                         </div>
 
                         {/* SECTION 6B: Professional Certifications */}
-                        <div>
+                        <div
+                          className="p-4 rounded-xl"
+                          style={{
+                            background: '#FFFFFF',
+                            border: '1.5px solid #E2E8F0',
+                            borderRadius: '16px',
+                            boxShadow: '0 4px 18px rgba(15, 23, 42, 0.03)',
+                          }}
+                        >
                           <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                             <div>
-                              <h6 className="font-weight-bold text-dark mb-0 d-flex align-items-center" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
-                                <span className="mr-2" style={{ fontSize: '1.25rem' }}></span>
-                                Professional Certifications &amp; Credentials
-                              </h6>
-                              <p className="text-muted small mb-0" style={{ fontSize: '12.5px' }}>Cloud, security, coding, vendor credentials (AWS, Google, Microsoft, Scrum, etc.)</p>
+                              <div className="d-flex align-items-center gap-2">
+                                <h6 className="font-weight-bold text-dark mb-0" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
+                                  Professional Certifications &amp; Credentials
+                                </h6>
+                                {certifications.length > 0 && (
+                                  <span
+                                    className="badge badge-pill font-weight-bold"
+                                    style={{ background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', fontSize: '11px', padding: '3px 8px' }}
+                                  >
+                                    {certifications.length} Added
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-muted small mb-0" style={{ fontSize: '12.5px' }}>
+                                Cloud, security, coding, vendor credentials (AWS, Google, Microsoft, Scrum, etc.)
+                              </p>
                             </div>
                             {!showCertForm && (
                               <button
                                 type="button"
-                                className="btn btn-sm d-inline-flex align-items-center gap-1 font-weight-bold"
+                                className="btn btn-sm d-inline-flex align-items-center gap-1.5 font-weight-bold"
                                 onClick={() => !isSetupCompleted && setShowCertForm(true)}
                                 disabled={isSetupCompleted}
                                 style={{
                                   borderRadius: '10px',
                                   fontSize: '12.5px',
-                                  padding: '7px 16px',
-                                  background: isSetupCompleted ? '#94A3B8' : 'linear-gradient(135deg, #00D294 0%, #00B880 100%)',
+                                  padding: '8px 18px',
+                                  background: isSetupCompleted ? '#94A3B8' : 'linear-gradient(135deg, #00D294 0%, #059669 100%)',
                                   color: '#FFFFFF',
                                   border: 'none',
-                                  boxShadow: isSetupCompleted ? 'none' : '0 2px 8px rgba(0, 210, 148, 0.25)',
+                                  boxShadow: isSetupCompleted ? 'none' : '0 3px 12px rgba(0, 210, 148, 0.3)',
                                   opacity: isSetupCompleted ? 0.65 : 1,
                                   cursor: isSetupCompleted ? 'not-allowed' : 'pointer',
+                                  transition: 'all 0.2s ease',
                                 }}
                               >
-                                <span>+ Add Certification</span>
+                                <span style={{ fontSize: '15px', lineHeight: 1 }}>+</span>
+                                <span>Add Certification</span>
                               </button>
                             )}
                           </div>
@@ -4829,7 +4882,10 @@ const KYCVerification = ({
                                           fontSize: '20px',
                                         }}
                                       >
-                                        
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <circle cx="12" cy="8" r="6"></circle>
+                                          <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+                                        </svg>
                                       </div>
                                       <div className="flex-grow-1">
                                         <div className="d-flex align-items-center flex-wrap mb-1.5 gap-2">
@@ -4925,7 +4981,10 @@ const KYCVerification = ({
                             <form onSubmit={handleAddCertification} className="kyc-form-card mt-3">
                               <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                                 <div className="d-flex align-items-center gap-2">
-                                  <span style={{ fontSize: '18px' }}></span>
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="8" r="6"></circle>
+                                    <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+                                  </svg>
                                   <h6 className="font-weight-bold text-dark mb-0" style={{ fontSize: '15px' }}>
                                     Add Professional Certification
                                   </h6>
@@ -4957,12 +5016,12 @@ const KYCVerification = ({
                                 </div>
                                 <div className="col-md-6 mb-2">
                                   <label className="d-block small font-weight-bold text-dark mb-1">
-                                    Issuing Organization / Vendor <span className="text-danger">*</span>
+                                    Issuing Organization <span className="text-danger">*</span>
                                   </label>
                                   <input
                                     type="text"
                                     className="kyc-input-modern"
-                                    placeholder="e.g. Amazon Web Services (AWS) / Google / Microsoft"
+                                    placeholder="e.g. Amazon Web Services, Google, Microsoft"
                                     value={certForm.issuer}
                                     onChange={(e) => setCertForm({ ...certForm, issuer: e.target.value })}
                                     required
@@ -5100,9 +5159,21 @@ const KYCVerification = ({
                           )}
 
                           {certifications.length === 0 && !showCertForm && (
-                            <p className="text-muted small mb-0" style={{ fontSize: '13px' }}>
-                              No certifications added yet. Click "+ Add Certification" above.
-                            </p>
+                            <div
+                              className="text-center py-4 px-3 rounded-lg"
+                              style={{
+                                background: '#F8FAFC',
+                                border: '1.5px dashed #CBD5E1',
+                                borderRadius: '14px',
+                              }}
+                            >
+                              <h6 className="font-weight-bold text-dark mb-1" style={{ fontSize: '14px' }}>
+                                No Professional Certifications Added Yet
+                              </h6>
+                              <p className="text-muted small mb-0" style={{ fontSize: '12.5px', maxWidth: '460px', margin: '0 auto' }}>
+                                Add your tech certifications, licenses, and verified skill badges to showcase your domain expertise.
+                              </p>
+                            </div>
                           )}
                         </div>
                       </div>

@@ -91,7 +91,6 @@ const ProfileNavbar = ({ onUpdate }) => {
       setShowLogoutModal(false);
       try { await dispatch(logoutUser()); } catch (_) {}
       dispatch(logout());
-      toast.success('Logged out successfully!');
       navigate('/login', { replace: true });
     } catch (err) {
       console.error('Logout error:', err);

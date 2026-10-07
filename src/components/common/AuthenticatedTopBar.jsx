@@ -15,8 +15,7 @@ const AuthenticatedTopBar = ({ subtitle = 'Verified Profile Dashboard', onLogout
     } catch (_) {}
     dispatch(logout());
     if (onLogoutSuccess) onLogoutSuccess();
-    toast.success('You have been logged out successfully.');
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const getImageUrl = (imgPath) => {
