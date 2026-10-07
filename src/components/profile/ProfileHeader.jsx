@@ -113,16 +113,16 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
               background: '#051d3d',
               border: '1.5px solid rgba(0, 229, 255, 0.35)',
               borderRadius: '20px',
-              padding: '12px 28px 12px 18px',
-              minWidth: '320px',
-              gap: '20px',
+              padding: '14px 28px 14px 20px',
+              minWidth: '340px',
+              gap: '22px',
               boxShadow: '0 8px 24px rgba(3, 32, 48, 0.4), 0 0 16px rgba(0, 229, 255, 0.18)',
-              height: '113px',
+              minHeight: '150px',
             }}
           >
             {/* Circular Gauge Ring */}
-            <div style={{ position: 'relative', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="90" height="90" viewBox="0 0 90 90" style={{ transform: 'rotate(-90deg)' }}>
+            <div style={{ position: 'relative', width: '130px', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="130" height="130" viewBox="0 0 130 130" style={{ transform: 'rotate(-90deg)' }}>
                 <defs>
                   <linearGradient id="headerScoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#00D294" />
@@ -130,23 +130,23 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
                   </linearGradient>
                 </defs>
                 <circle
-                  cx="45"
-                  cy="45"
-                  r="38"
+                  cx="65"
+                  cy="65"
+                  r="56"
                   fill="transparent"
                   stroke="rgba(255, 255, 255, 0.12)"
-                  strokeWidth="7"
+                  strokeWidth="9"
                 />
                 <circle
-                  cx="45"
-                  cy="45"
-                  r="38"
+                  cx="65"
+                  cy="65"
+                  r="56"
                   fill="transparent"
                   stroke="url(#headerScoreGrad)"
-                  strokeWidth="7"
+                  strokeWidth="9"
                   strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 38}
-                  strokeDashoffset={2 * Math.PI * 38 * (1 - Math.min(100, Math.max(0, displayScore)) / 100)}
+                  strokeDasharray={2 * Math.PI * 56}
+                  strokeDashoffset={2 * Math.PI * 56 * (1 - Math.min(100, Math.max(0, displayScore)) / 100)}
                   style={{ transition: 'stroke-dashoffset 0.8s ease' }}
                 />
               </svg>
@@ -160,10 +160,10 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
                   justifyContent: 'center',
                 }}
               >
-                <span style={{ color: '#FFFFFF', fontSize: '1.7rem', fontWeight: 900, lineHeight: 1 }}>
+                <span style={{ color: '#FFFFFF', fontSize: '2.4rem', fontWeight: 900, lineHeight: 1 }}>
                   {displayScore}
                 </span>
-                <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1, marginTop: '3px' }}>
+                <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.92rem', fontWeight: 700, lineHeight: 1, marginTop: '4px' }}>
                   /100
                 </span>
               </div>
@@ -171,10 +171,10 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
 
             {/* Tier details */}
             <div className="d-flex flex-column justify-content-center">
-              <span style={{ color: '#5EFCE8', fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.4px', lineHeight: 1.2 }}>
+              <span style={{ color: '#5EFCE8', fontSize: '1.35rem', fontWeight: 800, letterSpacing: '0.4px', lineHeight: 1.2 }}>
                 {shortTier} Tier
               </span>
-              <span style={{ color: '#00D294', fontSize: '0.88rem', fontWeight: 700, marginTop: '4px', letterSpacing: '0.2px' }}>
+              <span style={{ color: '#00D294', fontSize: '0.95rem', fontWeight: 700, marginTop: '6px', letterSpacing: '0.2px' }}>
                 • High Trust
               </span>
             </div>
@@ -185,8 +185,8 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
             <svg
               className="candidate-ref-qr-svg"
               viewBox="0 0 29 29"
-              width="64"
-              height="64"
+              width="118"
+              height="118"
               shapeRendering="crispEdges"
             >
               <rect width="29" height="29" fill="#FFFFFF" />

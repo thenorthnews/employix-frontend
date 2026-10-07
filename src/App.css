@@ -899,9 +899,9 @@ input.auth-input-group:disabled {
 .candidate-ref-qr-box {
   position: relative;
   background: #FFFFFF;
-  padding: 6px;
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  padding: 12px;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   border: 1.5px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -913,23 +913,23 @@ input.auth-input-group:disabled {
 .candidate-ref-qr-box:hover {
   transform: translateY(-2px);
   border-color: #00D294;
-  box-shadow: 0 6px 18px rgba(0, 210, 148, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 210, 148, 0.22);
 }
 
 .candidate-ref-qr-svg {
   display: block;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .candidate-ref-qr-corner-accent {
   position: absolute;
   bottom: -4px;
   right: -4px;
-  width: 14px;
-  height: 14px;
-  border-bottom: 3px solid #00D294;
-  border-right: 3px solid #00D294;
-  border-bottom-right-radius: 6px;
+  width: 18px;
+  height: 18px;
+  border-bottom: 3.5px solid #00D294;
+  border-right: 3.5px solid #00D294;
+  border-bottom-right-radius: 8px;
 }
 
 /* ==========================================================================
