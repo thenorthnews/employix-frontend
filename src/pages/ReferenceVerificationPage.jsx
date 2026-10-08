@@ -54,23 +54,6 @@ const ReferenceVerificationPage = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [sessionData, setSessionData] = useState(null);
-  const [redirectCountdown, setRedirectCountdown] = useState(4);
-
-  // Auto-redirect to KYC Verification screen after reference feedback completed
-  useEffect(() => {
-    if (pageState !== 'completed') return;
-    const timer = setInterval(() => {
-      setRedirectCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate('/kyc-verification#step-references');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [pageState, navigate]);
 
   // OTP State
   const [otpCode, setOtpCode] = useState('');
@@ -621,47 +604,39 @@ const ReferenceVerificationPage = () => {
               </div>
               <div className="mb-4">
                 <div
-                  className="d-inline-flex align-items-center px-3 py-2 rounded-pill font-weight-bold"
+                  className="d-inline-flex align-items-center px-4 py-2.5 rounded-pill font-weight-bold"
                   style={{
                     background: 'rgba(0, 210, 148, 0.1)',
                     border: '1px solid rgba(0, 210, 148, 0.3)',
                     color: '#059669',
-                    fontSize: '13px',
+                    fontSize: '13.5px',
                   }}
                 >
-                  <span
-                    className="spinner-grow spinner-grow-sm mr-2"
-                    style={{ width: '9px', height: '9px', color: '#00D294' }}
-                    role="status"
-                  />
-                  Redirecting to KYC Verification screen in{' '}
-                  <span className="mx-1 font-weight-bold" style={{ color: '#00a875', fontSize: '14px' }}>
-                    {redirectCountdown}s
-                  </span>
-                  ...
+                  <span className="mr-2" style={{ fontSize: '16px' }}>✓</span>
+                  Your feedback has been securely submitted. You may safely close this page.
                 </div>
               </div>
 
               <div className="d-flex flex-wrap align-items-center justify-content-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => window.close()}
+                  className="btn btn-outline-secondary font-weight-bold px-4 py-2.5"
+                  style={{ borderRadius: '10px', fontSize: '14px' }}
+                >
+                  Close Window
+                </button>
                 <Link
-                  to="/kyc-verification#step-references"
+                  to="/"
                   className="btn font-weight-bold px-4 py-2.5 text-white shadow-sm"
                   style={{
                     borderRadius: '10px',
                     background: 'linear-gradient(135deg, #00D294 0%, #00b37e 100%)',
                     border: 'none',
                     fontSize: '14px',
-                    boxShadow: '0 4px 14px rgba(0, 210, 148, 0.35)',
                   }}
                 >
-                  Go to KYC Verification Screen &rarr;
-                </Link>
-                <Link
-                  to="/"
-                  className="btn btn-outline-secondary font-weight-bold px-3 py-2"
-                  style={{ borderRadius: '10px', fontSize: '13.5px' }}
-                >
-                  Return to Home
+                  Go to EMPLOYIX Home &rarr;
                 </Link>
               </div>
             </div>

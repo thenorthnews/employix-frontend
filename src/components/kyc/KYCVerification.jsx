@@ -358,13 +358,20 @@ const KYCVerification = ({
     return Boolean(hasDigi || hasQual || hasCert);
   };
 
-  const calculateDynamicScore = (isAadhaarDone, isEmpDone, isVoterDone, isDlDone, isEduDone, isEduVerified = undefined, refCount = undefined) => {
+  const countVerifiedReferences = (refs) => {
+    if (!Array.isArray(refs)) return 0;
+    return refs.filter(
+      (r) => r.isFeedbackSubmitted || r.status === 'completed' || r.isPointsAwarded || r.isVerified
+    ).length;
+  };
+
+  const calculateDynamicScore = (isAadhaarDone, isEpfoDone, isVoterDone, isDlDone, isEduDone, isEduVerified = undefined, refCount = undefined) => {
     const aadhaarPts = isAadhaarDone ? (scoreConfig.aadhaarScore ?? 20) : 0;
     const voterPts = isVoterDone ? (scoreConfig.voterScore ?? 20) : 0;
     const actualEduVerified = isEduVerified !== undefined ? isEduVerified : checkIsEduVerified();
     const eduPts = actualEduVerified ? (scoreConfig.educationScore ?? 20) : 0;
-    const empPts = isEmpDone ? (scoreConfig.employmentScore ?? 30) : 0;
-    const currentRefs = refCount !== undefined ? refCount : (userReferences?.length || 0);
+    const empPts = (isEpfoDone || epfoRecords.length > 0) ? (scoreConfig.employmentScore ?? 30) : 0;
+    const currentRefs = refCount !== undefined ? refCount : countVerifiedReferences(userReferences);
     const validRefs = Math.min(scoreConfig.maxReferencesAllowed ?? 2, Math.max(0, currentRefs));
     const refPts = validRefs * (scoreConfig.referenceScorePerItem ?? 5);
 
@@ -508,7 +515,7 @@ const KYCVerification = ({
           })
         );
       } else {
-        calculateDynamicScore(isAadhaarDone, hasEpfo, isVoterDone, isDlDone, isEduDone, hasVerifiedEdu, (pData.references || []).length);
+        calculateDynamicScore(isAadhaarDone, hasEpfo, isVoterDone, isDlDone, isEduDone, hasVerifiedEdu, countVerifiedReferences(pData.references));
       }
 
       // Restore kycStatus (preserve status 8 if completed)
@@ -962,10 +969,12 @@ const KYCVerification = ({
         setAddressText(extractedAddr);
       }
       const hasEdu = qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0;
-      const clientScore = calculateDynamicScore(true, employmentVerified, voterVerified, dlVerified, hasEdu);
+      const hasVerifiedEdu = checkIsEduVerified();
+      const isEpfoVerified = epfoRecords.length > 0;
+      const clientScore = calculateDynamicScore(true, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       const serverScore = data.newScore !== undefined ? data.newScore : data.employixScore;
       const nextLiveScore = (serverScore !== undefined && serverScore !== null)
-        ? Math.max(Number(serverScore), Number(clientScore))
+        ? Number(serverScore)
         : clientScore;
       updateScoreAndTier(nextLiveScore);
 
@@ -1034,10 +1043,12 @@ const KYCVerification = ({
         setAddressText(data.address.fullAddress);
       }
       const hasEdu = qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0;
-      const clientScore = calculateDynamicScore(aadhaarVerified, employmentVerified, true, dlVerified, hasEdu);
+      const hasVerifiedEdu = checkIsEduVerified();
+      const isEpfoVerified = epfoRecords.length > 0;
+      const clientScore = calculateDynamicScore(aadhaarVerified, isEpfoVerified, true, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       const serverScore = data.newScore !== undefined ? data.newScore : data.employixScore;
       const nextLiveScore = (serverScore !== undefined && serverScore !== null)
-        ? Math.max(Number(serverScore), Number(clientScore))
+        ? Number(serverScore)
         : clientScore;
       updateScoreAndTier(nextLiveScore);
 
@@ -1182,10 +1193,12 @@ const KYCVerification = ({
         setAddressText(data.address.fullAddress);
       }
       const hasEdu = qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0;
-      const clientScore = calculateDynamicScore(aadhaarVerified, employmentVerified, true, dlVerified, hasEdu);
+      const hasVerifiedEdu = checkIsEduVerified();
+      const isEpfoVerified = epfoRecords.length > 0;
+      const clientScore = calculateDynamicScore(aadhaarVerified, isEpfoVerified, true, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       const serverScore = data.newScore !== undefined ? data.newScore : data.employixScore;
       const nextLiveScore = (serverScore !== undefined && serverScore !== null)
-        ? Math.max(Number(serverScore), Number(clientScore))
+        ? Number(serverScore)
         : clientScore;
       updateScoreAndTier(nextLiveScore);
 
@@ -1348,10 +1361,12 @@ const KYCVerification = ({
       setDlResult(data);
 
       const hasEdu = qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0;
-      const clientScore = calculateDynamicScore(aadhaarVerified, employmentVerified, voterVerified, true, hasEdu);
+      const hasVerifiedEdu = checkIsEduVerified();
+      const isEpfoVerified = epfoRecords.length > 0;
+      const clientScore = calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, true, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       const serverScore = data.newScore !== undefined ? data.newScore : data.employixScore;
       const nextLiveScore = (serverScore !== undefined && serverScore !== null)
-        ? Math.max(Number(serverScore), Number(clientScore))
+        ? Number(serverScore)
         : clientScore;
       updateScoreAndTier(nextLiveScore);
 
@@ -1445,10 +1460,11 @@ const KYCVerification = ({
       const epfoList = data.records && data.records.length > 0 ? [data] : [];
       setEpfoRecords(epfoList);
       const hasEdu = qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0;
-      const clientScore = calculateDynamicScore(aadhaarVerified, true, voterVerified, dlVerified, hasEdu);
+      const hasVerifiedEdu = checkIsEduVerified();
+      const clientScore = calculateDynamicScore(aadhaarVerified, true, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       const serverScore = data.newScore !== undefined ? data.newScore : data.employixScore;
       const nextLiveScore = (serverScore !== undefined && serverScore !== null)
-        ? Math.max(Number(serverScore), Number(clientScore))
+        ? Number(serverScore)
         : clientScore;
       updateScoreAndTier(nextLiveScore);
 
@@ -1494,10 +1510,11 @@ const KYCVerification = ({
       const epfoList = Array.isArray(data.records) ? [data] : [];
       setEpfoRecords(epfoList);
       const hasEdu = qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0;
-      const clientScore = calculateDynamicScore(aadhaarVerified, true, voterVerified, dlVerified, hasEdu);
+      const hasVerifiedEdu = checkIsEduVerified();
+      const clientScore = calculateDynamicScore(aadhaarVerified, true, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       const serverScore = data.newScore !== undefined ? data.newScore : data.employixScore;
       const nextLiveScore = (serverScore !== undefined && serverScore !== null)
-        ? Math.max(Number(serverScore), Number(clientScore))
+        ? Number(serverScore)
         : clientScore;
       updateScoreAndTier(nextLiveScore);
 
@@ -1592,7 +1609,7 @@ const KYCVerification = ({
       const isAlreadyEpfoVerified = epfoRecords.length > 0;
       const hasVerifiedEdu = checkIsEduVerified();
       const hasEdu = qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0;
-      const clientScore = calculateDynamicScore(aadhaarVerified, isAlreadyEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+      const clientScore = calculateDynamicScore(aadhaarVerified, isAlreadyEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       const serverScore = data.newScore !== undefined ? data.newScore : data.employixScore;
       const nextLiveScore = (serverScore !== undefined && serverScore !== null)
         ? Number(serverScore)
@@ -1653,7 +1670,7 @@ const KYCVerification = ({
       });
       setKycStatus(nextStatus);
       dispatch(updateUserKycStatus({ employmentStatus: isAlreadyEpfoVerified ? 1 : 0, kycStatus: nextStatus }));
-      calculateDynamicScore(aadhaarVerified, isAlreadyEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+      calculateDynamicScore(aadhaarVerified, isAlreadyEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       toast.success('Employment record removed.');
     } catch (err) {
       toast.error('Failed to delete record.');
@@ -1725,7 +1742,7 @@ const KYCVerification = ({
         updateScoreAndTier(data.employixScore);
       } else {
         const isEpfoVerified = epfoRecords.length > 0;
-        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       }
       toast.success('Educational Qualification added (Not Verified - Points awarded upon verification).');
     } catch (err) {
@@ -1750,7 +1767,7 @@ const KYCVerification = ({
         updateScoreAndTier(data.employixScore);
       } else {
         const isEpfoVerified = epfoRecords.length > 0;
-        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       }
       toast.success('Qualification record deleted.');
     } catch (err) {
@@ -1807,7 +1824,7 @@ const KYCVerification = ({
         updateScoreAndTier(data.employixScore);
       } else {
         const isEpfoVerified = epfoRecords.length > 0;
-        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       }
       toast.success('Professional Certification added (Not Verified - Points awarded upon verification).');
     } catch (err) {
@@ -1831,7 +1848,7 @@ const KYCVerification = ({
         updateScoreAndTier(data.employixScore);
       } else {
         const isEpfoVerified = epfoRecords.length > 0;
-        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, countVerifiedReferences(userReferences));
       }
       toast.success('Certification record deleted.');
     } catch (err) {
@@ -2564,7 +2581,7 @@ const KYCVerification = ({
                                             <line x1="16" y1="17" x2="8" y2="17"></line>
                                           </svg>
                                         </div>
-                                        <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
+                                        <strong className="text-white small text-center kyc-pdf-filename">
                                           {aadhaarFront.name}
                                         </strong>
                                         <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
@@ -2687,7 +2704,7 @@ const KYCVerification = ({
                                             <line x1="16" y1="17" x2="8" y2="17"></line>
                                           </svg>
                                         </div>
-                                        <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
+                                        <strong className="text-white small text-center kyc-pdf-filename">
                                           {aadhaarBack.name}
                                         </strong>
                                         <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
@@ -2745,7 +2762,6 @@ const KYCVerification = ({
                       >
                         <div className="form-check d-flex align-items-center m-0">
                           <input
-                            className="form-check-input mr-3"
                             type="checkbox"
                             id="aadhaarOcrConsent"
                             checked={aadhaarConsent}
@@ -2753,7 +2769,6 @@ const KYCVerification = ({
                             className="form-check-input mr-3 kyc-consent-input"
                           />
                           <label
-                            className="form-check-label mb-0 text-dark"
                             htmlFor="aadhaarOcrConsent"
                             className="form-check-label mb-0 text-dark kyc-consent-label"
                           >
@@ -3056,7 +3071,7 @@ const KYCVerification = ({
                                                 <polyline points="14 2 14 8 20 8"></polyline>
                                               </svg>
                                             </div>
-                                            <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
+                                            <strong className="text-white small text-center kyc-pdf-filename">
                                               {voterFront.name}
                                             </strong>
                                             <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
@@ -3178,7 +3193,7 @@ const KYCVerification = ({
                                                 <polyline points="14 2 14 8 20 8"></polyline>
                                               </svg>
                                             </div>
-                                            <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
+                                            <strong className="text-white small text-center kyc-pdf-filename">
                                               {voterBack.name}
                                             </strong>
                                             <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
@@ -3236,7 +3251,6 @@ const KYCVerification = ({
                           >
                             <div className="form-check d-flex align-items-center m-0">
                               <input
-                                className="form-check-input mr-3"
                                 type="checkbox"
                                 id="voterOcrConsent"
                                 checked={voterOcrConsent}
@@ -3244,7 +3258,6 @@ const KYCVerification = ({
                                 className="form-check-input mr-3 kyc-consent-input"
                               />
                               <label
-                                className="form-check-label mb-0 text-dark"
                                 htmlFor="voterOcrConsent"
                                 className="form-check-label mb-0 text-dark kyc-consent-label"
                               >
@@ -3934,8 +3947,7 @@ const KYCVerification = ({
                                 <div className="row g-2">
                                   <div className="col-7">
                                     <select
-                                      className="form-control auth-input-group px-2"
-                                      className="form-control font-weight-bold kyc-filter-select"
+                                      className="form-control font-weight-bold kyc-filter-select auth-input-group px-2"
                                       value={jobStartMonth}
                                       onChange={(e) => handleJobStartMonth(e.target.value)}
                                       required
@@ -3950,8 +3962,7 @@ const KYCVerification = ({
                                   </div>
                                   <div className="col-5">
                                     <select
-                                      className="form-control auth-input-group px-2"
-                                      className="form-control font-weight-bold kyc-filter-select"
+                                      className="form-control font-weight-bold kyc-filter-select auth-input-group px-2"
                                       value={jobStartYear}
                                       onChange={(e) => handleJobStartYear(e.target.value)}
                                       required
@@ -4127,6 +4138,7 @@ const KYCVerification = ({
                     if (typeof updatedPoints === 'number') {
                       setRewardPoints(updatedPoints);
                     }
+                    fetchInitialData();
                   }}
                 />
               </div>
@@ -5360,7 +5372,7 @@ const KYCVerification = ({
                                             <polyline points="14 2 14 8 20 8"></polyline>
                                           </svg>
                                         </div>
-                                        <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
+                                        <strong className="text-white small text-center kyc-pdf-filename">
                                           {dlFront.name}
                                         </strong>
                                         <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
@@ -5482,7 +5494,7 @@ const KYCVerification = ({
                                             <polyline points="14 2 14 8 20 8"></polyline>
                                           </svg>
                                         </div>
-                                        <strong className="text-white small text-center" className="text-white small text-center kyc-pdf-filename">
+                                        <strong className="text-white small text-center kyc-pdf-filename">
                                           {dlBack.name}
                                         </strong>
                                         <span className="badge badge-teal px-2 py-1 mt-2 text-dark font-weight-bold small">PDF Document</span>
@@ -5540,7 +5552,6 @@ const KYCVerification = ({
                       >
                         <div className="form-check d-flex align-items-center m-0">
                           <input
-                            className="form-check-input mr-3"
                             type="checkbox"
                             id="dlOcrConsent"
                             checked={dlConsent}
@@ -5548,7 +5559,6 @@ const KYCVerification = ({
                             className="form-check-input mr-3 kyc-consent-input"
                           />
                           <label
-                            className="form-check-label mb-0 text-dark"
                             htmlFor="dlOcrConsent"
                             className="form-check-label mb-0 text-dark kyc-consent-label"
                           >

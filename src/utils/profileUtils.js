@@ -181,7 +181,8 @@ export const getKycVerificationFlags = (user) => {
   const hasEpfo = Array.isArray(rawEpfo)
     ? rawEpfo.length > 0
     : Boolean(rawEpfo?.records?.length || rawEpfo?.employerName);
-  const isEmpDone = user.employmentStatus === 1 || hasEpfo;
+  const isEmpDone = user.employmentStatus === 1 || hasEpfo || manualJobs.length > 0;
+  const isEmpVerified = Boolean(hasEpfo);
 
   // Step 4: Voter ID Address
   const isVoterDone = user.voterStatus === 1 || Boolean(user.address) || Boolean(user.voterData);
@@ -215,6 +216,7 @@ export const getKycVerificationFlags = (user) => {
   return {
     isAadhaarDone,
     isEmpDone,
+    isEmpVerified,
     isVoterDone,
     isDlDone,
     isEduVerified,
@@ -293,7 +295,7 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
     };
   }
 
-  const { isAadhaarDone, isEmpDone, isVoterDone, isDlDone, isEduVerified } = getKycVerificationFlags(user);
+  const { isAadhaarDone, isEmpDone, isEmpVerified, isVoterDone, isDlDone, isEduVerified } = getKycVerificationFlags(user);
 
   // Dynamic Score Weights from DB Table (with safe fallback)
   const cfg = user?.profileScoring?.scoreConfig || {};
@@ -315,8 +317,8 @@ export const calculateEmployeeScore = (user, explicitReferences = null) => {
   // 3. Education
   const eduScore = isEduVerified ? eduWeight : 0;
 
-  // 4. Employment
-  const empScore = isEmpDone ? empWeight : 0;
+  // 4. Employment (EPFO only)
+  const empScore = isEmpVerified ? empWeight : 0;
 
   // 5. Employee Reference (Up to maxRefs allowed, refPerItem points each)
   const refsList = explicitReferences || user.references || [];

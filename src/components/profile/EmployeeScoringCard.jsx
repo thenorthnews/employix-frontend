@@ -30,6 +30,7 @@ const EmployeeScoringCard = ({ user, references = null }) => {
   const {
     isAadhaarDone,
     isEmpDone,
+    isEmpVerified,
     isVoterDone,
     isDlDone,
     isEduVerified,
@@ -69,8 +70,8 @@ const EmployeeScoringCard = ({ user, references = null }) => {
     }
   }
 
-  // 4. Employment Record (EPFO / Manual Employment)
-  const employmentScore = isEmpDone ? empMax : 0;
+  // 4. Employment Record (EPFO only awards points)
+  const employmentScore = isEmpVerified ? empMax : 0;
 
   // 5. Conduct & Security (Professional References & Soft Skills Conduct)
   const refsList = references || user?.references || [];
