@@ -39,8 +39,9 @@ const AadhaarSuccessModal = ({
 
   const displayPoints = Number(pointsEarned);
   const finalBadgeText =
-    badgeText ||
-    (displayPoints > 0 ? `Earned +${displayPoints} Points` : 'Verified & Authenticated');
+    badgeText !== undefined
+      ? badgeText
+      : (displayPoints > 0 ? `Earned +${displayPoints} Points` : null);
 
   const finalDescription =
     description ||
@@ -200,25 +201,27 @@ const AadhaarSuccessModal = ({
         </h3>
 
         {/* 3. Points / Status Badge */}
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 22px',
-            borderRadius: '50px',
-            background: 'linear-gradient(135deg, #00D294 0%, #10B981 100%)',
-            color: '#FFFFFF',
-            fontWeight: 800,
-            fontSize: '1.05rem',
-            letterSpacing: '0.01em',
-            boxShadow: '0 4px 14px rgba(0, 210, 148, 0.35)',
-            marginTop: '6px',
-            marginBottom: '14px',
-          }}
-        >
-          <span>{finalBadgeText}</span>
-        </div>
+        {finalBadgeText && (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 22px',
+              borderRadius: '50px',
+              background: 'linear-gradient(135deg, #00D294 0%, #10B981 100%)',
+              color: '#FFFFFF',
+              fontWeight: 800,
+              fontSize: '1.05rem',
+              letterSpacing: '0.01em',
+              boxShadow: '0 4px 14px rgba(0, 210, 148, 0.35)',
+              marginTop: '6px',
+              marginBottom: '14px',
+            }}
+          >
+            <span>{finalBadgeText}</span>
+          </div>
+        )}
 
         {/* Short Subtitle */}
         <p

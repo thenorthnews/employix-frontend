@@ -463,9 +463,6 @@ const ProfessionalReferenceSection = ({
               </svg>
               Professional References (Managers / Peers)
             </h5>
-            <small className="text-muted">
-              Add up to 2 managers or colleagues to verify candidate's tenure, conduct &amp; soft skills
-            </small>
           </div>
           <button
             type="button"
@@ -508,12 +505,9 @@ const ProfessionalReferenceSection = ({
               borderRadius: '14px',
             }}
           >
-            <h6 className="font-weight-bold text-dark mb-1" style={{ fontSize: '14px' }}>
+            <h6 className="font-weight-bold text-dark mb-0" style={{ fontSize: '14px' }}>
               No Professional References Added Yet
             </h6>
-            <p className="text-muted small mb-0" style={{ fontSize: '12.5px', maxWidth: '460px', margin: '0 auto' }}>
-              Add up to 2 managers or colleagues to verify candidate's tenure, conduct &amp; soft skills.
-            </p>
           </div>
         ) : (
         /* Modern High-End Table Format */

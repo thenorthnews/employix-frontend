@@ -341,7 +341,6 @@ const KYCVerification = ({
   };
 
   const checkIsEduVerified = () => {
-    if (user?.educationStatus === 1) return true;
     const hasDigi = digilockerDocuments && digilockerDocuments.some((d) => {
       const norm = (d.docType || '').toLowerCase();
       const name = (d.docName || '').toLowerCase();
@@ -349,6 +348,7 @@ const KYCVerification = ({
         !['aadhaar', 'pan', 'driving_license', 'voter_id'].includes(norm) &&
         !name.includes('aadhaar') &&
         !name.includes('pan card') &&
+        !name.includes('income tax') &&
         !name.includes('voter') &&
         !name.includes('driving license')
       );
@@ -481,12 +481,19 @@ const KYCVerification = ({
       if (epfoList && Array.isArray(epfoList)) {
         setEpfoRecords(epfoList);
       }
-      if (isEmpDone) {
+      const hasManualEmp = (pData.manualEmployment && Array.isArray(pData.manualEmployment) && pData.manualEmployment.length > 0);
+      if (isEmpDone || hasManualEmp) {
         setEmploymentVerified(true);
       }
 
       // Score & Tier: Prioritize authoritative server score, avoiding premature low-score overwrites
-      const hasVerifiedEdu = loadedDocs.length > 0 || loadedQuals.some(q => q.isVerified && q.verificationStatus === 'verified') || loadedCerts.some(c => c.isVerified && c.verificationStatus === 'verified');
+      const nonEduTypes = ['aadhaar', 'pan', 'driving_license', 'voter_id'];
+      const realEduDocs = loadedDocs.filter(d => {
+        const norm = (d.docType || '').toLowerCase();
+        const name = (d.docName || '').toLowerCase();
+        return !nonEduTypes.includes(norm) && !name.includes('aadhaar') && !name.includes('pan card') && !name.includes('income tax') && !name.includes('voter') && !name.includes('driving license');
+      });
+      const hasVerifiedEdu = realEduDocs.length > 0 || loadedQuals.some(q => q.isVerified && q.verificationStatus === 'verified') || loadedCerts.some(c => c.isVerified && c.verificationStatus === 'verified');
       const authoritativeScore = pData.employixScore ?? user?.employixScore;
       if (authoritativeScore !== undefined && authoritativeScore !== null && Number(authoritativeScore) > 0) {
         updateScoreAndTier(Number(authoritativeScore));
@@ -501,7 +508,7 @@ const KYCVerification = ({
           })
         );
       } else {
-        calculateDynamicScore(isAadhaarDone, isEmpDone, isVoterDone, isDlDone, isEduDone, hasVerifiedEdu, (pData.references || []).length);
+        calculateDynamicScore(isAadhaarDone, hasEpfo, isVoterDone, isDlDone, isEduDone, hasVerifiedEdu, (pData.references || []).length);
       }
 
       // Restore kycStatus (preserve status 8 if completed)
@@ -1578,21 +1585,23 @@ const KYCVerification = ({
       const res = await addManualEmploymentApi(jobForm);
       const data = res.data?.data || res.data || res;
       setManualJobs((prev) => [data.record || jobForm, ...prev]);
+      setEmploymentVerified(true);
       setShowJobForm(false);
       setJobForm({ companyName: '', designation: '', startDate: '', endDate: '', isCurrent: false, description: '' });
 
       const isAlreadyEpfoVerified = epfoRecords.length > 0;
+      const hasVerifiedEdu = checkIsEduVerified();
       const hasEdu = qualifications.length > 0 || certifications.length > 0 || digilockerDocuments.length > 0;
-      const clientScore = calculateDynamicScore(aadhaarVerified, isAlreadyEpfoVerified, voterVerified, dlVerified, hasEdu);
+      const clientScore = calculateDynamicScore(aadhaarVerified, isAlreadyEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
       const serverScore = data.newScore !== undefined ? data.newScore : data.employixScore;
       const nextLiveScore = (serverScore !== undefined && serverScore !== null)
-        ? Math.max(Number(serverScore), Number(clientScore))
+        ? Number(serverScore)
         : clientScore;
       updateScoreAndTier(nextLiveScore);
 
       const nextStatus = data.kycStatus || recomputeKyc({
         isAadhaar: aadhaarVerified,
-        isEmp: isAlreadyEpfoVerified,
+        isEmp: true,
         isVoter: voterVerified,
         isDl: dlVerified,
         hasEdu,
@@ -1605,7 +1614,14 @@ const KYCVerification = ({
         kycStatus: nextStatus,
       }));
 
-      toast.info('Employment record added as Self-Reported (Not Verified · 0 Points).');
+      showVerificationSuccessModal({
+        title: 'Success!',
+        pointsEarned: 0,
+        badgeText: null,
+        description: 'Employment Record added (Not Verified - Points awarded upon verification).',
+        buttonText: 'Got It',
+        targetStepId: 'step-references',
+      });
     } catch (err) {
       toast.error(err.message || 'Failed to add employment record.');
     } finally {
@@ -1618,22 +1634,26 @@ const KYCVerification = ({
     try {
       const res = await deleteManualEmploymentApi(id);
       const data = res.data || res;
-      setManualJobs(prev => prev.filter(j => j._id !== id));
-      if (data.employmentStatus === 0 && epfoRecords.length === 0) {
+      const remainingJobs = manualJobs.filter(j => j._id !== id);
+      setManualJobs(remainingJobs);
+      const hasAnyEmp = remainingJobs.length > 0 || epfoRecords.length > 0;
+      if (!hasAnyEmp) {
         setEmploymentVerified(false);
-        const hasEdu = qualifications.length > 0 || certifications.length > 0;
-        const nextStatus = recomputeKyc({
-          isAadhaar: aadhaarVerified,
-          isEmp: false,
-          isVoter: voterVerified,
-          isDl: dlVerified,
-          hasEdu,
-          isProfile: profileSaved,
-        });
-        setKycStatus(nextStatus);
-        dispatch(updateUserKycStatus({ employmentStatus: 0, kycStatus: nextStatus }));
-        calculateDynamicScore(aadhaarVerified, false, voterVerified, dlVerified, hasEdu);
       }
+      const isAlreadyEpfoVerified = epfoRecords.length > 0;
+      const hasEdu = qualifications.length > 0 || certifications.length > 0;
+      const hasVerifiedEdu = checkIsEduVerified();
+      const nextStatus = recomputeKyc({
+        isAadhaar: aadhaarVerified,
+        isEmp: hasAnyEmp,
+        isVoter: voterVerified,
+        isDl: dlVerified,
+        hasEdu,
+        isProfile: profileSaved,
+      });
+      setKycStatus(nextStatus);
+      dispatch(updateUserKycStatus({ employmentStatus: isAlreadyEpfoVerified ? 1 : 0, kycStatus: nextStatus }));
+      calculateDynamicScore(aadhaarVerified, isAlreadyEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
       toast.success('Employment record removed.');
     } catch (err) {
       toast.error('Failed to delete record.');
@@ -1643,9 +1663,10 @@ const KYCVerification = ({
   // Helper to recompute overall KYC status for education
   const updateEducationKycStatus = (qualsList, certsList) => {
     const hasEdu = (qualsList && qualsList.length > 0) || (certsList && certsList.length > 0);
+    const hasEmp = employmentVerified || epfoRecords.length > 0 || manualJobs.length > 0;
     const computedStatus = recomputeKyc({
       isAadhaar: aadhaarVerified,
-      isEmp: employmentVerified,
+      isEmp: hasEmp,
       isVoter: voterVerified,
       isDl: dlVerified,
       hasEdu,
@@ -1703,7 +1724,8 @@ const KYCVerification = ({
       if (data?.employixScore !== undefined && data?.employixScore !== null) {
         updateScoreAndTier(data.employixScore);
       } else {
-        calculateDynamicScore(aadhaarVerified, employmentVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+        const isEpfoVerified = epfoRecords.length > 0;
+        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
       }
       toast.success('Educational Qualification added (Not Verified - Points awarded upon verification).');
     } catch (err) {
@@ -1727,7 +1749,8 @@ const KYCVerification = ({
       if (data?.employixScore !== undefined && data?.employixScore !== null) {
         updateScoreAndTier(data.employixScore);
       } else {
-        calculateDynamicScore(aadhaarVerified, employmentVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+        const isEpfoVerified = epfoRecords.length > 0;
+        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
       }
       toast.success('Qualification record deleted.');
     } catch (err) {
@@ -1783,7 +1806,8 @@ const KYCVerification = ({
       if (data?.employixScore !== undefined && data?.employixScore !== null) {
         updateScoreAndTier(data.employixScore);
       } else {
-        calculateDynamicScore(aadhaarVerified, employmentVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+        const isEpfoVerified = epfoRecords.length > 0;
+        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
       }
       toast.success('Professional Certification added (Not Verified - Points awarded upon verification).');
     } catch (err) {
@@ -1806,7 +1830,8 @@ const KYCVerification = ({
       if (data?.employixScore !== undefined && data?.employixScore !== null) {
         updateScoreAndTier(data.employixScore);
       } else {
-        calculateDynamicScore(aadhaarVerified, employmentVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
+        const isEpfoVerified = epfoRecords.length > 0;
+        calculateDynamicScore(aadhaarVerified, isEpfoVerified, voterVerified, dlVerified, hasEdu, hasVerifiedEdu, userReferences?.length || 0);
       }
       toast.success('Certification record deleted.');
     } catch (err) {
@@ -1911,7 +1936,7 @@ const KYCVerification = ({
   const isProfileDone = Boolean(profileSaved && designation && designation.trim().length > 0);
   const isAadhaarDone = Boolean(aadhaarVerified);
   const isVoterDone = Boolean(voterVerified);
-  const isEmpDone = Boolean(employmentVerified);
+  const isEmpDone = Boolean(employmentVerified || epfoRecords.length > 0 || manualJobs.length > 0);
   const isRefDone = Boolean(
     userReferences &&
     userReferences.length > 0 &&
@@ -1958,7 +1983,7 @@ const KYCVerification = ({
       } else if (!isVoterDone) {
         toast.error('Step 3 incomplete: Voter ID verification is required.');
       } else if (!isEmpDone) {
-        toast.error('Step 4 incomplete: Verified EPFO Employment history is required.');
+        toast.error('Step 4 incomplete: Employment history (EPFO or Manual) is required.');
       } else if (!isRefDone) {
         toast.error('Step 5 incomplete: At least 1 Professional Reference must be verified (feedback submitted by referee).');
       } else if (!isEduDone) {
@@ -4144,9 +4169,6 @@ const KYCVerification = ({
                           <span className="font-weight-bold text-dark" style={{ fontSize: '1rem' }}>
                             Verification Method
                           </span>
-                          {educationMode === 'digilocker' && hasDigilockerVerified && (
-                            <span className="kyc-badge-verified">✓ DigiLocker Verified</span>
-                          )}
                         </div>
                       </div>
 
