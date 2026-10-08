@@ -125,14 +125,15 @@ export const resolveDocumentUrl = (docPath) => {
  * @returns {string}
  */
 export const formatEmployixId = (rawId, userId = '') => {
-  if (rawId && rawId.startsWith('EMX')) {
-    return rawId;
+  if (rawId && typeof rawId === 'string' && rawId.trim()) {
+    return rawId.trim();
   }
-  if (rawId && rawId.startsWith('#EMP-')) {
-    return rawId.replace('#EMP-', 'EMX-4021-').replace('-IN', '-1934');
+  if (userId) {
+    const idStr = String(userId);
+    const suffix = idStr.length >= 4 ? idStr.slice(-4).toUpperCase() : idStr.toUpperCase();
+    return `#EMP-${suffix}-IN`;
   }
-  const fallbackSuffix = userId ? userId.slice(-4).toUpperCase() : '7758';
-  return `EMX-4021-${fallbackSuffix}-1934`;
+  return '#EMP-IN';
 };
 
 /**

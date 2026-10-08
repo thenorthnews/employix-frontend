@@ -491,28 +491,7 @@ const ProfessionalReferenceSection = ({
           </button>
         </div>
 
-        {/* Scoring Policy Info Strip */}
-        <div
-          className="p-2 px-3 rounded-lg mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
-          style={{ background: '#f8f9fa', border: '1px solid #e2e8f0' }}
-        >
-       
-          <div className="d-flex align-items-center gap-2">
-            <span className="badge badge-light border text-muted font-weight-bold px-2 py-1" style={{ fontSize: '11px' }}>
-              {references.length}/2 Added
-            </span>
-            <span
-              className="badge font-weight-bold px-2 py-1"
-              style={{
-                background: scores.completedReferencesCount > 0 ? '#dcfce7' : '#fef3c7',
-                color: scores.completedReferencesCount > 0 ? '#15803d' : '#92400e',
-                fontSize: '11px',
-              }}
-            >
-              {scores.completedReferencesCount}/2 Verified (+{displayEarned} Pts)
-            </span>
-          </div>
-        </div>
+
 
         {/* Main Content Area */}
         {loading ? (
@@ -521,9 +500,20 @@ const ProfessionalReferenceSection = ({
             <span className="small text-muted d-block mt-2 font-weight-bold">Loading professional references...</span>
           </div>
         ) : references.length === 0 ? (
-          /* Empty State matching Image 2 */
-          <div className="py-2">
-           
+          <div
+            className="text-center py-4 px-3 rounded-lg my-2"
+            style={{
+              background: '#F8FAFC',
+              border: '1.5px dashed #CBD5E1',
+              borderRadius: '14px',
+            }}
+          >
+            <h6 className="font-weight-bold text-dark mb-1" style={{ fontSize: '14px' }}>
+              No Professional References Added Yet
+            </h6>
+            <p className="text-muted small mb-0" style={{ fontSize: '12.5px', maxWidth: '460px', margin: '0 auto' }}>
+              Add up to 2 managers or colleagues to verify candidate's tenure, conduct &amp; soft skills.
+            </p>
           </div>
         ) : (
         /* Modern High-End Table Format */
@@ -882,7 +872,7 @@ const ProfessionalReferenceSection = ({
 
                     {/* 1. Name with Regex Validation */}
                     <div className="form-group mb-3">
-                      <label className="font-weight-bold text-dark small">
+                      <label className="font-weight-bold text-dark mb-1 d-block" style={{ fontSize: '0.9rem' }}>
                         Reference Full Name <span className="text-danger font-weight-bold">*</span>
                       </label>
                       <input
@@ -901,20 +891,16 @@ const ProfessionalReferenceSection = ({
                         disabled={submitting}
                         style={{ height: '44px', borderRadius: '10px' }}
                       />
-                      {fieldErrors.name ? (
-                        <div className="invalid-feedback d-block small font-weight-bold">
+                      {fieldErrors.name && (
+                        <div className="invalid-feedback d-block small font-weight-bold mt-1">
                           {fieldErrors.name}
                         </div>
-                      ) : (
-                        <small className="form-text text-muted">
-                          Only letters, spaces, and periods allowed (2-50 characters).
-                        </small>
                       )}
                     </div>
 
                     {/* 2. Email with Regex Validation */}
                     <div className="form-group mb-3">
-                      <label className="font-weight-bold text-dark small">
+                      <label className="font-weight-bold text-dark mb-1 d-block" style={{ fontSize: '0.9rem' }}>
                         Professional Email Address <span className="text-danger font-weight-bold">*</span>
                       </label>
                       <input
@@ -933,20 +919,16 @@ const ProfessionalReferenceSection = ({
                         disabled={submitting}
                         style={{ height: '44px', borderRadius: '10px' }}
                       />
-                      {fieldErrors.email ? (
-                        <div className="invalid-feedback d-block small font-weight-bold">
+                      {fieldErrors.email && (
+                        <div className="invalid-feedback d-block small font-weight-bold mt-1">
                           {fieldErrors.email}
                         </div>
-                      ) : (
-                        <small className="form-text text-muted">
-                          Must be a valid email format. Verification link &amp; OTP will be sent here.
-                        </small>
                       )}
                     </div>
 
                     {/* 3. Role with Regex Validation */}
                     <div className="form-group mb-3">
-                      <label className="font-weight-bold text-dark small">
+                      <label className="font-weight-bold text-dark mb-1 d-block" style={{ fontSize: '0.9rem' }}>
                         Role / Designation <span className="text-danger font-weight-bold">*</span>
                       </label>
                       <input
@@ -965,14 +947,10 @@ const ProfessionalReferenceSection = ({
                         disabled={submitting}
                         style={{ height: '44px', borderRadius: '10px' }}
                       />
-                      {fieldErrors.role ? (
-                        <div className="invalid-feedback d-block small font-weight-bold">
+                      {fieldErrors.role && (
+                        <div className="invalid-feedback d-block small font-weight-bold mt-1">
                           {fieldErrors.role}
                         </div>
-                      ) : (
-                        <small className="form-text text-muted">
-                          e.g. Project Manager, Tech Lead, Senior Developer (2-60 characters).
-                        </small>
                       )}
                     </div>
                   </div>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { logout, logoutUser } from '../../redux/slices/authSlice';
+import { formatEmployixId } from '../../utils/profileUtils';
 
 const AuthenticatedTopBar = ({ subtitle = 'Verified Profile Dashboard', onLogoutSuccess }) => {
   const dispatch = useDispatch();
@@ -26,7 +27,7 @@ const AuthenticatedTopBar = ({ subtitle = 'Verified Profile Dashboard', onLogout
 
   const userName = user?.name || 'Verified Candidate';
   const userAvatar = getImageUrl(user?.profileImage);
-  const employixId = user?.employixId || (user?._id ? `EMX-${user._id.slice(-4).toUpperCase()}-1934` : 'EMX-4021-7758-1934');
+  const employixId = formatEmployixId(user?.employixId, user?._id);
 
   return (
     <header className="authenticated-top-bar">

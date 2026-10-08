@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import ButtonSpinner from '../common/Loader';
 import { updateProfileApi } from '../../api/authApi';
 import { updateUserKycStatus, updateProfileSuccess } from '../../redux/slices/authSlice';
+import { formatEmployixId } from '../../utils/profileUtils';
 
 const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   const dispatch = useDispatch();
@@ -19,13 +20,14 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   // Read-only values from user
   const phone = user?.phoneNumber || user?.phone || '';
   const email = user?.email || '';
-  const formattedId = user?.employixId || (user?._id ? `#EMP-${user._id.slice(-4).toUpperCase()}-IN` : '#EMP-5178-IN');
+  const formattedId = formatEmployixId(user?.employixId, user?._id);
 
   // Photo Upload State
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('/images/identity.jpg');
   const [saving, setSaving] = useState(false);
   const [designationError, setDesignationError] = useState('');
+  const [photoError, setPhotoError] = useState('');
 
   // Helper for image url resolution
   const resolveImageUrl = (imgPath) => {
@@ -103,16 +105,21 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload a valid image file (PNG, JPG, WEBP).');
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const fileExt = file.name ? file.name.split('.').pop().toLowerCase() : '';
+    const allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
+
+    if (!allowedTypes.includes(file.type) || !allowedExts.includes(fileExt)) {
+      setPhotoError('Only JPG, PNG and WEBP images are allowed.');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB.');
+      setPhotoError('Image size must be less than 5MB.');
       return;
     }
 
+    setPhotoError('');
     setPhotoFile(file);
     const objectUrl = URL.createObjectURL(file);
     setPhotoPreview(objectUrl);
@@ -128,7 +135,6 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
 
     if (!designation.trim()) {
       setDesignationError('Professional Designation / Role is required.');
-      toast.error('Professional Designation / Role is required.');
       return;
     }
     setDesignationError('');
@@ -380,7 +386,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    accept="image/*"
                     onChange={handlePhotoChange}
                     style={{ display: 'none' }}
                   />
@@ -390,43 +396,53 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                   <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
                     {fullName.trim() || 'Candidate Name'}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      color: '#00A876',
-                      fontWeight: 600,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    Change Picture
-                  </button>
-                  {photoFile && (
+                  <div>
                     <button
                       type="button"
-                      onClick={() => {
-                        setPhotoFile(null);
-                        setPhotoPreview(resolveImageUrl(user?.profileImage));
-                      }}
+                      onClick={() => fileInputRef.current?.click()}
                       style={{
                         background: 'none',
                         border: 'none',
                         padding: 0,
-                        marginLeft: '12px',
-                        color: '#EF4444',
+                        color: '#00A876',
                         fontWeight: 600,
                         fontSize: '0.84rem',
                         cursor: 'pointer',
+                        textDecoration: 'none',
                       }}
                     >
-                      Reset
+                      Change Picture
                     </button>
-                  )}
+                    {photoFile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhotoFile(null);
+                          setPhotoPreview(resolveImageUrl(user?.profileImage));
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          marginLeft: '12px',
+                          color: '#EF4444',
+                          fontWeight: 600,
+                          fontSize: '0.84rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Reset
+                      </button>
+                    )}
+                    <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>
+                      JPG, PNG or WEBP (Max 5MB)
+                    </span>
+                    {photoError && (
+                      <span style={{ display: 'block', fontSize: '0.78rem', color: '#EF4444', fontWeight: 600, marginTop: '3px' }}>
+                        {photoError}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 

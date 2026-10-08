@@ -16,7 +16,7 @@ const KycScoreGauge = ({ score = 0 }) => {
     scoreBgLight: '#FEF2F2',
     scoreBorderLight: 'rgba(239, 68, 68, 0.35)',
     glowLight: 'rgba(239, 68, 68, 0.35)',
-    scoreLabel: 'Basic Trust',
+    scoreLabel: 'Building Trust',
     knobColor: '#DC2626',
   };
 
@@ -30,7 +30,7 @@ const KycScoreGauge = ({ score = 0 }) => {
       scoreBgLight: 'rgba(0, 210, 148, 0.12)',
       scoreBorderLight: 'rgba(0, 210, 148, 0.4)',
       glowLight: 'rgba(0, 210, 148, 0.35)',
-      scoreLabel: 'High Trust',
+      scoreLabel: 'Elite Trust',
       knobColor: '#00D294',
     };
   } else if (numericScore > 20) {
@@ -43,7 +43,7 @@ const KycScoreGauge = ({ score = 0 }) => {
       scoreBgLight: '#FFFBEB',
       scoreBorderLight: 'rgba(245, 158, 11, 0.4)',
       glowLight: 'rgba(245, 158, 11, 0.35)',
-      scoreLabel: 'Moderate Trust',
+      scoreLabel: 'Verified Trust',
       knobColor: '#EA580C',
     };
   }

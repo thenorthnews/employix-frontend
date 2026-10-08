@@ -590,8 +590,20 @@ const KYCVerification = ({
 
   // Handle Photo selection
   const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      const fileExt = file.name ? file.name.split('.').pop().toLowerCase() : '';
+      const allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
+
+      if (!allowedTypes.includes(file.type) || !allowedExts.includes(fileExt)) {
+        setProfileErrors((prev) => ({ ...prev, photo: 'Only JPG, PNG and WEBP images are allowed' }));
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setProfileErrors((prev) => ({ ...prev, photo: 'Image size must be less than 5MB' }));
+        return;
+      }
       setProfilePhotoFile(file);
       setProfilePhotoPreview(URL.createObjectURL(file));
       setProfileSaved(false);
@@ -627,12 +639,6 @@ const KYCVerification = ({
 
     if (hasError) {
       setProfileErrors(newErrors);
-      if (!isSilent) {
-        if (newErrors.designation) toast.error(newErrors.designation);
-        else if (newErrors.photo) toast.error(newErrors.photo);
-        else if (newErrors.name) toast.error(newErrors.name);
-        else if (newErrors.phone) toast.error(newErrors.phone);
-      }
       return;
     }
 
@@ -2199,6 +2205,9 @@ const KYCVerification = ({
                             <>Upload Profile Photo <span className="text-danger">*</span></>
                           )}
                         </span>
+                        <span className="d-block text-muted" style={{ fontSize: '0.74rem', marginTop: '2px', color: '#64748B' }}>
+                          JPG, PNG or WEBP (Max 5MB)
+                        </span>
                         {profileErrors.photo && !profileSaved && (
                           <small className="text-danger font-weight-bold mt-1 d-block" style={{ fontSize: '0.82rem' }}>
                             {profileErrors.photo}
@@ -3290,18 +3299,8 @@ const KYCVerification = ({
                           <span className="font-weight-bold text-dark" style={{ fontSize: '1rem' }}>
                             Employment Method
                           </span>
-                          {empMethod === 'uan' ? (
-                            epfoRecords.length > 0 ? (
-                              <span className="kyc-badge-verified">✓ EPFO Authenticated</span>
-                            ) : (
-                              <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '3px 9px', borderRadius: '20px' }}>
-                                UAN / EPFO
-                              </span>
-                            )
-                          ) : (
-                            <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0', padding: '3px 9px', borderRadius: '20px' }}>
-                              Manual Entry
-                            </span>
+                          {empMethod === 'uan' && epfoRecords.length > 0 && (
+                            <span className="kyc-badge-verified">✓ EPFO Authenticated</span>
                           )}
                         </div>
                       </div>
@@ -3855,14 +3854,8 @@ const KYCVerification = ({
                                 <h6 className="mb-0 font-weight-bold text-dark" style={{ fontSize: '15px' }}>
                                   Add Employment Record
                                 </h6>
-                                <small className="text-muted" style={{ fontSize: '12px' }}>
-                                  Manual entry (0 points) &bull; For +30 points, verify via UAN lookup
-                                </small>
                               </div>
                             </div>
-                            <span className="badge bg-light text-muted border px-2 py-1 small mt-1 mt-sm-0">
-                              * Required fields
-                            </span>
                           </div>
 
                           <form onSubmit={handleAddManualJob}>
@@ -4151,18 +4144,8 @@ const KYCVerification = ({
                           <span className="font-weight-bold text-dark" style={{ fontSize: '1rem' }}>
                             Verification Method
                           </span>
-                          {educationMode === 'digilocker' ? (
-                            hasDigilockerVerified ? (
-                              <span className="kyc-badge-verified">✓ DigiLocker Verified</span>
-                            ) : (
-                              <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '3px 9px', borderRadius: '20px' }}>
-                                DigiLocker
-                              </span>
-                            )
-                          ) : (
-                            <span className="badge font-weight-bold" style={{ fontSize: '11px', background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0', padding: '3px 9px', borderRadius: '20px' }}>
-                              Manual Upload
-                            </span>
+                          {educationMode === 'digilocker' && hasDigilockerVerified && (
+                            <span className="kyc-badge-verified">✓ DigiLocker Verified</span>
                           )}
                         </div>
                       </div>
