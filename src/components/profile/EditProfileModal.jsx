@@ -26,7 +26,9 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('/images/identity.jpg');
   const [saving, setSaving] = useState(false);
+  const [nameError, setNameError] = useState('');
   const [designationError, setDesignationError] = useState('');
+  const [addressError, setAddressError] = useState('');
   const [photoError, setPhotoError] = useState('');
 
   // Helper for image url resolution
@@ -56,8 +58,11 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   // Populate fields when modal opens or user prop changes
   useEffect(() => {
     if (user && isOpen) {
-      setFullName(user.name || '');
-      setDesignation((user.designation || '').trim());
+      setFullName((user.name || '').slice(0, 50));
+      setDesignation((user.designation || '').trim().slice(0, 60));
+      setNameError('');
+      setDesignationError('');
+      setAddressError('');
 
       // Gender: user.gender, with fallback to UIDAI / Voter
       const initialGender = user.gender || user.aadhaarData?.gender || user.voterData?.gender || '';
@@ -77,7 +82,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
       } else if (user.voterData?.address) {
         initialAddress = typeof user.voterData.address === 'string' ? user.voterData.address : (user.voterData.address?.fullAddress || '');
       }
-      setAddress(initialAddress || '');
+      setAddress((initialAddress || '').slice(0, 250));
 
       const currentImg = user.profileImage;
       if (currentImg) {
@@ -110,7 +115,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
     const allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
 
     if (!allowedTypes.includes(file.type) || !allowedExts.includes(fileExt)) {
-      setPhotoError('Only JPG, PNG and WEBP images are allowed.');
+      setPhotoError('Only JPG, JPEG, PNG and WEBP images are allowed.');
       return;
     }
 
@@ -128,16 +133,44 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    let hasError = false;
+
     if (!fullName.trim()) {
-      toast.error('Full Name is required.');
-      return;
+      setNameError('Full Name is required.');
+      hasError = true;
+    } else if (fullName.trim().length < 2) {
+      setNameError('Full Name must be at least 2 characters.');
+      hasError = true;
+    } else if (fullName.length > 50) {
+      setNameError('Full Name cannot exceed 50 characters.');
+      hasError = true;
+    } else {
+      setNameError('');
     }
 
     if (!designation.trim()) {
       setDesignationError('Professional Designation / Role is required.');
+      hasError = true;
+    } else if (designation.trim().length < 2) {
+      setDesignationError('Designation must be at least 2 characters.');
+      hasError = true;
+    } else if (designation.length > 60) {
+      setDesignationError('Designation cannot exceed 60 characters.');
+      hasError = true;
+    } else {
+      setDesignationError('');
+    }
+
+    if (address && address.length > 250) {
+      setAddressError('Address cannot exceed 250 characters.');
+      hasError = true;
+    } else {
+      setAddressError('');
+    }
+
+    if (hasError) {
       return;
     }
-    setDesignationError('');
 
     setSaving(true);
     try {
@@ -335,12 +368,12 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: '14px',
+                minWidth: 0,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1 1 240px', minWidth: 0 }}>
                 {/* Avatar with Camera Icon */}
-                <div
-                  style={{ position: 'relative', cursor: 'pointer' }}
+                <div style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
                   onClick={() => fileInputRef.current?.click()}
                   title="Click to upload profile photo"
                 >
@@ -392,8 +425,18 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                   />
                 </div>
 
-                <div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                <div style={{ flex: '1 1 auto', minWidth: 0, overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      color: '#0F172A',
+                      marginBottom: '4px',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere',
+                      lineHeight: '1.3',
+                    }}
+                  >
                     {fullName.trim() || 'Candidate Name'}
                   </div>
                   <div>
@@ -435,7 +478,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                       </button>
                     )}
                     <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>
-                      JPG, PNG or WEBP (Max 5MB)
+                      JPG, JPEG, PNG or WEBP (Max 5MB)
                     </span>
                     {photoError && (
                       <span style={{ display: 'block', fontSize: '0.78rem', color: '#EF4444', fontWeight: 600, marginTop: '3px' }}>
@@ -457,6 +500,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                   alignItems: 'center',
                   gap: '6px',
                   fontSize: '0.85rem',
+                  flexShrink: 0,
                 }}
               >
                 <span style={{ color: '#64748B', fontWeight: 500 }}>ID:</span>
@@ -468,28 +512,37 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
             <div className="row g-3 text-left">
               {/* Full Name */}
               <div className="col-md-6 mb-3">
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.86rem',
-                    fontWeight: 600,
-                    color: '#334155',
-                    marginBottom: '6px',
-                  }}
-                >
-                  Full Name <span style={{ color: '#EF4444' }}>*</span>
-                </label>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.86rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      marginBottom: 0,
+                    }}
+                  >
+                    Full Name <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <span style={{ fontSize: '0.74rem', color: (fullName.length >= 50 || nameError) ? '#EF4444' : '#94A3B8', fontWeight: 500 }}>
+                    {fullName.length}/50
+                  </span>
+                </div>
                 <input
                   type="text"
+                  maxLength={50}
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.slice(0, 50);
+                    setFullName(val);
+                    if (nameError) setNameError('');
+                  }}
                   placeholder="Enter full name"
-                  required
                   style={{
                     width: '100%',
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    border: '1.5px solid #CBD5E1',
+                    border: nameError ? '1.5px solid #EF4444' : '1.5px solid #CBD5E1',
                     fontSize: '0.94rem',
                     color: '#0F172A',
                     outline: 'none',
@@ -497,14 +550,24 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                     transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#00D294';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(0, 210, 148, 0.18)';
+                    e.target.style.borderColor = nameError ? '#EF4444' : '#00D294';
+                    e.target.style.boxShadow = nameError ? '0 0 0 3px rgba(239, 68, 68, 0.18)' : '0 0 0 3px rgba(0, 210, 148, 0.18)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = '#CBD5E1';
+                    e.target.style.borderColor = nameError ? '#EF4444' : '#CBD5E1';
                     e.target.style.boxShadow = 'none';
                   }}
                 />
+                {nameError && (
+                  <small style={{ color: '#EF4444', fontWeight: 600, fontSize: '0.82rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    {nameError}
+                  </small>
+                )}
               </div>
 
               {/* Gender */}
@@ -555,22 +618,29 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
 
               {/* Professional Designation / Role */}
               <div className="col-12 mb-3">
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.86rem',
-                    fontWeight: 600,
-                    color: '#334155',
-                    marginBottom: '6px',
-                  }}
-                >
-                  Professional Designation / Role <span style={{ color: '#EF4444' }}>*</span>
-                </label>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.86rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      marginBottom: 0,
+                    }}
+                  >
+                    Professional Designation / Role <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <span style={{ fontSize: '0.74rem', color: (designation.length >= 60 || designationError) ? '#EF4444' : '#94A3B8', fontWeight: 500 }}>
+                    {designation.length}/60
+                  </span>
+                </div>
                 <input
                   type="text"
+                  maxLength={60}
                   value={designation}
                   onChange={(e) => {
-                    setDesignation(e.target.value);
+                    const val = e.target.value.slice(0, 60);
+                    setDesignation(val);
                     if (designationError) setDesignationError('');
                   }}
                   placeholder="e.g. Senior Software Engineer"
@@ -595,7 +665,12 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                   }}
                 />
                 {designationError && (
-                  <small style={{ color: '#EF4444', fontWeight: 600, fontSize: '0.84rem', marginTop: '6px', display: 'flex', alignItems: 'center' }}>
+                  <small style={{ color: '#EF4444', fontWeight: 600, fontSize: '0.82rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
                     {designationError}
                   </small>
                 )}
@@ -603,21 +678,27 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
 
               {/* Current Residential Address */}
               <div className="col-12 mb-3">
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.86rem',
-                    fontWeight: 600,
-                    color: '#334155',
-                    marginBottom: '6px',
-                  }}
-                >
-                  Current Residential Address
-                </label>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.86rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      marginBottom: 0,
+                    }}
+                  >
+                    Current Residential Address
+                  </label>
+                  <span style={{ fontSize: '0.74rem', color: address.length >= 250 ? '#EF4444' : '#94A3B8', fontWeight: 500 }}>
+                    {address.length}/250
+                  </span>
+                </div>
                 <textarea
                   rows={3}
+                  maxLength={250}
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => setAddress(e.target.value.slice(0, 250))}
                   placeholder="Enter complete current residential address (House No, Street, City, State, PIN)"
                   style={{
                     width: '100%',

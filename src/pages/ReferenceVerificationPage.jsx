@@ -618,14 +618,6 @@ const ReferenceVerificationPage = () => {
               </div>
 
               <div className="d-flex flex-wrap align-items-center justify-content-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => window.close()}
-                  className="btn btn-outline-secondary font-weight-bold px-4 py-2.5"
-                  style={{ borderRadius: '10px', fontSize: '14px' }}
-                >
-                  Close Window
-                </button>
                 <Link
                   to="/"
                   className="btn font-weight-bold px-4 py-2.5 text-white shadow-sm"

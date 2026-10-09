@@ -322,6 +322,9 @@
   color: #475569;
   font-weight: 500;
   font-size: 0.75rem;
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .kyc-filter-select {
