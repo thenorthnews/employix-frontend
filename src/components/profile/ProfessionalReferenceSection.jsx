@@ -119,16 +119,6 @@ const ProfessionalReferenceSection = ({
           return r;
         })
       );
-      setRewardPoints((prev) => (prev || 0) + (data?.points || 5));
-
-      const toastId = `ref_verified_${data?.referenceId || 'single'}`;
-      if (!toast.isActive(toastId)) {
-        toast.success(
-          `${data?.refereeName ? `Reference verified by ${data.refereeName}!` : 'Behavioral Reference Verified!'} (+5 Points Awarded)`,
-          { toastId }
-        );
-      }
-
       // 2. Sync full details from backend
       fetchReferences(true);
     };
