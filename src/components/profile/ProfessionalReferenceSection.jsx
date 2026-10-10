@@ -103,7 +103,7 @@ const ProfessionalReferenceSection = ({
       }
 
       toast.success(
-        `${data?.refereeName ? `Reference verified by ${data.refereeName}!` : 'Professional Reference Verified!'} (+5 Points Awarded)`
+        `${data?.refereeName ? `Reference verified by ${data.refereeName}!` : 'Behavioral Reference Verified!'} (+5 Points Awarded)`
       );
 
       // Instantly refresh references list and reward points without page refresh
@@ -177,7 +177,7 @@ const ProfessionalReferenceSection = ({
 
   const handleOpenModal = () => {
     if (references.length >= 2) {
-      toast.warning('Maximum 2 professional references are already added.');
+      toast.warning('Maximum 2 behavioral references are already added.');
       return;
     }
     setRefereeName('');
@@ -421,9 +421,9 @@ const ProfessionalReferenceSection = ({
         <div className="d-flex align-items-center gap-3">
           <span className="setup-step-badge mr-2">Step 5</span>
           <div>
-            <h3 className="auth-card-heading mb-0">Professional Reference Verification</h3>
+            <h3 className="auth-card-heading mb-0">Behavioral Reference Verification</h3>
             <p className="auth-card-sub small mb-0">
-              Add up to 2 professional references (managers or peers) with email verification (+10 Points)
+              Add up to 2 behavioral references (managers or peers) with email verification (+10 Points)
             </p>
           </div>
         </div>
@@ -461,7 +461,7 @@ const ProfessionalReferenceSection = ({
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
               </svg>
-              Professional References (Managers / Peers)
+              Behavioral References (Managers / Peers)
             </h5>
           </div>
           <button
@@ -481,7 +481,7 @@ const ProfessionalReferenceSection = ({
                 ? 'Profile setup is complete and locked'
                 : maxReached
                 ? 'Maximum 2 references reached'
-                : 'Add a new professional reference'
+                : 'Add a new behavioral reference'
             }
           >
             + Add Reference
@@ -494,7 +494,7 @@ const ProfessionalReferenceSection = ({
         {loading ? (
           <div className="text-center py-5">
             <ButtonSpinner color="#00D294" />
-            <span className="small text-muted d-block mt-2 font-weight-bold">Loading professional references...</span>
+            <span className="small text-muted d-block mt-2 font-weight-bold">Loading behavioral references...</span>
           </div>
         ) : references.length === 0 ? (
           <div
@@ -506,7 +506,7 @@ const ProfessionalReferenceSection = ({
             }}
           >
             <h6 className="font-weight-bold text-dark mb-0" style={{ fontSize: '14px' }}>
-              No Professional References Added Yet
+              No Behavioral References Added Yet
             </h6>
           </div>
         ) : (
@@ -808,7 +808,7 @@ const ProfessionalReferenceSection = ({
                     </div>
                     <div>
                       <h5 className="modal-title font-weight-bold text-white mb-0" style={{ fontSize: '17px' }}>
-                        Add Professional Reference
+                        Add Behavioral Reference
                       </h5>
                       <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                         Step 5: Reference Verification (+10 Points)
@@ -1115,7 +1115,7 @@ const ProfessionalReferenceSection = ({
                       </small>
                       <a
                         href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                          `Hi ${recentlySentReferee?.name || 'there'}, please verify my professional reference on EMPLOYIX: ${formatShareableLink(recentlySentReferee.shareableLink)}`
+                          `Hi ${recentlySentReferee?.name || 'there'}, please verify my behavioral reference on EMPLOYIX: ${formatShareableLink(recentlySentReferee.shareableLink)}`
                         )}`}
                         target="_blank"
                         rel="noreferrer"
@@ -1698,7 +1698,7 @@ const ProfessionalReferenceSection = ({
                     const d = feedbackModal.reference.feedback?.diligence ?? 8;
                     const e = feedbackModal.reference.feedback?.enthusiasm ?? 8;
                     const r = feedbackModal.reference.feedback?.respectfulness ?? 8;
-                    return `Professional reference confirmed. Rated Diligence ${d}/10, Enthusiasm ${e}/10, Respectfulness ${r}/10${comp ? ` at ${comp}` : ''}.`;
+                    return `Behavioral reference confirmed. Rated Diligence ${d}/10, Enthusiasm ${e}/10, Respectfulness ${r}/10${comp ? ` at ${comp}` : ''}.`;
                   })()}"
                 </p>
               </div>

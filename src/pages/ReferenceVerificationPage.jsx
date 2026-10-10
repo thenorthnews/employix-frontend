@@ -348,7 +348,7 @@ const ReferenceVerificationPage = () => {
 
       const isSuccess = Boolean(res?.success || res?.data?.success || res?.completed || res?.data?.completed);
       if (isSuccess) {
-        toast.success('Professional reference feedback submitted successfully! +5 points awarded.');
+        toast.success('Behavioral reference feedback submitted successfully! +5 points awarded.');
         setPageState('completed');
       }
     } catch (err) {
@@ -572,7 +572,7 @@ const ReferenceVerificationPage = () => {
               </div>
               <h3 className="font-weight-bold text-dark mb-2">Reference Verified!</h3>
               <p className="text-muted mb-4" style={{ maxWidth: '520px', margin: '0 auto' }}>
-                Thank you, <strong>{refereeName}</strong>! Your confidential professional reference feedback for{' '}
+                Thank you, <strong>{refereeName}</strong>! Your confidential behavioral reference feedback for{' '}
                 <strong>{candidateName}</strong> has been successfully recorded and verified.
               </p>
               <div
@@ -649,7 +649,7 @@ const ReferenceVerificationPage = () => {
                     className="badge px-3 py-1 font-weight-bold"
                     style={{ background: 'rgba(0, 210, 148, 0.2)', color: '#00D294', border: '1px solid rgba(0, 210, 148, 0.4)', borderRadius: '20px', fontSize: '11px' }}
                   >
-                    CONFIDENTIAL PROFESSIONAL REFERENCE &bull; EMPLOYIX
+                    CONFIDENTIAL BEHAVIORAL REFERENCE &bull; EMPLOYIX
                   </span>
                   <span
                     className="badge px-2 py-1 font-weight-bold"

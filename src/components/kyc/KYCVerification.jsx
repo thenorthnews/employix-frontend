@@ -26,9 +26,19 @@ import {
   getDigilockerDocumentsApi,
 } from '../../api/kycApi';
 import { updateProfileApi, getProfileApi } from '../../api/authApi';
-import { resolveImageUrl, resolveDocumentUrl } from '../../utils/profileUtils';
+import { resolveImageUrl, resolveDocumentUrl, POPULAR_DESIGNATIONS } from '../../utils/profileUtils';
+import {
+  isValidProfileImage,
+  isValidDocumentOrImage,
+  processUploadFile,
+  processProfileImageFile,
+  PROFILE_IMAGE_ACCEPT,
+  DOCUMENT_UPLOAD_ACCEPT,
+} from '../../utils/imageUtils';
 import AadhaarSuccessModal from './AadhaarSuccessModal';
 import KycScoreGauge from './KycScoreGauge';
+import DesignationSelect from '../common/DesignationSelect';
+import { getSocket, joinUserRoom } from '../../utils/socket';
 import './KYCVerification.css';
 
 const MONTH_OPTIONS = [
@@ -445,6 +455,37 @@ const KYCVerification = ({
       // References & Reward Points from profile
       if (pData.references && Array.isArray(pData.references)) {
         setUserReferences(pData.references);
+
+        // Check if any reference was recently verified while user was away and hasn't been acknowledged
+        const ackKey = `employix_acked_refs_${pData._id || user?._id || 'guest'}`;
+        let ackedIds = [];
+        try {
+          ackedIds = JSON.parse(localStorage.getItem(ackKey) || '[]');
+        } catch (e) {
+          ackedIds = [];
+        }
+
+        const completedRefs = pData.references.filter(
+          (r) => r.status === 'completed' || r.isFeedbackSubmitted || r.isPointsAwarded
+        );
+
+        const unackedRef = completedRefs.find((r) => r._id && !ackedIds.includes(String(r._id)));
+        if (unackedRef) {
+          setTimeout(() => {
+            showVerificationSuccessModal({
+              title: '🎉 You Earned 5 Reward Points!',
+              pointsEarned: 5,
+              badgeText: '✓ Reference Endorsed',
+              description: `Great news! Your behavioral reference from ${unackedRef.refereeName || 'your manager'} has been authenticated and +5 Reward Points have been added to your balance!`,
+              buttonText: 'View Updated Score',
+              targetStepId: 'step-references',
+            });
+          }, 600);
+
+          try {
+            localStorage.setItem(ackKey, JSON.stringify([...ackedIds, String(unackedRef._id)]));
+          } catch (e) {}
+        }
       }
       if (pData.rewardPoints !== undefined) {
         setRewardPoints(pData.rewardPoints);
@@ -592,7 +633,7 @@ const KYCVerification = ({
         pointsEarned: 0,
         badgeText: 'Account Activated',
         description: 'Your email credentials have been authenticated. Welcome to Employix! Please complete your KYC verification below.',
-        buttonText: 'Start KYC Setup',
+        buttonText: 'Start your free verification',
         targetStepId: 'step-profile',
       });
       if (window.history && window.history.replaceState) {
@@ -602,33 +643,90 @@ const KYCVerification = ({
     }
   }, [location.search]);
 
-  // Handle Photo selection
-  const handlePhotoChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      const fileExt = file.name ? file.name.split('.').pop().toLowerCase() : '';
-      const allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
+  // Real-time WebSocket listener for Behavioral Reference Verification & +5 Points
+  useEffect(() => {
+    const currentUserId = user?._id || user?.id;
+    if (currentUserId) {
+      joinUserRoom(currentUserId);
+    }
 
-      if (!allowedTypes.includes(file.type) || !allowedExts.includes(fileExt)) {
-        setProfileErrors((prev) => ({ ...prev, photo: 'Only JPG, JPEG, PNG and WEBP images are allowed' }));
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleReferenceVerified = (data) => {
+      console.log('[KYC Real-time Reference Verified Event Received]:', data);
+      if (data?.targetUserId && currentUserId && String(data.targetUserId) !== String(currentUserId)) {
         return;
       }
-      if (file.size > 5 * 1024 * 1024) {
+
+      // Pop up center celebration modal immediately when socket hits
+      showVerificationSuccessModal({
+        title: 'Behavioral Reference Verified! 🎉',
+        pointsEarned: data?.points || 5,
+        badgeText: '✓ +5 Points Credited',
+        description: `${data?.refereeName ? `${data.refereeName} has verified your behavioral reference!` : 'Your reference has been successfully evaluated!'} +5 Reward Points have been credited to your Employix balance.`,
+        buttonText: 'Awesome, View My Score',
+        targetStepId: 'step-references',
+      });
+
+      // Instantly increment local points & score
+      setRewardPoints((prev) => (prev || 0) + (data?.points || 5));
+      if (data?.newScore) {
+        updateScoreAndTier(Number(data.newScore));
+      }
+
+      // Mark in local storage as acknowledged
+      if (data?.referenceId && currentUserId) {
+        const ackKey = `employix_acked_refs_${currentUserId}`;
+        try {
+          const ackedIds = JSON.parse(localStorage.getItem(ackKey) || '[]');
+          if (!ackedIds.includes(String(data.referenceId))) {
+            localStorage.setItem(ackKey, JSON.stringify([...ackedIds, String(data.referenceId)]));
+          }
+        } catch (e) {}
+      }
+
+      // Refresh full profile data to sync references state
+      fetchInitialData();
+    };
+
+    socket.on('reference_verified', handleReferenceVerified);
+
+    return () => {
+      socket.off('reference_verified', handleReferenceVerified);
+    };
+  }, [user?._id, user?.id, fetchInitialData]);
+
+  // Handle Photo selection (supports JPEG, PNG, HEIC, WEBP)
+  const handlePhotoChange = async (e) => {
+    const rawFile = e.target.files?.[0];
+    if (rawFile) {
+      if (!isValidProfileImage(rawFile)) {
+        setProfileErrors((prev) => ({ ...prev, photo: 'Please select a valid image file (JPEG, PNG, HEIC, WEBP).' }));
+        return;
+      }
+      if (rawFile.size > 5 * 1024 * 1024) {
         setProfileErrors((prev) => ({ ...prev, photo: 'Image size must be less than 5MB' }));
         return;
       }
-      setProfilePhotoFile(file);
-      setProfilePhotoPreview(URL.createObjectURL(file));
-      setProfileSaved(false);
-      setProfileErrors((prev) => ({ ...prev, photo: '' }));
+      try {
+        setProfileErrors((prev) => ({ ...prev, photo: '' }));
+        const result = await processProfileImageFile(rawFile);
+        if (result) {
+          setProfilePhotoFile(result.file);
+          setProfilePhotoPreview(result.previewUrl);
+          setProfileSaved(false);
+        }
+      } catch (err) {
+        console.error('Error processing KYC profile image:', err);
+        setProfileErrors((prev) => ({ ...prev, photo: 'Could not process selected image. Please try another.' }));
+      }
     }
   };
 
   // Handle Step 1 Save (Personal Profile & Designation)
   const handleSaveProfile = async (e, isSilent = false) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (profileSaved) return;
 
     const newErrors = { photo: '', name: '', phone: '', designation: '' };
     let hasError = false;
@@ -720,20 +818,11 @@ const KYCVerification = ({
     setVoterNumber(raw);
   };
 
-  // Validate document file helper (JPEG, JPG, PNG, PDF <= 5MB)
+  // Validate document file helper (Supports: JPEG, PNG, HEIC, WEBP & PDF <= 5MB)
   const validateDocFile = (file) => {
     if (!file) return false;
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/jpg',
-      'application/pdf',
-    ];
-    const allowedExts = ['.jpg', '.jpeg', '.png', '.pdf'];
-    const ext = file.name ? file.name.substring(file.name.lastIndexOf('.')).toLowerCase() : '';
-
-    if (!allowedTypes.includes(file.type) && !allowedExts.includes(ext)) {
-      toast.error('Invalid file format. Supported formats: JPEG, JPG, PNG, PDF.');
+    if (!isValidDocumentOrImage(file)) {
+      toast.error('Invalid file format. Supported formats: JPEG, JPG, PNG, HEIC, WEBP, PDF.');
       return false;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -854,8 +943,11 @@ const KYCVerification = ({
     });
   };
 
-  const handleAadhaarFrontChange = async (file, inputElem) => {
-    if (!file) return;
+  const handleAadhaarFrontChange = async (rawFile, inputElem) => {
+    if (!rawFile) return;
+
+    const processed = await processUploadFile(rawFile);
+    const file = processed?.file || rawFile;
 
     if (
       aadhaarBack &&
@@ -884,14 +976,17 @@ const KYCVerification = ({
 
     setAadhaarFront(file);
     setAadhaarFrontPreview(
-      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+      processed?.previewUrl || (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
         ? 'pdf'
-        : URL.createObjectURL(file)
+        : URL.createObjectURL(file))
     );
   };
 
-  const handleAadhaarBackChange = async (file, inputElem) => {
-    if (!file) return;
+  const handleAadhaarBackChange = async (rawFile, inputElem) => {
+    if (!rawFile) return;
+
+    const processed = await processUploadFile(rawFile);
+    const file = processed?.file || rawFile;
 
     if (
       aadhaarFront &&
@@ -920,9 +1015,9 @@ const KYCVerification = ({
 
     setAadhaarBack(file);
     setAadhaarBackPreview(
-      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+      processed?.previewUrl || (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
         ? 'pdf'
-        : URL.createObjectURL(file)
+        : URL.createObjectURL(file))
     );
   };
 
@@ -964,6 +1059,9 @@ const KYCVerification = ({
 
       setAadhaarVerified(true);
       setAadhaarResult(data);
+      if (data?.name || data?.fullName) {
+        setFullName((data.name || data.fullName).trim());
+      }
       const extractedAddr = data.address?.fullAddress || (typeof data.address === 'string' ? data.address : '');
       if (extractedAddr) {
         setAddressText(extractedAddr);
@@ -1084,8 +1182,11 @@ const KYCVerification = ({
     }
   };
 
-  const handleVoterFrontChange = (file, inputElem) => {
-    if (!file) return;
+  const handleVoterFrontChange = async (rawFile, inputElem) => {
+    if (!rawFile) return;
+
+    const processed = await processUploadFile(rawFile);
+    const file = processed?.file || rawFile;
 
     if (
       voterBack &&
@@ -1113,14 +1214,17 @@ const KYCVerification = ({
 
     setVoterFront(file);
     setVoterFrontPreview(
-      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+      processed?.previewUrl || (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
         ? 'pdf'
-        : URL.createObjectURL(file)
+        : URL.createObjectURL(file))
     );
   };
 
-  const handleVoterBackChange = (file, inputElem) => {
-    if (!file) return;
+  const handleVoterBackChange = async (rawFile, inputElem) => {
+    if (!rawFile) return;
+
+    const processed = await processUploadFile(rawFile);
+    const file = processed?.file || rawFile;
 
     if (
       voterFront &&
@@ -1148,9 +1252,9 @@ const KYCVerification = ({
 
     setVoterBack(file);
     setVoterBackPreview(
-      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+      processed?.previewUrl || (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
         ? 'pdf'
-        : URL.createObjectURL(file)
+        : URL.createObjectURL(file))
     );
   };
 
@@ -1244,8 +1348,11 @@ const KYCVerification = ({
     }
   };
 
-  const handleDlFrontChange = (file, inputElem) => {
-    if (!file) return;
+  const handleDlFrontChange = async (rawFile, inputElem) => {
+    if (!rawFile) return;
+
+    const processed = await processUploadFile(rawFile);
+    const file = processed?.file || rawFile;
 
     if (
       dlBack &&
@@ -1273,14 +1380,17 @@ const KYCVerification = ({
 
     setDlFront(file);
     setDlFrontPreview(
-      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+      processed?.previewUrl || (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
         ? 'pdf'
-        : URL.createObjectURL(file)
+        : URL.createObjectURL(file))
     );
   };
 
-  const handleDlBackChange = (file, inputElem) => {
-    if (!file) return;
+  const handleDlBackChange = async (rawFile, inputElem) => {
+    if (!rawFile) return;
+
+    const processed = await processUploadFile(rawFile);
+    const file = processed?.file || rawFile;
 
     if (
       dlFront &&
@@ -1308,9 +1418,9 @@ const KYCVerification = ({
 
     setDlBack(file);
     setDlBackPreview(
-      file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
+      processed?.previewUrl || (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')
         ? 'pdf'
-        : URL.createObjectURL(file)
+        : URL.createObjectURL(file))
     );
   };
 
@@ -2002,7 +2112,7 @@ const KYCVerification = ({
       } else if (!isEmpDone) {
         toast.error('Step 4 incomplete: Employment history (EPFO or Manual) is required.');
       } else if (!isRefDone) {
-        toast.error('Step 5 incomplete: At least 1 Professional Reference must be verified (feedback submitted by referee).');
+        toast.error('Step 5 incomplete: At least 1 Behavioral Reference must be verified (feedback submitted by referee).');
       } else if (!isEduDone) {
         toast.error('Step 6 incomplete: Educational Degree / Certification verification is required.');
       } else if (!isDlDone) {
@@ -2171,9 +2281,9 @@ const KYCVerification = ({
           <div className="container position-relative" style={{ zIndex: 3 }}>
             
             {/* STEP 1: Personal Profile, Designation & Photo Setup */}
-            <div className="row justify-content-center mb-5" id="step-profile">
+            <div className="row justify-content-center mb-5" id="step-profile" style={{ position: 'relative', zIndex: 60 }}>
               <div className="col-lg-10">
-                <div className="auth-card">
+                <div className="auth-card" style={{ position: 'relative', zIndex: 60 }}>
                   <div className="auth-card-header d-flex flex-wrap align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
                       <span className="setup-step-badge mr-2">Step 1</span>
@@ -2196,9 +2306,9 @@ const KYCVerification = ({
                       <div className="col-md-3 text-center mb-4 mb-md-0">
                         <div
                           className="setup-photo-wrap mb-2"
-                          onClick={() => !profileSaved && document.getElementById('photoUploadInput')?.click()}
-                          style={{ cursor: profileSaved ? 'default' : 'pointer' }}
-                          title={profileSaved ? '' : 'Click to upload photo'}
+                          onClick={() => document.getElementById('photoUploadInput')?.click()}
+                          style={{ cursor: 'pointer' }}
+                          title="Click to upload or change profile photo"
                         >
                           {profilePhotoPreview ? (
                             <img
@@ -2222,27 +2332,23 @@ const KYCVerification = ({
                               {fullName ? fullName.trim().split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'EX'}
                             </div>
                           )}
-                          {!profileSaved && (
-                            <>
-                              <label htmlFor="photoUploadInput" className="setup-photo-badge" title="Upload Photo" onClick={(e) => e.stopPropagation()}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                                  <circle cx="12" cy="13" r="4"></circle>
-                                </svg>
-                              </label>
-                              <input
-                                type="file"
-                                id="photoUploadInput"
-                                accept="image/*"
-                                onChange={handlePhotoChange}
-                                style={{ display: 'none' }}
-                              />
-                            </>
-                          )}
+                          <label htmlFor="photoUploadInput" className="setup-photo-badge" title="Upload / Change Photo" onClick={(e) => e.stopPropagation()}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                              <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                          </label>
+                          <input
+                            type="file"
+                            id="photoUploadInput"
+                            accept={PROFILE_IMAGE_ACCEPT}
+                            onChange={handlePhotoChange}
+                            style={{ display: 'none' }}
+                          />
                         </div>
                         <span className="small text-muted font-weight-bold d-block">
-                          {profileSaved && (profilePhotoPreview || user?.profileImage) ? (
-                            'Verified Profile Photo'
+                          {profilePhotoPreview || user?.profileImage ? (
+                            'Profile Photo'
                           ) : (
                             <>Upload Profile Photo <span className="text-danger">*</span></>
                           )}
@@ -2250,7 +2356,7 @@ const KYCVerification = ({
                         <span className="d-block text-muted" style={{ fontSize: '0.74rem', marginTop: '2px', color: '#64748B' }}>
                           JPG, JPEG, PNG or WEBP (Max 5MB)
                         </span>
-                        {profileErrors.photo && !profileSaved && (
+                        {profileErrors.photo && (
                           <small className="text-danger font-weight-bold mt-1 d-block" style={{ fontSize: '0.82rem' }}>
                             {profileErrors.photo}
                           </small>
@@ -2260,18 +2366,51 @@ const KYCVerification = ({
                       {/* Full Name & Details */}
                       <div className="col-md-9">
                         <div className="row g-3">
-                          {/* Full Name (Registered - Non-editable) */}
+                          {/* Full Name */}
                           <div className="col-12 mb-3">
-                            <label className="auth-label">Full Name (Registered)</label>
+                            <div className="d-flex align-items-center justify-content-between mb-1">
+                              <label className="auth-label mb-0">
+                                Full Name {aadhaarVerified ? '(Verified via Aadhaar)' : <><span className="text-danger">*</span></>}
+                              </label>
+                              {aadhaarVerified && (
+                                <span className="badge badge-success px-2 py-1 font-weight-bold" style={{ fontSize: '0.74rem' }}>
+                                  ✓ Aadhaar Verified (Locked)
+                                </span>
+                              )}
+                            </div>
                             <input
                               type="text"
-                              className="form-control auth-input-group px-3 py-2 bg-light text-muted"
-                              style={{ cursor: 'not-allowed', backgroundColor: '#f8fafc' }}
+                              className={`form-control auth-input-group px-3 py-2 ${
+                                aadhaarVerified ? 'bg-light text-muted' : ''
+                              } ${profileErrors.name ? 'is-invalid border-danger' : ''}`}
+                              style={{
+                                cursor: aadhaarVerified ? 'not-allowed' : 'text',
+                                backgroundColor: aadhaarVerified ? '#f8fafc' : '#ffffff',
+                                ...(profileErrors.name ? { borderColor: '#dc3545', boxShadow: '0 0 0 2px rgba(220,53,69,0.15)' } : {})
+                              }}
                               value={fullName}
-                              readOnly
-                              disabled
+                              readOnly={Boolean(aadhaarVerified)}
+                              disabled={Boolean(aadhaarVerified)}
+                              onChange={(e) => {
+                                if (aadhaarVerified) return;
+                                setFullName(e.target.value.slice(0, 50));
+                                if (profileErrors.name) {
+                                  setProfileErrors((prev) => ({ ...prev, name: '' }));
+                                }
+                              }}
                               placeholder="e.g. Full Name"
+                              title={aadhaarVerified ? 'Full Name is permanently locked as per verified Aadhaar card' : 'Enter your full name'}
                             />
+                            {profileErrors.name && !aadhaarVerified && (
+                              <small className="text-danger font-weight-bold mt-1 d-block" style={{ fontSize: '0.82rem' }}>
+                                {profileErrors.name}
+                              </small>
+                            )}
+                            {aadhaarVerified && (
+                              <small className="text-success font-weight-bold mt-1 d-block" style={{ fontSize: '0.78rem' }}>
+                                ✓ Full Name is permanently locked and verified as per UIDAI Aadhaar record.
+                              </small>
+                            )}
                           </div>
 
                           {/* Email (Read-Only) */}
@@ -2300,13 +2439,12 @@ const KYCVerification = ({
                               </div>
                               <input
                                 type="tel"
-                                className={`form-control auth-input-group px-3 ${profileSaved ? 'bg-light text-muted' : ''} ${profileErrors.phone ? 'is-invalid border-danger' : ''}`}
+                                className={`form-control auth-input-group px-3 ${profileErrors.phone ? 'is-invalid border-danger' : ''}`}
                                 style={{
                                   borderRadius: '0 30px 30px 0',
                                   ...(profileErrors.phone ? { borderColor: '#dc3545', boxShadow: '0 0 0 2px rgba(220,53,69,0.15)' } : {})
                                 }}
                                 value={phone}
-                                disabled={profileSaved}
                                 onChange={(e) => {
                                   setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
                                   if (profileErrors.phone) {
@@ -2317,7 +2455,7 @@ const KYCVerification = ({
                                 maxLength={10}
                               />
                             </div>
-                            {profileErrors.phone && !profileSaved && (
+                            {profileErrors.phone && (
                               <small className="text-danger font-weight-bold mt-1 d-flex align-items-center" style={{ fontSize: '0.84rem' }}>
                                 {profileErrors.phone}
                               </small>
@@ -2329,21 +2467,20 @@ const KYCVerification = ({
                             <label className="auth-label mb-1">
                               Professional Designation / Role <span className="text-danger">*</span>
                             </label>
-                            <input
-                              type="text"
-                              className={`form-control auth-input-group px-3 py-2 ${profileSaved ? 'bg-light text-muted' : ''} ${profileErrors.designation ? 'is-invalid border-danger' : ''}`}
-                              style={profileErrors.designation ? { borderColor: '#dc3545', boxShadow: '0 0 0 2px rgba(220,53,69,0.15)' } : {}}
+                            <DesignationSelect
+                              id="kyc-profile-designation"
                               value={designation}
-                              disabled={profileSaved}
-                              onChange={(e) => {
-                                setDesignation(e.target.value);
+                              onChange={(val) => {
+                                setDesignation(val);
                                 if (profileErrors.designation) {
                                   setProfileErrors((prev) => ({ ...prev, designation: '' }));
                                 }
                               }}
-                              placeholder="e.g. Senior Software Engineer"
+                              error={profileErrors.designation}
+                              placeholder="Select from categorized list or type role (e.g. Software Engineer, Product Manager)"
+                              maxLength={60}
                             />
-                            {profileErrors.designation && !profileSaved && (
+                            {profileErrors.designation && (
                               <small className="text-danger font-weight-bold mt-1 d-flex align-items-center" style={{ fontSize: '0.84rem' }}>
                                 {profileErrors.designation}
                               </small>
@@ -2354,16 +2491,14 @@ const KYCVerification = ({
                         <div className="text-right mt-2">
                           <button
                             type="submit"
-                            className={`btn px-4 py-2 font-weight-bold ${
-                              profileSaved ? 'btn-secondary text-white' : 'btn-primary-teal'
-                            }`}
-                            disabled={profileSaving || profileSaved}
-                            style={{ cursor: profileSaved ? 'not-allowed' : 'pointer' }}
+                            className="btn btn-primary-teal px-4 py-2 font-weight-bold"
+                            disabled={profileSaving}
+                            style={{ cursor: profileSaving ? 'not-allowed' : 'pointer' }}
                           >
                             {profileSaving ? (
                               <ButtonSpinner text="Saving Profile..." />
                             ) : profileSaved ? (
-                              '✓ Profile Details Saved'
+                              'Update Profile Details'
                             ) : (
                               'Save Profile Details'
                             )}
@@ -2524,7 +2659,7 @@ const KYCVerification = ({
                                 ref={aadhaarFrontInputRef}
                                 type="file"
                                 className="d-none"
-                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                accept={DOCUMENT_UPLOAD_ACCEPT}
                                 onChange={(e) => {
                                   const f = e.target.files[0];
                                   if (f) {
@@ -2647,7 +2782,7 @@ const KYCVerification = ({
                                 ref={aadhaarBackInputRef}
                                 type="file"
                                 className="d-none"
-                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                accept={DOCUMENT_UPLOAD_ACCEPT}
                                 onChange={(e) => {
                                   const f = e.target.files[0];
                                   if (f) {
@@ -3015,7 +3150,7 @@ const KYCVerification = ({
                                     ref={voterFrontInputRef}
                                     type="file"
                                     className="d-none"
-                                    accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                    accept={DOCUMENT_UPLOAD_ACCEPT}
                                     onChange={(e) => {
                                       const f = e.target.files[0];
                                       if (f) {
@@ -3137,7 +3272,7 @@ const KYCVerification = ({
                                     ref={voterBackInputRef}
                                     type="file"
                                     className="d-none"
-                                    accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                    accept={DOCUMENT_UPLOAD_ACCEPT}
                                     onChange={(e) => {
                                       const f = e.target.files[0];
                                       if (f) {
@@ -4750,7 +4885,7 @@ const KYCVerification = ({
                                   <label className="kyc-custom-file-upload d-block position-relative mb-0">
                                     <input
                                       type="file"
-                                      accept=".pdf,image/*"
+                                      accept={DOCUMENT_UPLOAD_ACCEPT}
                                       style={{ display: 'none' }}
                                       onChange={(e) => {
                                         if (e.target.files && e.target.files[0]) {
@@ -5140,7 +5275,7 @@ const KYCVerification = ({
                                   <label className="kyc-custom-file-upload d-block position-relative mb-0">
                                     <input
                                       type="file"
-                                      accept=".pdf,image/*"
+                                      accept={DOCUMENT_UPLOAD_ACCEPT}
                                       style={{ display: 'none' }}
                                       onChange={(e) => {
                                         if (e.target.files && e.target.files[0]) {
@@ -5385,7 +5520,7 @@ const KYCVerification = ({
                                 ref={dlFrontInputRef}
                                 type="file"
                                 className="d-none"
-                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                accept={DOCUMENT_UPLOAD_ACCEPT}
                                 onChange={(e) => {
                                   const f = e.target.files[0];
                                   if (f) {
@@ -5507,7 +5642,7 @@ const KYCVerification = ({
                                 ref={dlBackInputRef}
                                 type="file"
                                 className="d-none"
-                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                accept={DOCUMENT_UPLOAD_ACCEPT}
                                 onChange={(e) => {
                                   const f = e.target.files[0];
                                   if (f) {
@@ -5682,7 +5817,7 @@ const KYCVerification = ({
                         : !voterVerified
                         ? 'Pending: Complete Voter ID Verification'
                         : !isRefDone
-                        ? 'Pending: Professional Reference verification (Referee feedback required)'
+                        ? 'Pending: Behavioral Reference verification (Referee feedback required)'
                         : !isEduDone
                         ? 'Pending: Add & verify Degree or Certification'
                         : !dlVerified

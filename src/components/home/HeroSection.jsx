@@ -24,7 +24,7 @@ const HeroSection = () => {
             {/* Headline */}
             <h1 className="hero-title section-heading mb-4">
               One verified identity.   
-              <span className="text-teal"> Trusted by every employer. Curent for life.</span>
+              <span className="text-teal"> Trusted by every employer. Current for life.</span>
               
             </h1>
 

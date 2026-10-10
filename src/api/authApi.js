@@ -62,4 +62,13 @@ export const deleteAccountApi = async () => {
   return await axiosInstance.delete('/users/deleteAccount');
 };
 
+/**
+ * Fetch public verified candidate profile for employers
+ * @param {string} identifier - employixId or userId
+ */
+export const getPublicVerifiedProfileApi = async (identifier) => {
+  const cleanId = encodeURIComponent(String(identifier || '').trim());
+  return await axiosInstance.get(`/users/public-profile/${cleanId}`);
+};
+
 

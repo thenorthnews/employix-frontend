@@ -6,6 +6,8 @@ import ButtonSpinner from '../common/Loader';
 import { updateProfileApi } from '../../api/authApi';
 import { updateUserKycStatus, updateProfileSuccess } from '../../redux/slices/authSlice';
 import { formatEmployixId } from '../../utils/profileUtils';
+import DesignationSelect from '../common/DesignationSelect';
+import { isValidProfileImage, processProfileImageFile, PROFILE_IMAGE_ACCEPT } from '../../utils/imageUtils';
 
 const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   const dispatch = useDispatch();
@@ -21,6 +23,12 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
   const phone = user?.phoneNumber || user?.phone || '';
   const email = user?.email || '';
   const formattedId = formatEmployixId(user?.employixId, user?._id);
+  const isAadhaarVerified = Boolean(
+    user?.aadhaarStatus === 1 ||
+    user?.isAadhaarVerified ||
+    user?.aadhaarVerification?.isVerified ||
+    user?.aadhaarData
+  );
 
   // Photo Upload State
   const [photoFile, setPhotoFile] = useState(null);
@@ -105,29 +113,32 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
     }
   }, [isOpen]);
 
-  // Handle Photo file selection
-  const handlePhotoChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Handle Photo file selection (supports JPEG, PNG, HEIC, WEBP)
+  const handlePhotoChange = async (e) => {
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    const fileExt = file.name ? file.name.split('.').pop().toLowerCase() : '';
-    const allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
-
-    if (!allowedTypes.includes(file.type) || !allowedExts.includes(fileExt)) {
-      setPhotoError('Only JPG, JPEG, PNG and WEBP images are allowed.');
+    if (!isValidProfileImage(rawFile)) {
+      setPhotoError('Please select a valid image file (JPEG, PNG, HEIC, WEBP).');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (rawFile.size > 5 * 1024 * 1024) {
       setPhotoError('Image size must be less than 5MB.');
       return;
     }
 
-    setPhotoError('');
-    setPhotoFile(file);
-    const objectUrl = URL.createObjectURL(file);
-    setPhotoPreview(objectUrl);
+    try {
+      setPhotoError('');
+      const result = await processProfileImageFile(rawFile);
+      if (result) {
+        setPhotoFile(result.file);
+        setPhotoPreview(result.previewUrl);
+      }
+    } catch (err) {
+      console.error('Error processing profile image:', err);
+      setPhotoError('Could not process selected image. Please try another.');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -419,7 +430,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    accept="image/*"
+                    accept={PROFILE_IMAGE_ACCEPT}
                     onChange={handlePhotoChange}
                     style={{ display: 'none' }}
                   />
@@ -522,17 +533,22 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                       marginBottom: 0,
                     }}
                   >
-                    Full Name <span style={{ color: '#EF4444' }}>*</span>
+                    Full Name {isAadhaarVerified ? <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginLeft: '6px' }}>✓ (Verified via Aadhaar)</span> : <span style={{ color: '#EF4444' }}>*</span>}
                   </label>
-                  <span style={{ fontSize: '0.74rem', color: (fullName.length >= 50 || nameError) ? '#EF4444' : '#94A3B8', fontWeight: 500 }}>
-                    {fullName.length}/50
-                  </span>
+                  {!isAadhaarVerified && (
+                    <span style={{ fontSize: '0.74rem', color: (fullName.length >= 50 || nameError) ? '#EF4444' : '#94A3B8', fontWeight: 500 }}>
+                      {fullName.length}/50
+                    </span>
+                  )}
                 </div>
                 <input
                   type="text"
                   maxLength={50}
                   value={fullName}
+                  disabled={isAadhaarVerified}
+                  readOnly={isAadhaarVerified}
                   onChange={(e) => {
+                    if (isAadhaarVerified) return;
                     const val = e.target.value.slice(0, 50);
                     setFullName(val);
                     if (nameError) setNameError('');
@@ -542,23 +558,33 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                     width: '100%',
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    border: nameError ? '1.5px solid #EF4444' : '1.5px solid #CBD5E1',
+                    border: isAadhaarVerified ? '1.5px solid #E2E8F0' : (nameError ? '1.5px solid #EF4444' : '1.5px solid #CBD5E1'),
                     fontSize: '0.94rem',
-                    color: '#0F172A',
+                    color: isAadhaarVerified ? '#64748B' : '#0F172A',
+                    backgroundColor: isAadhaarVerified ? '#F8FAFC' : '#FFFFFF',
+                    cursor: isAadhaarVerified ? 'not-allowed' : 'text',
                     outline: 'none',
                     boxSizing: 'border-box',
                     transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                   }}
                   onFocus={(e) => {
+                    if (isAadhaarVerified) return;
                     e.target.style.borderColor = nameError ? '#EF4444' : '#00D294';
                     e.target.style.boxShadow = nameError ? '0 0 0 3px rgba(239, 68, 68, 0.18)' : '0 0 0 3px rgba(0, 210, 148, 0.18)';
                   }}
                   onBlur={(e) => {
+                    if (isAadhaarVerified) return;
                     e.target.style.borderColor = nameError ? '#EF4444' : '#CBD5E1';
                     e.target.style.boxShadow = 'none';
                   }}
+                  title={isAadhaarVerified ? 'Full Name is locked as per verified Aadhaar record' : ''}
                 />
-                {nameError && (
+                {isAadhaarVerified && (
+                  <small style={{ color: '#059669', fontWeight: 600, fontSize: '0.78rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    ✓ Full Name is permanently locked and verified as per UIDAI Aadhaar record.
+                  </small>
+                )}
+                {nameError && !isAadhaarVerified && (
                   <small style={{ color: '#EF4444', fontWeight: 600, fontSize: '0.82rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <circle cx="12" cy="12" r="10" />
@@ -634,35 +660,16 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                     {designation.length}/60
                   </span>
                 </div>
-                <input
-                  type="text"
-                  maxLength={60}
+                <DesignationSelect
+                  id="edit-profile-designation"
                   value={designation}
-                  onChange={(e) => {
-                    const val = e.target.value.slice(0, 60);
+                  onChange={(val) => {
                     setDesignation(val);
                     if (designationError) setDesignationError('');
                   }}
-                  placeholder="e.g. Senior Software Engineer"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: designationError ? '1.5px solid #EF4444' : '1.5px solid #CBD5E1',
-                    fontSize: '0.94rem',
-                    color: '#0F172A',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = designationError ? '#EF4444' : '#00D294';
-                    e.target.style.boxShadow = designationError ? '0 0 0 3px rgba(239, 68, 68, 0.18)' : '0 0 0 3px rgba(0, 210, 148, 0.18)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = designationError ? '#EF4444' : '#CBD5E1';
-                    e.target.style.boxShadow = 'none';
-                  }}
+                  error={designationError}
+                  placeholder="Select from categorized list or type role (e.g. Software Engineer, Product Manager)"
+                  maxLength={60}
                 />
                 {designationError && (
                   <small style={{ color: '#EF4444', fontWeight: 600, fontSize: '0.82rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>

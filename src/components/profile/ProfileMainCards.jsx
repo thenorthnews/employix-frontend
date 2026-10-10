@@ -390,7 +390,7 @@ const ProfileMainCards = ({ user: propUser }) => {
                 <line x1="20" y1="8" x2="20" y2="14"></line>
                 <line x1="23" y1="11" x2="17" y2="11"></line>
               </svg>
-              Professional Conduct &amp; References
+              Behavioral References &amp; Conduct
             </h3>
             <span className="badge badge-success px-2 py-1 font-weight-bold small">
               {user.references.filter((r) => r.status === 'completed' || r.isFeedbackSubmitted).length}/{user.references.length} Verified

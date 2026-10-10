@@ -12,6 +12,7 @@ import OtpPage from './pages/OtpPage';
 import KycVerificationPage from './pages/KycVerificationPage';
 import ProfilePage from './pages/ProfilePage';
 import ReferenceVerificationPage from './pages/ReferenceVerificationPage';
+import VerifiedIdPage from './pages/VerifiedIdPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PublicRoute from './components/common/PublicRoute';
 import GlobalSuccessModal from './components/common/GlobalSuccessModal';
@@ -110,6 +111,8 @@ function App() {
             element={<DigiLockerCallbackRoute />}
           />
           <Route path="/reference-verification" element={<ReferenceVerificationPage />} />
+          <Route path="/verify-id/:id" element={<VerifiedIdPage />} />
+          <Route path="/candidate-id/:id" element={<VerifiedIdPage />} />
           {/* Fallback route */}
           <Route path="*" element={<HomePage />} />
         </Routes>

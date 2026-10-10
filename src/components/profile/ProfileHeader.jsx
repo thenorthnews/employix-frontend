@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import EditProfileModal from './EditProfileModal';
+import ShareVerifiedIdModal from './ShareVerifiedIdModal';
 import {
   getKycVerificationFlags,
   formatCandidateAddress,
@@ -14,6 +15,7 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
   const user = propUser || reduxUser;
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const avatarSrc = resolveImageUrl(user?.profileImage);
   const userName = user?.name || 'Verified Candidate';
@@ -95,6 +97,32 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
               <span className="candidate-ref-id-pill" style={{ marginTop: 0 }}>
                 {formattedId}
               </span>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="btn btn-sm font-weight-bold d-inline-flex align-items-center gap-2"
+                style={{
+                  background: 'linear-gradient(135deg, #00D294 0%, #00B880 100%)',
+                  color: '#020C1F',
+                  border: 'none',
+                  borderRadius: '20px',
+                  padding: '5px 14px',
+                  fontSize: '0.82rem',
+                  boxShadow: '0 2px 8px rgba(0, 210, 148, 0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                title="Share your verified ID link with employers"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6">
+                  <circle cx="18" cy="5" r="3"></circle>
+                  <circle cx="6" cy="12" r="3"></circle>
+                  <circle cx="18" cy="19" r="3"></circle>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                Share Verified ID
+              </button>
             </div>
             <div>
               <span className="badge badge-pill badge-teal-subtle text-teal px-2 py-1 font-weight-bold" style={{ fontSize: '0.8rem' }}>
@@ -180,8 +208,13 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
             </div>
           </div>
 
-          {/* Static QR Code Card */}
-          <div className="candidate-ref-qr-box" title="Candidate Verification QR Code">
+          {/* QR Code Card (Click to Share) */}
+          <div
+            className="candidate-ref-qr-box"
+            title="Click to share verified ID or scan QR code"
+            onClick={() => setIsShareModalOpen(true)}
+            style={{ cursor: 'pointer' }}
+          >
             <svg
               className="candidate-ref-qr-svg"
               viewBox="0 0 29 29"
@@ -472,6 +505,13 @@ const ProfileHeader = ({ user: propUser, onUpdate }) => {
         onClose={() => setIsEditModalOpen(false)}
         user={user}
         onUpdate={onUpdate}
+      />
+
+      {/* Share Verified ID Modal Dialog */}
+      <ShareVerifiedIdModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        user={user}
       />
     </div>
   );

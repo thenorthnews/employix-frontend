@@ -6,7 +6,7 @@ const AccountVerifiedModal = ({
   onProceed,
   title = 'Account Verified Successfully!',
   subtitle = 'Your email and login credentials have been verified. Welcome to Employix!',
-  buttonText = 'Proceed to KYC Verification',
+  buttonText = 'Start your free verification',
   countdownSeconds = 3,
 }) => {
   const [timeLeft, setTimeLeft] = useState(countdownSeconds);
