@@ -710,6 +710,26 @@ const KYCVerification = ({
     };
   }, [user?._id, user?.id, fetchInitialData]);
 
+  // Auto sync KYC state when user switches back to tab or focuses the window
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchInitialData();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchInitialData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchInitialData]);
+
   // Handle Photo selection (supports JPEG, PNG, HEIC, WEBP)
   const handlePhotoChange = async (e) => {
     const rawFile = e.target.files?.[0];

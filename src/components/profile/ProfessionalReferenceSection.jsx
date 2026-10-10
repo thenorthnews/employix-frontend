@@ -65,9 +65,9 @@ const ProfessionalReferenceSection = ({
     reference: null,
   });
 
-  const fetchReferences = async () => {
+  const fetchReferences = async (isSilent = false) => {
     try {
-      setLoading(true);
+      if (!isSilent) setLoading(true);
       const res = await getReferencesApi();
       const payload = res?.data || res;
       const isSuccess = Boolean(res?.success || res?.data?.success || payload?.references);
@@ -83,10 +83,11 @@ const ProfessionalReferenceSection = ({
     } catch (err) {
       console.error('Error fetching references:', err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
+  // 1. Initial fetch & WebSocket listener
   useEffect(() => {
     fetchReferences();
 
@@ -107,7 +108,7 @@ const ProfessionalReferenceSection = ({
       );
 
       // Instantly refresh references list and reward points without page refresh
-      fetchReferences();
+      fetchReferences(true);
     };
 
     socket.on('reference_verified', handleReferenceVerified);
@@ -116,6 +117,40 @@ const ProfessionalReferenceSection = ({
       socket.off('reference_verified', handleReferenceVerified);
     };
   }, [user?._id, user?.id]);
+
+  // 2. Automatic refresh when user switches tabs or focuses the window
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchReferences(true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchReferences(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // 3. Smart Auto-Polling (every 3.5s) if there is any pending reference awaiting verification
+  useEffect(() => {
+    const hasPending = references.some(
+      (r) => r.status !== 'completed' && !r.isFeedbackSubmitted && !r.isPointsAwarded
+    );
+    if (!hasPending) return;
+
+    const pollTimer = setInterval(() => {
+      fetchReferences(true);
+    }, 3500);
+
+    return () => clearInterval(pollTimer);
+  }, [references]);
 
   useEffect(() => {
     if (initialReferences !== null && initialReferences !== undefined) {
