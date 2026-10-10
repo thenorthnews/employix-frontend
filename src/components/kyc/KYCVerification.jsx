@@ -672,6 +672,23 @@ const KYCVerification = ({
         return;
       }
 
+      // Instantly update userReferences array in state
+      setUserReferences((prev) =>
+        prev.map((r) => {
+          const matchId = data?.referenceId && String(r._id || r.id || '') === String(data.referenceId);
+          const matchEmail = data?.refereeEmail && (r.refereeEmail || '').toLowerCase() === data.refereeEmail.toLowerCase();
+          if (matchId || matchEmail) {
+            return {
+              ...r,
+              status: 'completed',
+              isFeedbackSubmitted: true,
+              isPointsAwarded: true,
+            };
+          }
+          return r;
+        })
+      );
+
       // Pop up center celebration modal immediately when socket hits
       showVerificationSuccessModal({
         title: 'Behavioral Reference Verified! 🎉',

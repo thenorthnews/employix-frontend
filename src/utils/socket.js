@@ -4,23 +4,40 @@ let socket = null;
 
 export const getSocket = () => {
   if (!socket) {
-    // In dev, connects to window.location.origin (proxied to port 5000) with fallback to direct http://localhost:5000
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin);
+    let socketUrl = import.meta.env.VITE_SOCKET_URL;
+
+    if (!socketUrl) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
+        try {
+          socketUrl = new URL(apiBase).origin;
+        } catch {
+          socketUrl = `${window.location.protocol}//${window.location.hostname}:5000`;
+        }
+      } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        socketUrl = 'http://localhost:5000';
+      } else {
+        // Live server default: connect to port 5000 on current host
+        socketUrl = `${window.location.protocol}//${window.location.hostname}:5000`;
+      }
+    }
+
+    console.log('[Socket.io Initializing Target URL]:', socketUrl);
 
     socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 20,
       reconnectionDelay: 1000,
       autoConnect: true,
     });
 
     socket.on('connect', () => {
-      console.log('[Socket.io Connected] ID:', socket.id);
+      console.log('[Socket.io Connected Successfully] Socket ID:', socket.id);
     });
 
     socket.on('connect_error', (err) => {
-      console.warn('[Socket.io Connect Error]:', err.message);
+      console.warn('[Socket.io Connection Error]:', err.message);
     });
 
     socket.on('disconnect', (reason) => {
@@ -37,8 +54,15 @@ export const getSocket = () => {
 export const joinUserRoom = (userId) => {
   const s = getSocket();
   if (s && userId) {
-    s.emit('join_user_room', userId);
-    console.log(`[Socket.io] Joined room for user ${userId}`);
+    if (s.connected) {
+      s.emit('join_user_room', String(userId));
+      console.log(`[Socket.io] Emitted join_user_room for user ${userId}`);
+    } else {
+      s.once('connect', () => {
+        s.emit('join_user_room', String(userId));
+        console.log(`[Socket.io] Connected & Emitted join_user_room for user ${userId}`);
+      });
+    }
   }
 };
 

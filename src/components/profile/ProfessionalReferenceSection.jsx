@@ -103,11 +103,29 @@ const ProfessionalReferenceSection = ({
         return;
       }
 
+      // 1. Instant local state update (Zero UI latency)
+      setReferences((prev) =>
+        prev.map((r) => {
+          const matchId = data?.referenceId && String(r._id || r.id || '') === String(data.referenceId);
+          const matchEmail = data?.refereeEmail && (r.refereeEmail || '').toLowerCase() === data.refereeEmail.toLowerCase();
+          if (matchId || matchEmail) {
+            return {
+              ...r,
+              status: 'completed',
+              isFeedbackSubmitted: true,
+              isPointsAwarded: true,
+            };
+          }
+          return r;
+        })
+      );
+      setRewardPoints((prev) => (prev || 0) + (data?.points || 5));
+
       toast.success(
         `${data?.refereeName ? `Reference verified by ${data.refereeName}!` : 'Behavioral Reference Verified!'} (+5 Points Awarded)`
       );
 
-      // Instantly refresh references list and reward points without page refresh
+      // 2. Sync full details from backend
       fetchReferences(true);
     };
 
