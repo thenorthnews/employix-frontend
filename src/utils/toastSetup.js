@@ -53,25 +53,21 @@ const originalError = toast.error?.bind(toast);
 const originalWarn = toast.warn?.bind(toast);
 const originalInfo = toast.info?.bind(toast);
 
-// 1. Success -> Show standard toast (or modal only if explicitly requested with options.showModal: true)
+// 1. Success -> Show in Center Global Modal (No right-side toast)
 toast.success = (content, options = {}) => {
   const message = cleanSuccessMessage(content);
-  if (options.showModal && typeof window !== 'undefined') {
+  if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('app:show-success-modal', {
         detail: {
           message,
-          title: options.title || 'Success!',
-          buttonText: options.buttonText || 'Got It',
+          title: options?.title || 'Success!',
+          buttonText: options?.buttonText || 'Got It',
         },
       })
     );
   }
-  return originalSuccess(message, {
-    position: 'top-right',
-    autoClose: 3500,
-    ...options,
-  });
+  return null;
 };
 
 // 2. Error -> Show in Toastify on Right Side
