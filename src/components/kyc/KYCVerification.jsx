@@ -457,10 +457,11 @@ const KYCVerification = ({
         setUserReferences(pData.references);
 
         // Check if any reference was recently verified while user was away and hasn't been acknowledged
-        const ackKey = `employix_acked_refs_${pData._id || user?._id || 'guest'}`;
+        const currentUserId = pData._id || pData.id || user?._id || user?.id || 'current_user';
+        const ackKey = `employix_acked_refs_${currentUserId}`;
         let ackedIds = [];
         try {
-          ackedIds = JSON.parse(localStorage.getItem(ackKey) || '[]');
+          ackedIds = JSON.parse(localStorage.getItem(ackKey) || localStorage.getItem('employix_acked_refs_global') || '[]');
         } catch (e) {
           ackedIds = [];
         }
@@ -469,22 +470,34 @@ const KYCVerification = ({
           (r) => r.status === 'completed' || r.isFeedbackSubmitted || r.isPointsAwarded
         );
 
-        const unackedRef = completedRefs.find((r) => r._id && !ackedIds.includes(String(r._id)));
-        if (unackedRef) {
-          setTimeout(() => {
-            showVerificationSuccessModal({
-              title: '🎉 You Earned 5 Reward Points!',
-              pointsEarned: 5,
-              badgeText: '✓ Reference Endorsed',
-              description: `Great news! Your behavioral reference from ${unackedRef.refereeName || 'your manager'} has been authenticated and +5 Reward Points have been added to your balance!`,
-              buttonText: 'View Updated Score',
-              targetStepId: 'step-references',
-            });
-          }, 600);
+        const unackedRef = completedRefs.find((r) => {
+          const refId = String(r._id || r.id || r.referenceId || '');
+          return refId && !ackedIds.includes(refId);
+        });
 
+        if (unackedRef) {
+          // Immediately mark all completed IDs as acknowledged
+          const allCompletedIds = completedRefs.map((r) => String(r._id || r.id || r.referenceId || '')).filter(Boolean);
+          const updatedAcked = Array.from(new Set([...ackedIds, ...allCompletedIds]));
           try {
-            localStorage.setItem(ackKey, JSON.stringify([...ackedIds, String(unackedRef._id)]));
+            localStorage.setItem(ackKey, JSON.stringify(updatedAcked));
+            localStorage.setItem('employix_acked_refs_global', JSON.stringify(updatedAcked));
           } catch (e) {}
+
+          const hasShownInSession = sessionStorage.getItem(`shown_ref_popup_${unackedRef._id || unackedRef.id}`);
+          if (!hasShownInSession) {
+            sessionStorage.setItem(`shown_ref_popup_${unackedRef._id || unackedRef.id}`, 'true');
+            setTimeout(() => {
+              showVerificationSuccessModal({
+                title: '🎉 You Earned 5 Reward Points!',
+                pointsEarned: 5,
+                badgeText: '✓ Reference Endorsed',
+                description: `Great news! Your behavioral reference from ${unackedRef.refereeName || 'your manager'} has been authenticated and +5 Reward Points have been added to your balance!`,
+                buttonText: 'View Updated Score',
+                targetStepId: 'step-references',
+              });
+            }, 600);
+          }
         }
       }
       if (pData.rewardPoints !== undefined) {
@@ -794,7 +807,11 @@ const KYCVerification = ({
         setKycStatus(nextStatus);
       }
       if (!isSilent) {
-        toast.success('Profile details saved successfully.');
+        toast.success('Profile details saved successfully.', {
+          showModal: true,
+          title: 'Profile Details Saved!',
+          buttonText: 'Continue',
+        });
       }
     } catch (err) {
       console.error('Failed to update profile:', err);
@@ -2354,7 +2371,7 @@ const KYCVerification = ({
                           )}
                         </span>
                         <span className="d-block text-muted" style={{ fontSize: '0.74rem', marginTop: '2px', color: '#64748B' }}>
-                          JPG, JPEG, PNG or WEBP (Max 5MB)
+                          JPG, JPEG, PNG, WEBP, or HEIC (Max 5MB)
                         </span>
                         {profileErrors.photo && (
                           <small className="text-danger font-weight-bold mt-1 d-block" style={{ fontSize: '0.82rem' }}>
@@ -2404,11 +2421,6 @@ const KYCVerification = ({
                             {profileErrors.name && !aadhaarVerified && (
                               <small className="text-danger font-weight-bold mt-1 d-block" style={{ fontSize: '0.82rem' }}>
                                 {profileErrors.name}
-                              </small>
-                            )}
-                            {aadhaarVerified && (
-                              <small className="text-success font-weight-bold mt-1 d-block" style={{ fontSize: '0.78rem' }}>
-                                ✓ Full Name is permanently locked and verified as per UIDAI Aadhaar record.
                               </small>
                             )}
                           </div>

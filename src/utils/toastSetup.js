@@ -53,10 +53,10 @@ const originalError = toast.error?.bind(toast);
 const originalWarn = toast.warn?.bind(toast);
 const originalInfo = toast.info?.bind(toast);
 
-// 1. Success -> Show in Center Modal
+// 1. Success -> Show standard toast (or modal only if explicitly requested with options.showModal: true)
 toast.success = (content, options = {}) => {
   const message = cleanSuccessMessage(content);
-  if (typeof window !== 'undefined') {
+  if (options.showModal && typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('app:show-success-modal', {
         detail: {
@@ -67,7 +67,11 @@ toast.success = (content, options = {}) => {
       })
     );
   }
-  return 'success-modal-triggered';
+  return originalSuccess(message, {
+    position: 'top-right',
+    autoClose: 3500,
+    ...options,
+  });
 };
 
 // 2. Error -> Show in Toastify on Right Side

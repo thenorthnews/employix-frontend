@@ -202,9 +202,11 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
 
       // Update Redux state
       dispatch(updateProfileSuccess(data));
-      dispatch(updateUserKycStatus(data));
-
-      toast.success('Profile updated successfully.');
+      toast.success('Profile updated successfully.', {
+        showModal: true,
+        title: 'Profile Updated Successfully!',
+        buttonText: 'Great',
+      });
 
       // Notify parent to refetch latest profile data
       if (typeof onUpdate === 'function') {
@@ -489,7 +491,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                       </button>
                     )}
                     <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>
-                      JPG, JPEG, PNG or WEBP (Max 5MB)
+                      JPG, JPEG, PNG, WEBP, or HEIC (Max 5MB)
                     </span>
                     {photoError && (
                       <span style={{ display: 'block', fontSize: '0.78rem', color: '#EF4444', fontWeight: 600, marginTop: '3px' }}>
@@ -579,11 +581,6 @@ const EditProfileModal = ({ isOpen, onClose, user, onUpdate }) => {
                   }}
                   title={isAadhaarVerified ? 'Full Name is locked as per verified Aadhaar record' : ''}
                 />
-                {isAadhaarVerified && (
-                  <small style={{ color: '#059669', fontWeight: 600, fontSize: '0.78rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    ✓ Full Name is permanently locked and verified as per UIDAI Aadhaar record.
-                  </small>
-                )}
                 {nameError && !isAadhaarVerified && (
                   <small style={{ color: '#EF4444', fontWeight: 600, fontSize: '0.82rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

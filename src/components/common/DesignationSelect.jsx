@@ -259,25 +259,7 @@ const DesignationSelect = ({
                 boxSizing: 'border-box',
               }}
             />
-            {customText && (
-              <span
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  fontSize: '0.74rem',
-                  color: '#94A3B8',
-                  pointerEvents: 'none',
-                }}
-              >
-                {customText.length}/{maxLength}
-              </span>
-            )}
           </div>
-          <small style={{ display: 'block', color: '#64748B', fontSize: '0.76rem', marginTop: '4px' }}>
-            Enter your exact title as listed in your company records.
-          </small>
         </div>
       )}
     </div>
